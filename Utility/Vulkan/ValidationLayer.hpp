@@ -53,6 +53,8 @@ public:
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);
+
+    static void glfwErrorCallback(int code, const char* description);
 };
 
 #endif // MINECRAFT_VK_UTILITY_VULKAN_VALIDATIONLAYER_HPP
