@@ -6,72 +6,88 @@
 #define MINECRAFT_VK_UTILITY_LOGGER_HPP
 
 #include <iostream>
-#include <string>
 #include <sstream>
+#include <string>
 
 class Logger
 {
 
 private:
-	static constexpr auto RED = "\033[38;5;9m";
-	static constexpr auto RESET_COLOR = "\033[38;5;15m";
+    static constexpr auto RED = "\033[38;5;9m";
+    static constexpr auto RESET_COLOR = "\033[38;5;15m";
 
 public:
+    enum class Color
+    {
+        wReset,
+        eRed,
+        eColorSize
+    };
 
-	enum class Color
-	{
-		wReset, eRed, eColorSize
-	};
+    inline static Logger&
+    getInstance()
+    {
+        static Logger instance;
+        return instance;
+    }
 
-	inline static Logger &
-	getInstance()
-	{
-		static Logger instance;
-		return instance;
-	}
+    static inline const char*
+    prefix(const Color& color)
+    {
+        switch (color)
+        {
+        case Color::wReset:
+            return RESET_COLOR;
+        case Color::eRed:
+            return RED;
+        default:
+            break;
+        }
 
-	static inline const char *
-	prefix(const Color &color)
-	{
-		switch (color)
-		{
-			case Color::wReset: return RESET_COLOR;
-			case Color::eRed: return RED;
-		}
-	}
+		return RESET_COLOR;
+    }
 
-	template<typename ... Ty>
-	void
-	Log(Color &&color, Ty &&... str)
-	{
-		Log(prefix(color));
-		Log(str...);
-		Log(prefix(Color::wReset));
-	}
+    template <typename Ty, typename... Tys>
+    void
+    Log(Ty&& elm, Tys&&... elms)
+    {
+        if constexpr (std::is_same<typename std::decay<Ty>::type, Color>::value)
+        {
+            LogWithColor(elm, elms...);
+        }
+        else
+        {
+            std::stringstream output;
+            output << std::forward<Ty>(elm);
+            ((output << ' ' << std::forward<Tys>(elms)), ...) << std::flush;
 
-	template<typename ... Ty>
-	void
-	Log(Ty &&... str)
-	{
-		std::stringstream output;
-		((output << str << ' '), ...) << std::flush;
-		Log(output.str());
-	}
+            Log(output.str());
+        }
+    }
 
-	template<typename Ty>
-	inline void
-	Log(Ty &&str)
-	{
-		std::cout << str << std::flush;
-	}
+    template <typename ColorTy, typename... Tys>
+    void
+    LogWithColor(ColorTy&& color, Tys&&... elms)
+    {
+        Log(prefix(color));
+        Log(std::forward<Tys>(elms)...);
+        Log(prefix(Color::wReset));
+    }
 
-	template<typename Ty>
-	inline Logger &
-	operator<<(const Ty &str)
-	{
-		Log(str);
-		return *this;
-	}
+    template <typename Ty>
+    inline void
+    Log(Ty&& elm)
+    {
+        std::cout << std::forward<Ty>(elm) << std::flush;
+    }
+
+    template <typename Ty>
+    inline Logger&
+    operator<<(const Ty& elm)
+    {
+        Log(elm);
+        return *this;
+    }
 };
 
-#endif //MINECRAFT_VK_UTILITY_LOGGER_HPP
+#endif // MINECRAFT_VK_UTILITY_LOGGER_HPP

@@ -10,6 +10,7 @@ find_package(Threads)
 
 add_executable(Minecraft_vk main.cpp)
 
+add_subdirectory(Utility)
 add_subdirectory(Vulkan)
 
 target_link_libraries(Minecraft_vk glfw vulkan)

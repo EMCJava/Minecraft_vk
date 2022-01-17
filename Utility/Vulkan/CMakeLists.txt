@@ -1,0 +1,2 @@
+add_library(ValidationLayerLib ValidationLayer.hpp ValidationLayer.cpp)
+add_library(VulkanExtensionLib VulkanExtension.hpp VulkanExtension.cpp)

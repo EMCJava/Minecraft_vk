@@ -4,7 +4,7 @@
 #include <iostream>
 
 int main() {
-	GlobalConfig::LoadFromFile("config.ini");
+	GlobalConfig::LoadFromFile("../config.ini");
 
 	bool success = true;
 
