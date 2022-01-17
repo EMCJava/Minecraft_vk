@@ -18,22 +18,33 @@
 
 class MainApplication
 {
+private:
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+
+        bool isComplete()
+        {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
 
 private:
     GLFWwindow* m_window;
     int m_screen_width, m_screen_height;
     bool m_window_resizable = false;
 
-    ValidationLayer m_vkValidationLayer;
-    VulkanExtension m_vkExtension;
+    std::unique_ptr<ValidationLayer> m_vkValidationLayer;
+    std::unique_ptr<VulkanExtension> m_vkExtension;
 
-    std::unordered_map<vk::QueueFlagBits, int> m_queue_flag_index;
-    std::unordered_map<vk::QueueFlagBits, VkQueue> m_queue;
+    vk::Queue m_vkGraphicQueue;
+    vk::Queue m_vkPresentQueue;
 
     vk::DispatchLoaderDynamic m_vkDynamicDispatch;
     vk::DebugUtilsMessengerEXT m_vkdebugMessenger;
     vk::UniqueInstance m_vkInstance;
 
+    vk::UniqueSurfaceKHR m_vksurface;
     vk::PhysicalDevice m_vkPhysicalDevice;
     vk::UniqueDevice m_vkLogicalDevice;
 
@@ -41,6 +52,8 @@ private:
 
     void InitWindow();
     void InitGraphicAPI();
+
+    QueueFamilyIndices findQueueFamilies();
 
     void selectPhysicalDevice();
     void createLogicalDevice();
@@ -54,4 +67,4 @@ public:
     void run();
 };
 
-#endif // MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP
+#endif   // MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP

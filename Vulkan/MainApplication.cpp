@@ -4,6 +4,7 @@
 
 #include "MainApplication.hpp"
 
+#include "GraphicAPI.hpp"
 #include <Include/GlobalConfig.hpp>
 
 MainApplication::MainApplication()
@@ -32,16 +33,19 @@ MainApplication::InitGraphicAPI()
 {
     // graphicAPIInfo();
 
-    assert( m_vkValidationLayer.IsAvailable() );
-
     auto appInfo = vk::ApplicationInfo(
         "Hello Triangle",
-        VK_MAKE_VERSION( 1, 0, 0 ),
+        VK_MAKE_API_VERSION( 0, 1, 0, 0 ),
         "No Engine",
-        VK_MAKE_VERSION( 1, 0, 0 ),
+        VK_MAKE_API_VERSION( 0, 1, 0, 0 ),
         VK_API_VERSION_1_0 );
 
-    vk::InstanceCreateInfo createInfo { {}, &appInfo, m_vkValidationLayer.RequiredLayerCount(), m_vkValidationLayer.RequiredLayerStrPtr(), m_vkExtension.ExtensionCount(), m_vkExtension.ExtensionStrPtr() };
+    m_vkValidationLayer = std::make_unique<ValidationLayer>();
+    assert( m_vkValidationLayer->IsAvailable() );
+
+    m_vkExtension = std::make_unique<VulkanExtension>();
+
+    vk::InstanceCreateInfo createInfo { {}, &appInfo, m_vkValidationLayer->RequiredLayerCount(), m_vkValidationLayer->RequiredLayerStrPtr(), m_vkExtension->ExtensionCount(), m_vkExtension->ExtensionStrPtr() };
 
     // Validation layer
     using SeverityFlag = vk::DebugUtilsMessageSeverityFlagBitsEXT;
@@ -55,7 +59,7 @@ MainApplication::InitGraphicAPI()
     debugCreateInfo.messageSeverity ^= SeverityFlag::eInfo | SeverityFlag::eVerbose;
 
     // Validation layer for instance create & destroy
-    if ( m_vkExtension.isUsingValidationLayer() )
+    if ( m_vkExtension->isUsingValidationLayer() )
     {
         createInfo.pNext = (vk::DebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
     }
@@ -64,10 +68,17 @@ MainApplication::InitGraphicAPI()
     m_vkDynamicDispatch.init( m_vkInstance.get(), vkGetInstanceProcAddr );
 
     // Validation layer
-    if ( m_vkExtension.isUsingValidationLayer() )
+    if ( m_vkExtension->isUsingValidationLayer() )
     {
         m_vkdebugMessenger = m_vkInstance->createDebugUtilsMessengerEXT( debugCreateInfo, nullptr, m_vkDynamicDispatch );
     }
+
+    VkSurfaceKHR rawSurface;
+    if ( glfwCreateWindowSurface( m_vkInstance.get(), m_window, nullptr, &rawSurface ) != VK_SUCCESS )
+    {
+        throw std::runtime_error( "failed to create window surface!" );
+    }
+    m_vksurface = vk::UniqueSurfaceKHR( rawSurface, m_vkInstance.get() );
 
     selectPhysicalDevice();
     createLogicalDevice();
@@ -120,40 +131,54 @@ MainApplication::selectPhysicalDevice()
     }
 }
 
+auto
+MainApplication::findQueueFamilies() -> QueueFamilyIndices
+{
+    QueueFamilyIndices indices;
+
+    auto queueFamilies = m_vkPhysicalDevice.getQueueFamilyProperties();
+
+    for ( int i = 0; i < queueFamilies.size(); ++i )
+    {
+        if ( !indices.graphicsFamily.has_value() && queueFamilies[ i ].queueCount > 0 && queueFamilies[ i ].queueFlags & vk::QueueFlagBits::eGraphics )
+        {
+            indices.graphicsFamily = i;
+        } else if ( !indices.presentFamily.has_value() && queueFamilies[ i ].queueCount > 0 && m_vkPhysicalDevice.getSurfaceSupportKHR( i, m_vksurface.get() ) )
+        {
+            indices.presentFamily = i;
+        }
+
+        if ( indices.isComplete() )
+        {
+            break;
+        }
+    }
+
+    return indices;
+}
+
 void
 MainApplication::createLogicalDevice()
 {
-    m_queue_flag_index                  = { { vk::QueueFlagBits::eGraphics, 0 } };
-    auto device_queue_family_properties = m_vkPhysicalDevice.getQueueFamilyProperties();
-    float queuePriority                 = 1.0f;
+    const auto queueFamily = findQueueFamilies();
+    float queuePriority    = 1.0f;
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-
-    for ( auto& [ flag, index ] : m_queue_flag_index )
-    {
-        index = std::find_if( device_queue_family_properties.begin(), device_queue_family_properties.end(),
-                              [ flag = flag ]( const auto& queue_family_properties ) { return queue_family_properties.queueFlags & flag; } )
-            - device_queue_family_properties.begin();
-
-        queueCreateInfos.emplace_back( vk::DeviceQueueCreateFlags(), index, 1, &queuePriority );
-    }
-
+    queueCreateInfos.emplace_back( vk::DeviceQueueCreateFlags(), queueFamily.graphicsFamily.value(), 1, &queuePriority );
+    queueCreateInfos.emplace_back( vk::DeviceQueueCreateFlags(), queueFamily.presentFamily.value(), 1, &queuePriority );
 
     vk::PhysicalDeviceFeatures requiredFeatures {};
-    vk::DeviceCreateInfo createInfo( {}, queueCreateInfos.size(), queueCreateInfos.data(), m_vkValidationLayer.RequiredLayerCount(), m_vkValidationLayer.RequiredLayerStrPtr() );
+    vk::DeviceCreateInfo createInfo( {}, queueCreateInfos.size(), queueCreateInfos.data(), m_vkValidationLayer->RequiredLayerCount(), m_vkValidationLayer->RequiredLayerStrPtr() );
     m_vkLogicalDevice = m_vkPhysicalDevice.createDeviceUnique( createInfo );
 
-
-    uint32_t device_index = 0;
-    for ( auto& [ flag, index ] : m_queue_flag_index )
-    {
-        m_queue[ flag ] = m_vkLogicalDevice->getQueue( index, device_index++ );
-    }
+    m_vkGraphicQueue = m_vkLogicalDevice->getQueue( queueFamily.graphicsFamily.value(), 0 );
+    m_vkPresentQueue = m_vkLogicalDevice->getQueue( queueFamily.presentFamily.value(), 0 );
 }
 
 void
 MainApplication::InitWindow()
 {
     glfwInit();
+    glfwSetErrorCallback( ValidationLayer::glfwErrorCallback );
 
     m_screen_width     = GlobalConfig::getConfigData()[ "screen_width" ].get<int>();
     m_screen_height    = GlobalConfig::getConfigData()[ "screen_height" ].get<int>();
@@ -167,7 +192,7 @@ MainApplication::InitWindow()
 void
 MainApplication::cleanUp()
 {
-    if ( m_vkExtension.isUsingValidationLayer() )
+    if ( m_vkExtension->isUsingValidationLayer() )
     {
         m_vkInstance->destroyDebugUtilsMessengerEXT( m_vkdebugMessenger, {}, m_vkDynamicDispatch );
     }
