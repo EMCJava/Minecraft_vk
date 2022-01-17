@@ -44,7 +44,14 @@ public:
             break;
         }
 
-		return RESET_COLOR;
+        return RESET_COLOR;
+    }
+
+    template <typename... Tys>
+    void
+    LogLine(Tys&&... elms)
+    {
+        Log(std::forward<Tys>(elms)..., '\n');
     }
 
     template <typename Ty, typename... Tys>
