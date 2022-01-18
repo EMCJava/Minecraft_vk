@@ -24,8 +24,8 @@ private:
 public:
     ValidationLayer();
 
-    inline bool
-    IsAvailable()
+    [[nodiscard]] inline bool
+    IsAvailable() const
     {
         return m_isAvailable;
     }

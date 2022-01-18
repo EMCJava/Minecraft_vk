@@ -15,7 +15,21 @@ void VulkanExtension::LoadRequiredExtensionsGlfw()
 
     m_extensions.assign(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
+    LoadRequiredExtensionsDevice();
+
     if (isUsingValidationLayer()) {
         m_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
+}
+
+void
+VulkanExtension::LoadRequiredExtensionsDevice()
+{
+    auto required_extension_properties = GlobalConfig::getConfigData()[ "logical_device_extensions" ];
+
+    m_device_extensions.clear();
+    std::ranges::transform(required_extension_properties, std::back_inserter(m_device_extensions_str),
+                            [](const auto& property){ return property.template get<std::string>();});
+    std::ranges::transform(m_device_extensions_str, std::back_inserter(m_device_extensions),
+                            [](const auto& str){ return str.c_str(); });
 }

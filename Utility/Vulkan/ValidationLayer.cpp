@@ -7,8 +7,6 @@
 #include <Include/GlobalConfig.hpp>
 #include <Utility/Logger.hpp>
 
-#include <algorithm>
-
 ValidationLayer::ValidationLayer()
 {
     LoadLayers();

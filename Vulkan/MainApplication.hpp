@@ -29,9 +29,24 @@ private:
         }
     };
 
+    struct SwapChainSupportDetails {
+
+        vk::SurfaceCapabilitiesKHR capabilities;
+        std::vector<vk::SurfaceFormatKHR> formats;
+        std::vector<vk::PresentModeKHR> presentModes;
+
+        vk::Extent2D getMaxSwapExtent(GLFWwindow* window) const;
+
+        [[nodiscard]] bool isComplete() const
+        {
+            return !formats.empty() && !presentModes.empty();
+        }
+    };
+
+
 private:
-    GLFWwindow* m_window;
-    int m_screen_width, m_screen_height;
+    GLFWwindow* m_window {};
+    int m_screen_width {}, m_screen_height {};
     bool m_window_resizable = false;
 
     std::unique_ptr<ValidationLayer> m_vkValidationLayer;
@@ -40,20 +55,32 @@ private:
     vk::Queue m_vkGraphicQueue;
     vk::Queue m_vkPresentQueue;
 
+    QueueFamilyIndices m_vkQueue_family_indices;
+
+    SwapChainSupportDetails m_vkSwap_chain_detail;
+    vk::UniqueSwapchainKHR m_vkSwap_chain;
+    std::vector<vk::Image> m_vkSwap_chain_images;
+
+    // Debug
     vk::DispatchLoaderDynamic m_vkDynamicDispatch;
-    vk::DebugUtilsMessengerEXT m_vkdebugMessenger;
+    vk::DebugUtilsMessengerEXT m_vkDebugMessenger;
+
     vk::UniqueInstance m_vkInstance;
 
-    vk::UniqueSurfaceKHR m_vksurface;
+    vk::UniqueSurfaceKHR m_vkSurface;
     vk::PhysicalDevice m_vkPhysicalDevice;
     vk::UniqueDevice m_vkLogicalDevice;
 
-    void graphicAPIInfo();
+    static void graphicAPIInfo();
+    static bool checkDeviceExtensionSupport( const vk::PhysicalDevice& device );
+
+    bool setSwapChainSupportDetails( const vk::PhysicalDevice& device );
+    void createSwapChain();
 
     void InitWindow();
     void InitGraphicAPI();
 
-    QueueFamilyIndices findQueueFamilies();
+    void setQueueFamiliesIndex();
 
     void selectPhysicalDevice();
     void createLogicalDevice();
