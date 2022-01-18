@@ -13,7 +13,7 @@ add_executable(Minecraft_vk main.cpp)
 add_subdirectory(Utility)
 add_subdirectory(Vulkan)
 
-target_link_libraries(Minecraft_vk glfw vulkan)
+target_link_libraries(Minecraft_vk glfw vulkan shaderc_shared)
 
 target_link_libraries(Minecraft_vk dl X11 Xxf86vm Xrandr Xi)
 target_link_libraries(Minecraft_vk Threads::Threads)
