@@ -26,14 +26,7 @@ ValidationLayer::ValidationLayer()
 void
 ValidationLayer::LoadLayers()
 {
-    uint32_t layerCount;
-    auto result = vk::enumerateInstanceLayerProperties( &layerCount, nullptr );
-    assert( result == vk::Result::eSuccess );
-
-    m_availableLayers.resize( layerCount );
-
-    result = vk::enumerateInstanceLayerProperties( &layerCount, m_availableLayers.data() );
-    assert( result == vk::Result::eSuccess );
+    m_availableLayers = vk::enumerateInstanceLayerProperties();
 }
 
 void

@@ -52,6 +52,12 @@ private:
     std::unique_ptr<ValidationLayer> m_vkValidationLayer;
     std::unique_ptr<VulkanExtension> m_vkExtension;
 
+    vk::UniqueInstance m_vkInstance;
+
+    vk::UniqueSurfaceKHR m_vkSurface;
+    vk::UniqueDevice m_vkLogicalDevice;
+    vk::PhysicalDevice m_vkPhysicalDevice;
+
     vk::Queue m_vkGraphicQueue;
     vk::Queue m_vkPresentQueue;
 
@@ -60,16 +66,12 @@ private:
     SwapChainSupportDetails m_vkSwap_chain_detail;
     vk::UniqueSwapchainKHR m_vkSwap_chain;
     std::vector<vk::Image> m_vkSwap_chain_images;
+    // std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
+    std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
 
     // Debug
     vk::DispatchLoaderDynamic m_vkDynamicDispatch;
     vk::DebugUtilsMessengerEXT m_vkDebugMessenger;
-
-    vk::UniqueInstance m_vkInstance;
-
-    vk::UniqueSurfaceKHR m_vkSurface;
-    vk::PhysicalDevice m_vkPhysicalDevice;
-    vk::UniqueDevice m_vkLogicalDevice;
 
     static void graphicAPIInfo();
     static bool checkDeviceExtensionSupport( const vk::PhysicalDevice& device );
