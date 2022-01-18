@@ -7,16 +7,16 @@
 #include <Include/GlobalConfig.hpp>
 #include <Utility/Logger.hpp>
 
-ValidationLayer::ValidationLayer()
+ValidationLayer::ValidationLayer( )
 {
-    LoadLayers();
-    LoadRequiredLayers();
+    LoadLayers( );
+    LoadRequiredLayers( );
 
     for ( auto& layer : m_requiredLayer )
     {
 
         m_isAvailable = m_isAvailable
-            && std::any_of( m_availableLayers.begin(), m_availableLayers.end(),
+            && std::any_of( m_availableLayers.begin( ), m_availableLayers.end( ),
                             [ &layer ]( const auto& layer_it ) -> bool {
                                 return layer == layer_it.layerName;
                             } );
@@ -24,24 +24,24 @@ ValidationLayer::ValidationLayer()
 }
 
 void
-ValidationLayer::LoadLayers()
+ValidationLayer::LoadLayers( )
 {
-    m_availableLayers = vk::enumerateInstanceLayerProperties();
+    m_availableLayers = vk::enumerateInstanceLayerProperties( );
 }
 
 void
-ValidationLayer::LoadRequiredLayers()
+ValidationLayer::LoadRequiredLayers( )
 {
-    for ( auto& layer : GlobalConfig::getConfigData()[ "validation_layer" ] )
-        m_requiredLayer.emplace_back( layer.get<std::string>() );
+    for ( auto& layer : GlobalConfig::getConfigData( )[ "validation_layer" ] )
+        m_requiredLayer.emplace_back( layer.get<std::string>( ) );
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
 ValidationLayer::debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT             messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData )
+    void*                                       pUserData )
 {
     Logger::Color log_color = Logger::Color::wReset;
 
@@ -56,12 +56,12 @@ ValidationLayer::debugCallback(
         log_color = Logger::Color::eRed;
     }
 
-    Logger::getInstance().LogLine( log_color, "validation layer: [",
-                               vk::to_string( (vk::DebugUtilsMessageSeverityFlagBitsEXT) messageSeverity ),
-                               "] -> [",
-                               vk::to_string( (vk::DebugUtilsMessageTypeFlagBitsEXT) messageType ),
-                               "] ->",
-                               pCallbackData->pMessage);
+    Logger::getInstance( ).LogLine( log_color, "validation layer: [",
+                                    vk::to_string( (vk::DebugUtilsMessageSeverityFlagBitsEXT) messageSeverity ),
+                                    "] -> [",
+                                    vk::to_string( (vk::DebugUtilsMessageTypeFlagBitsEXT) messageType ),
+                                    "] ->",
+                                    pCallbackData->pMessage );
 
     return VK_FALSE;
 }
@@ -69,5 +69,5 @@ ValidationLayer::debugCallback(
 void
 ValidationLayer::glfwErrorCallback( int code, const char* description )
 {
-    Logger::getInstance().LogLine( Logger::Color::eRed, "GLFW Error [", code, "]", description );
+    Logger::getInstance( ).LogLine( Logger::Color::eRed, "GLFW Error [", code, "]", description );
 }

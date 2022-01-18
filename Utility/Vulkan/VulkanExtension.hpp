@@ -14,39 +14,39 @@ private:
     std::vector<const char*> m_device_extensions;
     std::vector<std::string> m_addtional_extensions_str;
 
-    void LoadRequiredExtensionsGlfw();
-    void LoadRequiredExtensionsDevice();
+    void                     LoadRequiredExtensionsGlfw( );
+    void                     LoadRequiredExtensionsDevice( );
 
 public:
-    VulkanExtension();
+    VulkanExtension( );
 
     inline uint32_t
-    VulkanExtensionCount()
+    VulkanExtensionCount( )
     {
-        return m_extensions.size();
+        return m_extensions.size( );
     }
 
     inline const char**
-    VulkanExtensionStrPtr()
+    VulkanExtensionStrPtr( )
     {
-        return m_extensions.data();
+        return m_extensions.data( );
     }
 
     inline uint32_t
-    DeviceExtensionCount()
+    DeviceExtensionCount( )
     {
-        return m_device_extensions.size();
+        return m_device_extensions.size( );
     }
 
     inline const char**
-    DeviceExtensionStrPtr()
+    DeviceExtensionStrPtr( )
     {
-        return m_device_extensions.data();
+        return m_device_extensions.data( );
     }
 
     inline bool
-    isUsingValidationLayer()
+    isUsingValidationLayer( )
     {
-        return GlobalConfig::getConfigData()["vulkan"]["enable_explicit_validation_callback"].get<bool>();
+        return GlobalConfig::getConfigData( )[ "vulkan" ][ "enable_explicit_validation_callback" ].get<bool>( );
     }
 };

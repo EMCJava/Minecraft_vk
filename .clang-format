@@ -17,7 +17,11 @@ BraceWrapping:
   SplitEmptyRecord: true
   AfterExternBlock: true
 
-AlignConsecutiveAssignments: true
+AlignArrayOfStructures: Right
+AlignConsecutiveAssignments: AcrossEmptyLines
+AlignConsecutiveBitFields: AcrossEmptyLines
+AlignConsecutiveDeclarations: AcrossEmptyLines
+AlignConsecutiveMacros: AcrossEmptyLines
 AlignAfterOpenBracket: Align
 AlignEscapedNewlines: Right
 AlignTrailingComments: true
@@ -29,6 +33,7 @@ AlwaysBreakAfterReturnType: TopLevelDefinitions
 AlwaysBreakTemplateDeclarations: MultiLine
 BinPackArguments: true
 BinPackParameters: true
+BitFieldColonSpacing: After
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeTernaryOperators: true
 BreakInheritanceList: BeforeComma
@@ -38,14 +43,20 @@ IndentPPDirectives: AfterHash
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: true
 MaxEmptyLinesToKeep: 2
-SpaceAfterCStyleCast : true
-SpaceBeforeAssignmentOperators : true
-SpaceBeforeCpp11BracedList : true
-SpaceBeforeCtorInitializerColon : true
-SpaceBeforeInheritanceColon : true
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
 SpaceBeforeRangeBasedForLoopColon: true
-SpacesBeforeTrailingComments : 3
+SpacesBeforeTrailingComments: 3
 SpacesInContainerLiterals: true
-SpacesInParentheses : true
-SpacesInSquareBrackets : true
+SpacesInParentheses: true
+SpacesInSquareBrackets: true
+AllowShortLambdasOnASingleLine: All
+AlwaysBreakBeforeMultilineStrings: false
+BreakStringLiterals: true
+LambdaBodyIndentation: Signature
+SpaceBeforeCaseColon: false
+SpaceInEmptyParentheses: true

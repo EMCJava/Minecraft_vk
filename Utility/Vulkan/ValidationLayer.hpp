@@ -12,49 +12,49 @@
 class ValidationLayer
 {
 private:
-    std::vector<std::string> m_requiredLayer;
-    std::vector<const char*> m_requiredLayerCStr;
+    std::vector<std::string>         m_requiredLayer;
+    std::vector<const char*>         m_requiredLayerCStr;
     std::vector<vk::LayerProperties> m_availableLayers;
 
-    void LoadRequiredLayers();
-    void LoadLayers();
+    void                             LoadRequiredLayers( );
+    void                             LoadLayers( );
 
-    bool m_isAvailable = true;
+    bool                             m_isAvailable = true;
 
 public:
-    ValidationLayer();
+    ValidationLayer( );
 
     [[nodiscard]] inline bool
-    IsAvailable() const
+    IsAvailable( ) const
     {
         return m_isAvailable;
     }
 
     inline uint32_t
-    RequiredLayerCount()
+    RequiredLayerCount( )
     {
-        return m_requiredLayer.size();
+        return m_requiredLayer.size( );
     }
 
     inline const char**
-    RequiredLayerStrPtr()
+    RequiredLayerStrPtr( )
     {
-        m_requiredLayerCStr.clear();
+        m_requiredLayerCStr.clear( );
 
         std::ranges::transform(
-            m_requiredLayer, std::back_inserter(m_requiredLayerCStr),
-            [](const std::string& str) { return str.c_str(); });
+            m_requiredLayer, std::back_inserter( m_requiredLayerCStr ),
+            []( const std::string& str ) { return str.c_str( ); } );
 
-        return m_requiredLayerCStr.data();
+        return m_requiredLayerCStr.data( );
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT             messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
+        void*                                       pUserData );
 
-    static void glfwErrorCallback(int code, const char* description);
+    static void glfwErrorCallback( int code, const char* description );
 };
 
-#endif // MINECRAFT_VK_UTILITY_VULKAN_VALIDATIONLAYER_HPP
+#endif   // MINECRAFT_VK_UTILITY_VULKAN_VALIDATIONLAYER_HPP

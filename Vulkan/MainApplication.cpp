@@ -358,7 +358,10 @@ MainApplication::createSwapChain( )
                             [ this, &surfaceFormat ]( const vk::Image& image ) {
                                 vk::ImageViewCreateInfo createInfo {
                                     { },
-                                    image, vk::ImageViewType::e2D, surfaceFormat.format, vk::ComponentMapping { vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity },
+                                    image,
+                                    vk::ImageViewType::e2D,
+                                    surfaceFormat.format,
+                                    vk::ComponentMapping { vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity },
                                     vk::ImageSubresourceRange { vk::ImageAspectFlagBits::eColor,                               0,                               1,                               0, 1 }
                                 };
                                 return std::move( m_vkLogicalDevice->createImageViewUnique( createInfo ) );

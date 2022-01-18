@@ -18,25 +18,28 @@ struct GlobalConfig {
 
 private:
     static void
-    ReplaceConfig(nlohmann::json& source, nlohmann::json& target, std::vector<std::string> path)
+    ReplaceConfig( nlohmann::json& source, nlohmann::json& target, std::vector<std::string> path )
     {
 
-        if (source.is_null())
+        if ( source.is_null( ) )
             return;
 
-        if (source.is_object()) {
-            for (auto& [key, val] : source.items())
+        if ( source.is_object( ) )
+        {
+            for ( auto& [ key, val ] : source.items( ) )
             {
-                path.push_back(key);
-                ReplaceConfig(source[key], target[key], path);
-                path.pop_back();
+                path.push_back( key );
+                ReplaceConfig( source[ key ], target[ key ], path );
+                path.pop_back( );
             }
-        }
-        else {
+        } else
+        {
 
-            if (!target.is_null()) {
+            if ( !target.is_null( ) )
+            {
                 std::cout << "Replacing config ";
-                for (const auto& step : path) {
+                for ( const auto& step : path )
+                {
                     std::cout << step << "->";
                 }
                 std::cout << source << " with " << source << std::endl;
@@ -48,38 +51,38 @@ private:
 
 public:
     static inline nlohmann::json&
-    getConfigData()
+    getConfigData( )
     {
         static GlobalConfig gc;
-        (void)gc;
+        (void) gc;
 
         static nlohmann::json j;
         return j;
     }
 
     static void
-    LoadFromFile(const std::string& path)
+    LoadFromFile( const std::string& path )
     {
         // initialize config instance
-        auto& existing_config = getConfigData();
+        auto&          existing_config = getConfigData( );
 
-        std::ifstream file(path);
+        std::ifstream  file( path );
         nlohmann::json j;
 
-        if (file)
+        if ( file )
             file >> j;
 
-        bool hasData = !j.is_null();
-        if (hasData)
+        bool hasData = !j.is_null( );
+        if ( hasData )
         {
             std::cout << "GlobalConfig:" << std::endl;
-            std::cout << j.dump(4) << std::endl;
+            std::cout << j.dump( 4 ) << std::endl;
         }
 
-        ReplaceConfig(j, getConfigData(), {});
+        ReplaceConfig( j, getConfigData( ), { } );
 
-        file.close();
+        file.close( );
     }
 };
 
-#endif // MINECRAFT_VK_INCLUDE_GLOBALCONFIG_HPP
+#endif   // MINECRAFT_VK_INCLUDE_GLOBALCONFIG_HPP
