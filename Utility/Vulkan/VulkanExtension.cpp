@@ -14,6 +14,10 @@ void VulkanExtension::LoadRequiredExtensionsGlfw()
     auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     m_extensions.assign(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    for(auto& additional_extensions : GlobalConfig::getConfigData()["vulkan_additional_extensions"]){
+        m_addtional_extensions_str.push_back( additional_extensions.get<std::string>());
+        m_extensions.push_back(m_addtional_extensions_str.back().c_str());
+    }
 
     LoadRequiredExtensionsDevice();
 
