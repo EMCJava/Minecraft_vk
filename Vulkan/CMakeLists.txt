@@ -1,2 +1,2 @@
 add_library(MainApplicationLib MainApplication.hpp MainApplication.cpp)
-target_link_libraries(MainApplicationLib LoggerLib ValidationLayerLib VulkanExtensionLib)
+target_link_libraries(MainApplicationLib ValidationLayerLib VulkanExtensionLib ${WINDOW_PLATFORM_LIB})
