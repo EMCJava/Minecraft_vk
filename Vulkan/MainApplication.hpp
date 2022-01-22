@@ -11,9 +11,11 @@
 #include <Utility/Logger.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
+#include <Vulkan/Pipeline/VulkanPipeline.hpp>
 
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 class MainApplication
@@ -66,8 +68,9 @@ private:
     SwapChainSupportDetails          m_vkSwap_chain_detail;
     vk::UniqueSwapchainKHR           m_vkSwap_chain;
     std::vector<vk::Image>           m_vkSwap_chain_images;
-    // std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
     std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
+    
+    std::unique_ptr<VulkanPipeline> m_vkPipeline;
 
     // Debug
     vk::DispatchLoaderDynamic  m_vkDynamicDispatch;
@@ -78,6 +81,7 @@ private:
 
     bool                       setSwapChainSupportDetails( const vk::PhysicalDevice& device );
     void                       createSwapChain( );
+    void                       CreatePipeline( );
 
     void                       InitWindow( );
     void                       InitGraphicAPI( );

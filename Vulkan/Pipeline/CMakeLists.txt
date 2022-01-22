@@ -1,0 +1,4 @@
+add_library(VulkanShaderLib VulkanShader.hpp VulkanShader.cpp)
+target_link_libraries(VulkanShaderLib shaderc_shared)
+
+add_library(VulkanPipelineLib VulkanPipeline.hpp VulkanPipeline.cpp)

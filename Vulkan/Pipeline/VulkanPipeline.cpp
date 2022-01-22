@@ -1,0 +1,183 @@
+//
+// Created by loys on 18/1/2022.
+//
+
+#include "VulkanPipeline.hpp"
+
+VulkanPipeline::VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader )
+    : m_vkShader( std::move( vkShader ) )
+{
+}
+
+void
+VulkanPipeline::Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format )
+{
+    vk::Viewport viewport { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
+    vk::Rect2D   scissor {
+        {0, 0},
+        vk::Extent2D( width, height )
+    };
+
+    vk::PipelineShaderStageCreateInfo              vert_createInfo { { }, vk::ShaderStageFlagBits::eVertex, m_vkShader->m_vkVertex_shader_module.get( ), "main" };
+    vk::PipelineShaderStageCreateInfo              frag_createInfo { { }, vk::ShaderStageFlagBits::eFragment, m_vkShader->m_vkFragment_shader_module.get( ), "main" };
+    std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages { vert_createInfo, frag_createInfo };
+
+    /**
+     *
+     *  Input
+     *
+     * */
+
+    vk::PipelineVertexInputStateCreateInfo   vertexInputInfo { { },
+                                                             0,
+                                                             nullptr,
+                                                             0,
+                                                             nullptr };
+
+    vk::PipelineInputAssemblyStateCreateInfo inputAssembly { { },
+                                                             vk::PrimitiveTopology::eTriangleList,
+                                                             vk::Bool32( false ) };
+
+    vk::PipelineViewportStateCreateInfo      viewportState { { },
+                                                        1,
+                                                        &viewport,
+                                                        1,
+                                                        &scissor };
+
+    /**
+     *
+     *
+     * Rasterization
+     *
+     * */
+
+    vk::PipelineRasterizationStateCreateInfo rasterizer { { },
+                                                          vk::Bool32( false ),
+                                                          vk::Bool32( false ),
+                                                          vk::PolygonMode::eFill,
+                                                          vk::CullModeFlagBits::eBack,
+                                                          vk::FrontFace::eCounterClockwise,
+
+                                                          vk::Bool32( false ),
+                                                          { },
+                                                          { },
+                                                          { },
+
+                                                          1.0f };
+
+    vk::PipelineMultisampleStateCreateInfo   multisampling { { },
+                                                           vk::SampleCountFlagBits::e1,
+                                                           vk::Bool32( false ),
+                                                           1.0f,
+                                                           nullptr,
+                                                           vk::Bool32( false ),
+                                                           vk::Bool32( false ) };
+
+    /**
+     *
+     * Blending
+     *
+     * */
+
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment { vk::Bool32( false ),
+                                                                 vk::BlendFactor::eOne,
+                                                                 vk::BlendFactor::eZero,
+                                                                 vk::BlendOp::eAdd,
+                                                                 vk::BlendFactor::eOne,
+                                                                 vk::BlendFactor::eZero,
+                                                                 vk::BlendOp::eAdd,
+                                                                 vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB };
+
+    vk::PipelineColorBlendStateCreateInfo colorBlending {
+        { },
+        vk::Bool32( false ),
+        vk::LogicOp::eCopy,
+        1,
+        &colorBlendAttachment,
+        { 0, 0, 0, 0 }
+    };
+
+    /**
+     *
+     * Dynamic state
+     *
+     * */
+
+    vk::DynamicState dynamicStates[] = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eLineWidth };
+
+    vk::PipelineDynamicStateCreateInfo dynamicState { { }, std::size( dynamicStates ), dynamicStates };
+
+    /**
+     *
+     * Pipeline layout
+     *
+     * */
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo { { }, 0, nullptr, 0, nullptr };
+    m_vkPipelineLayout = device.createPipelineLayoutUnique( pipelineLayoutInfo );
+
+
+    /**
+     *
+     * Render pass
+     *
+     * */
+
+    vk::AttachmentDescription colorAttachment {
+        { },
+        format.format,
+        vk::SampleCountFlagBits::e1,
+        vk::AttachmentLoadOp::eClear,
+        vk::AttachmentStoreOp::eStore,
+        vk::AttachmentLoadOp::eDontCare,
+        vk::AttachmentStoreOp::eDontCare,
+        vk::ImageLayout::eUndefined,
+        vk::ImageLayout::ePresentSrcKHR };
+
+    /**
+     * @brief Creation of subpass
+     *
+     */
+
+    vk::AttachmentReference  colorAttachmentRef { 0, vk::ImageLayout::eColorAttachmentOptimal };
+    vk::SubpassDescription   subpass { { },
+                                     vk::PipelineBindPoint::eGraphics,
+                                     0,
+                                     nullptr,
+                                     1,
+                                     &colorAttachmentRef };
+
+
+    vk::RenderPassCreateInfo renderPassInfo {
+        { },
+        1,
+        &colorAttachment,
+        1,
+        &subpass };
+
+    m_vkRenderPass = device.createRenderPassUnique( renderPassInfo );
+
+    vk::GraphicsPipelineCreateInfo createInfo {
+        { },
+        shaderStages.size( ),
+        shaderStages.data( ),
+        &vertexInputInfo,
+        &inputAssembly,
+        nullptr,
+        &viewportState,
+        &rasterizer,
+        &multisampling,
+        nullptr,
+        &colorBlending,
+        nullptr,
+        m_vkPipelineLayout.get( ),
+        m_vkRenderPass.get( ),
+        0 };
+
+    auto result = device.createGraphicsPipelinesUnique( nullptr, createInfo );
+    assert( result.result == vk::Result::eSuccess );
+
+    m_vkPipeline = std::move( result.value );
+}

@@ -6,9 +6,11 @@
 
 #include "GraphicAPI.hpp"
 #include <Include/GlobalConfig.hpp>
+#include <Vulkan/Pipeline/VulkanShader.hpp>
 
 #include <limits>
 #include <unordered_set>
+#include <vulkan/vulkan_enums.hpp>
 
 MainApplication::MainApplication( )
 {
@@ -366,7 +368,21 @@ MainApplication::createSwapChain( )
                                 };
                                 return std::move( m_vkLogicalDevice->createImageViewUnique( createInfo ) );
                             } );
+
+    CreatePipeline( );
 }
+void
+MainApplication::CreatePipeline( )
+{
+
+    const VkExtent2D              extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
+    std::unique_ptr<VulkanShader> shader = std::make_unique<VulkanShader>( );
+    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/colortri.vert", "../Resources/Shader/colortri.frag" );
+
+    m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
+    m_vkPipeline->Create( extent.width, extent.height, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
+}
+
 
 vk::Extent2D
 MainApplication::SwapChainSupportDetails::getMaxSwapExtent( GLFWwindow* window ) const
