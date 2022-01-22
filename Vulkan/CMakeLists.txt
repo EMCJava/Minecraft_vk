@@ -1,4 +1,4 @@
 add_subdirectory(Pipeline)
 
 add_library(MainApplicationLib MainApplication.hpp MainApplication.cpp)
-target_link_libraries(MainApplicationLib LoggerLib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib)
+target_link_libraries(MainApplicationLib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib ${WINDOW_PLATFORM_LIB} )
