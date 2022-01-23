@@ -17,7 +17,7 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
-#include <optional>
+#include <vulkan/vulkan_handles.hpp>
 
 class MainApplication
 {
@@ -48,30 +48,42 @@ private:
 
 
 private:
-    GLFWwindow*                      m_window { };
-    int                              m_screen_width { }, m_screen_height { };
-    bool                             m_window_resizable = false;
+    GLFWwindow*                        m_window { };
+    int                                m_screen_width { }, m_screen_height { };
+    bool                               m_window_resizable = false;
 
-    std::unique_ptr<ValidationLayer> m_vkValidationLayer;
-    std::unique_ptr<VulkanExtension> m_vkExtension;
+    std::unique_ptr<ValidationLayer>   m_vkValidationLayer;
+    std::unique_ptr<VulkanExtension>   m_vkExtension;
 
-    vk::UniqueInstance               m_vkInstance;
+    vk::UniqueInstance                 m_vkInstance;
 
-    vk::UniqueSurfaceKHR             m_vkSurface;
-    vk::UniqueDevice                 m_vkLogicalDevice;
-    vk::PhysicalDevice               m_vkPhysicalDevice;
+    vk::UniqueSurfaceKHR               m_vkSurface;
+    vk::UniqueDevice                   m_vkLogicalDevice;
+    vk::PhysicalDevice                 m_vkPhysicalDevice;
 
-    vk::Queue                        m_vkGraphicQueue;
-    vk::Queue                        m_vkPresentQueue;
+    vk::Queue                          m_vkGraphicQueue;
+    vk::Queue                          m_vkPresentQueue;
 
-    QueueFamilyIndices               m_vkQueue_family_indices;
+    QueueFamilyIndices                 m_vkQueue_family_indices;
 
-    SwapChainSupportDetails          m_vkSwap_chain_detail;
-    vk::UniqueSwapchainKHR           m_vkSwap_chain;
-    std::vector<vk::Image>           m_vkSwap_chain_images;
-    std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
-    
-    std::unique_ptr<VulkanPipeline> m_vkPipeline;
+    SwapChainSupportDetails            m_vkSwap_chain_detail;
+    vk::UniqueSwapchainKHR             m_vkSwap_chain;
+    std::vector<vk::Image>             m_vkSwap_chain_images;
+    std::vector<vk::UniqueImageView>   m_vkSwap_chain_image_views;
+
+    std::unique_ptr<VulkanPipeline>    m_vkPipeline;
+    std::vector<vk::UniqueFramebuffer> m_vkFrameBuffers;
+
+    vk::UniqueCommandPool              m_vkCommandPool;
+    std::vector<vk::CommandBuffer>     m_vkCommandBuffers;
+
+    /**
+     *
+     * Synchronization
+     *
+     * */
+    vk::UniqueSemaphore m_vkImage_acquire_sync;
+    vk::UniqueSemaphore m_vkRender_sync;
 
     // Debug
     vk::DispatchLoaderDynamic  m_vkDynamicDispatch;
@@ -83,9 +95,13 @@ private:
     bool                       setSwapChainSupportDetails( const vk::PhysicalDevice& device );
     void                       createSwapChain( );
     void                       CreatePipeline( );
+    void                       createVKCommand( );
+
+    void                       beginCommandBuffer( int index = -1 );
 
     void                       InitWindow( );
     void                       InitGraphicAPI( );
+    void                       InitSyncs( );
 
     void                       setQueueFamiliesIndex( );
 
@@ -93,6 +109,8 @@ private:
     void                       createLogicalDevice( );
 
     void                       cleanUp( );
+
+    void                       drawFrame( );
 
 public:
     MainApplication( );

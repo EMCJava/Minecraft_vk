@@ -4,6 +4,8 @@
 
 #include "VulkanPipeline.hpp"
 
+#include <shaderc/shaderc.hpp>
+
 VulkanPipeline::VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader )
     : m_vkShader( std::move( vkShader ) )
 {
@@ -18,8 +20,8 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
         vk::Extent2D( width, height )
     };
 
-    vk::PipelineShaderStageCreateInfo              vert_createInfo { { }, vk::ShaderStageFlagBits::eVertex, m_vkShader->m_vkVertex_shader_module.get( ), "main" };
-    vk::PipelineShaderStageCreateInfo              frag_createInfo { { }, vk::ShaderStageFlagBits::eFragment, m_vkShader->m_vkFragment_shader_module.get( ), "main" };
+    vk::PipelineShaderStageCreateInfo                vert_createInfo { { }, vk::ShaderStageFlagBits::eVertex, m_vkShader->m_vkVertex_shader_module.get( ), "main" };
+    vk::PipelineShaderStageCreateInfo                frag_createInfo { { }, vk::ShaderStageFlagBits::eFragment, m_vkShader->m_vkFragment_shader_module.get( ), "main" };
     std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages { vert_createInfo, frag_createInfo };
 
     /**
@@ -36,7 +38,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly { { },
                                                              vk::PrimitiveTopology::eTriangleList,
-                                                             vk::Bool32( false ) };
+                                                             false };
 
     vk::PipelineViewportStateCreateInfo      viewportState { { },
                                                         1,
@@ -52,10 +54,10 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      * */
 
     vk::PipelineRasterizationStateCreateInfo rasterizer { { },
-                                                          vk::Bool32( false ),
-                                                          vk::Bool32( false ),
+                                                          false,
+                                                          false,
                                                           vk::PolygonMode::eFill,
-                                                          vk::CullModeFlagBits::eBack,
+                                                          vk::CullModeFlagBits::eNone,
                                                           vk::FrontFace::eCounterClockwise,
 
                                                           vk::Bool32( false ),
@@ -67,11 +69,11 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
 
     vk::PipelineMultisampleStateCreateInfo   multisampling { { },
                                                            vk::SampleCountFlagBits::e1,
-                                                           vk::Bool32( false ),
+                                                           false,
                                                            1.0f,
                                                            nullptr,
-                                                           vk::Bool32( false ),
-                                                           vk::Bool32( false ) };
+                                                           false,
+                                                           false };
 
     /**
      *
@@ -79,7 +81,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::PipelineColorBlendAttachmentState colorBlendAttachment { vk::Bool32( false ),
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment { false,
                                                                  vk::BlendFactor::eOne,
                                                                  vk::BlendFactor::eZero,
                                                                  vk::BlendOp::eAdd,
@@ -90,7 +92,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
 
     vk::PipelineColorBlendStateCreateInfo colorBlending {
         { },
-        vk::Bool32( false ),
+        false,
         vk::LogicOp::eCopy,
         1,
         &colorBlendAttachment,
@@ -149,13 +151,19 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
                                      1,
                                      &colorAttachmentRef };
 
+    vk::SubpassDependency    subpassDependency { VK_SUBPASS_EXTERNAL, 0,
+                                              vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                              vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                              vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite };
 
     vk::RenderPassCreateInfo renderPassInfo {
         { },
         1,
         &colorAttachment,
         1,
-        &subpass };
+        &subpass,
+        1,
+        &subpassDependency };
 
     m_vkRenderPass = device.createRenderPassUnique( renderPassInfo );
 

@@ -20,7 +20,10 @@ private:
 public:
     explicit VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader );
 
-    void Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format );
+    void                         Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format );
+
+    [[nodiscard]] vk::Pipeline   getPipeline( ) const { return m_vkPipeline.begin( )->get( ); }
+    [[nodiscard]] vk::RenderPass getRenderPass( ) const { return m_vkRenderPass.get( ); }
 };
 
 

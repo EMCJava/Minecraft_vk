@@ -11,6 +11,7 @@
 #include <limits>
 #include <unordered_set>
 #include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 MainApplication::MainApplication( )
 {
@@ -29,11 +30,25 @@ void
 MainApplication::run( )
 {
 
+    constexpr uint32_t output_per_frame = 144 * 2;
+    uint32_t frame_count = 0;
+    auto     start_time  = std::chrono::high_resolution_clock::now( );
     while ( !glfwWindowShouldClose( m_window ) )
     {
         glfwPollEvents( );
-        m_vkLogicalDevice->waitIdle( );
+
+        ++frame_count;
+        if ( frame_count % output_per_frame == 0 )
+        {
+            auto time_used = std::chrono::high_resolution_clock::now( ) - start_time;
+            Logger::getInstance( ).LogLine( "Time used:", (1000.f * output_per_frame) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ), "milliseconds" );
+            start_time  = std::chrono::high_resolution_clock::now( );
+        }
+
+        drawFrame( );
     }
+
+    m_vkLogicalDevice->waitIdle( );
 }
 
 void
@@ -91,6 +106,9 @@ MainApplication::InitGraphicAPI( )
     selectPhysicalDevice( );
     createLogicalDevice( );
     createSwapChain( );
+    createVKCommand( );
+    beginCommandBuffer( );
+    InitSyncs( );
 }
 
 void
@@ -377,12 +395,126 @@ MainApplication::CreatePipeline( )
 
     const VkExtent2D              extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
     std::unique_ptr<VulkanShader> shader = std::make_unique<VulkanShader>( );
-    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/colortri.vert", "../Resources/Shader/colortri.frag" );
+    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/basic.vert", "../Resources/Shader/basic.frag" );
+    // shader->InitGLSLBinary( m_vkLogicalDevice.get( ), "../Resources/shaders/vert.spv", "../Resources/shaders/frag.spv" );
 
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
     m_vkPipeline->Create( extent.width, extent.height, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
+
+    /**
+     *
+     * Create frame buffers
+     * */
+    m_vkFrameBuffers.reserve( m_vkSwap_chain_image_views.size( ) );
+    std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ extent, this ]( const auto& image_view ) {
+        vk::FramebufferCreateInfo framebufferInfo { };
+        framebufferInfo.setRenderPass( m_vkPipeline->getRenderPass( ) );
+        framebufferInfo.setAttachmentCount( 1 );
+        framebufferInfo.setAttachments( image_view.get( ) );
+        framebufferInfo.setWidth( extent.width );
+        framebufferInfo.setHeight( extent.height );
+        framebufferInfo.setLayers( 1 );
+
+        return m_vkLogicalDevice->createFramebufferUnique( framebufferInfo );
+    } );
 }
 
+void
+MainApplication::createVKCommand( )
+{
+    vk::CommandPoolCreateInfo poolCreateInfo { { }, m_vkQueue_family_indices.graphicsFamily.value( ) };
+
+    m_vkCommandPool = m_vkLogicalDevice->createCommandPoolUnique( poolCreateInfo );
+
+    /**
+     *
+     * Creation of command buffers
+     *
+     * */
+    vk::CommandBufferAllocateInfo allocInfo { };
+    allocInfo.setCommandPool( m_vkCommandPool.get( ) );
+    allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
+    allocInfo.setCommandBufferCount( m_vkFrameBuffers.size( ) );
+
+    m_vkCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
+}
+
+void
+MainApplication::beginCommandBuffer( int index )
+{
+    const VkExtent2D extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
+    size_t           it_index, end_index;
+    if ( index >= 0 )
+    {
+        assert( index < m_vkCommandBuffers.size( ) );
+        it_index  = index;
+        end_index = index + 1;
+    } else
+    {
+        it_index  = 0;
+        end_index = m_vkCommandBuffers.size( );
+    }
+
+    vk::ClearValue clearColor { { std::array<float, 4> { 0.0f, 0.0f, 0.0f, 1.0f } } };
+    for ( ; it_index != end_index; ++it_index )
+    {
+        m_vkCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr } );
+
+        vk::RenderPassBeginInfo render_pass_begin_info {
+            m_vkPipeline->getRenderPass( ),
+            m_vkFrameBuffers[ it_index ].get( ),
+            vk::Rect2D( { 0, 0 }, extent ), 1, &clearColor };
+
+        m_vkCommandBuffers[ it_index ].beginRenderPass( render_pass_begin_info, vk::SubpassContents::eInline );
+        m_vkCommandBuffers[ it_index ].bindPipeline( vk::PipelineBindPoint::eGraphics, m_vkPipeline->getPipeline( ) );
+
+        /**
+         *
+         * Rendering
+         *
+         * */
+        m_vkCommandBuffers[ it_index ].draw( 3, 1, 0, 0 );
+
+        m_vkCommandBuffers[ it_index ].endRenderPass( );
+        m_vkCommandBuffers[ it_index ].end( );
+    }
+}
+
+void
+MainApplication::drawFrame( )
+{
+    uint32_t image_index = m_vkLogicalDevice->acquireNextImageKHR( m_vkSwap_chain.get( ),
+                                                                   std::numeric_limits<uint64_t>::max( ),
+                                                                   m_vkImage_acquire_sync.get( ),
+                                                                   nullptr )
+                               .value;
+
+    vk::PipelineStageFlags waitStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    vk::SubmitInfo         submitInfo {
+        1, &m_vkImage_acquire_sync.get( ), &waitStageMask,
+        1, &m_vkCommandBuffers[ image_index ],
+        1, &m_vkRender_sync.get( ) };
+
+    m_vkGraphicQueue.submit( submitInfo, { } );
+
+    /**
+     *
+     * Present
+     *
+     * */
+    vk::PresentInfoKHR presentInfo { 1, &m_vkRender_sync.get( ),
+                                     1, &m_vkSwap_chain.get( ), &image_index };
+
+    const auto         present_result = m_vkPresentQueue.presentKHR( presentInfo );
+    assert( present_result == vk::Result::eSuccess );
+}
+
+void
+MainApplication::InitSyncs( )
+{
+    m_vkImage_acquire_sync = m_vkLogicalDevice->createSemaphoreUnique( { } );
+    m_vkRender_sync        = m_vkLogicalDevice->createSemaphoreUnique( { } );
+}
 
 vk::Extent2D
 MainApplication::SwapChainSupportDetails::getMaxSwapExtent( GLFWwindow* window ) const
