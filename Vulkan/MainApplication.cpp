@@ -8,6 +8,7 @@
 #include <Include/GlobalConfig.hpp>
 #include <Vulkan/Pipeline/VulkanShader.hpp>
 
+#include <chrono>
 #include <limits>
 #include <unordered_set>
 #include <vulkan/vulkan_enums.hpp>

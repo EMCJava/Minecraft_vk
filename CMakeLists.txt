@@ -17,13 +17,16 @@ if (WIN32 OR MSVC)
 
     find_package(glfw3 CONFIG REQUIRED)
 
+    set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB "glfw3")
     message(STATUS "Assume platform window")
 
 else ()
     find_package(glfw3 3.3 REQUIRED)
-    set(WINDOW_PLATFORM_LIB "dl;X11;Xxf86vm;Xrandr;Xi;dl;shaderc_shared")
+
+    set(SHADERC_LIB "shaderc_shared")
+    set(WINDOW_PLATFORM_LIB "dl;X11;Xxf86vm;Xrandr;Xi;dl")
     set(GLFW_PLATFORM_LIB "glfw")
     message(STATUS "Assume platform linux")
 
