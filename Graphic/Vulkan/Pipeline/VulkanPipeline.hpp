@@ -5,7 +5,7 @@
 #ifndef MINECRAFT_VK_VULKAN_PIPELINE_VULKANPIPELINE_HPP
 #define MINECRAFT_VK_VULKAN_PIPELINE_VULKANPIPELINE_HPP
 
-#include <Vulkan/Pipeline/VulkanShader.hpp>
+#include "VulkanShader.hpp"
 
 #include <memory>
 

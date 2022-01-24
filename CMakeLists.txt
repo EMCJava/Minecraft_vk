@@ -35,6 +35,7 @@ endif ()
 add_executable(Minecraft_vk main.cpp)
 
 add_subdirectory(Utility)
-add_subdirectory(Vulkan)
+add_subdirectory(Graphic)
+add_subdirectory(Minecraft)
 
 target_link_libraries(Minecraft_vk MainApplicationLib)

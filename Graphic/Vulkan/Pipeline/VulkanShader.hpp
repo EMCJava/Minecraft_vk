@@ -5,7 +5,7 @@
 #ifndef MINECRAFT_VK_VULKAN_PIPELINE_VULKANSHADER_HPP
 #define MINECRAFT_VK_VULKAN_PIPELINE_VULKANSHADER_HPP
 
-#include <Vulkan/GraphicAPI.hpp>
+#include <Include/GraphicAPI.hpp>
 
 #include <string>
 #include <vector>
