@@ -532,14 +532,29 @@ VulkanAPI::setupGraphicCommand( )
 void
 VulkanAPI::setupSyncs( )
 {
-    m_vkImage_acquire_sync = m_vkLogicalDevice->createSemaphoreUnique( { } );
-    m_vkRender_sync        = m_vkLogicalDevice->createSemaphoreUnique( { } );
+    m_sync_count = GlobalConfig::getConfigData( )[ "sync_frame_count" ].get<uint32_t>( );
+
+    m_vkImage_acquire_syncs.clear( );
+    m_vkImage_acquire_syncs.reserve( m_sync_count );
+    m_vkRender_syncs.clear( );
+    m_vkRender_syncs.reserve( m_sync_count );
+    m_vkRender_fence_syncs.clear( );
+    m_vkRender_fence_syncs.reserve( m_sync_count );
+    m_vkSwap_chain_image_fence_syncs.clear( );
+    m_vkSwap_chain_image_fence_syncs.resize( m_vkFrameBuffers.size( ), nullptr );
+
+    for ( int i = 0; i < m_sync_count; ++i )
+    {
+        m_vkImage_acquire_syncs.emplace_back( m_vkLogicalDevice->createSemaphoreUnique( { } ) );
+        m_vkRender_syncs.emplace_back( m_vkLogicalDevice->createSemaphoreUnique( { } ) );
+        m_vkRender_fence_syncs.emplace_back( m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } ) );
+    }
 }
 
 uint32_t
 VulkanAPI::acquireNextImage( ) const
 {
-    return m_vkLogicalDevice->acquireNextImageKHR( m_vkSwap_chain.get( ), std::numeric_limits<uint64_t>::max( ), m_vkImage_acquire_sync.get( ), nullptr ).value;
+    return m_vkLogicalDevice->acquireNextImageKHR( m_vkSwap_chain.get( ), std::numeric_limits<uint64_t>::max( ), m_vkImage_acquire_syncs[ m_sync_index ].get( ), nullptr ).value;
 }
 
 void
@@ -582,7 +597,6 @@ VulkanAPI::cycleGraphicCommandBuffers( const std::function<void( const vk::Comma
          * Rendering
          *
          * */
-        // m_vkGraphicCommandBuffers[ it_index ].draw( 3, 1, 0, 0 );
         renderer( m_vkGraphicCommandBuffers[ it_index ] );
 
         m_vkGraphicCommandBuffers[ it_index ].endRenderPass( );
@@ -593,23 +607,59 @@ VulkanAPI::cycleGraphicCommandBuffers( const std::function<void( const vk::Comma
 void
 VulkanAPI::presentFrame( uint32_t index )
 {
+    /**
+     *
+     * Sync in renderer
+     *
+     * */
+    auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[ m_sync_index ].get( ), true, std::numeric_limits<uint64_t>::max( ) );
+    assert( wait_fence_result == vk::Result::eSuccess );
 
+    /**
+     *
+     * Sync in swap chain image
+     * In-case too many synced render on the same image
+     *
+     * */
+    if ( m_vkSwap_chain_image_fence_syncs[ index ] )
+    {
+        wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkSwap_chain_image_fence_syncs[ m_sync_index ], true, std::numeric_limits<uint64_t>::max( ) );
+        assert( wait_fence_result == vk::Result::eSuccess );
+    }
+
+    m_vkSwap_chain_image_fence_syncs[ index ] = m_vkRender_fence_syncs[ m_sync_index ].get( );
+
+    /**
+     *
+     * Reset fence to unsignaled state
+     *
+     * */
+    m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[ m_sync_index ].get( ) );
+
+    /**
+     *
+     * Submit
+     *
+     * */
     vk::PipelineStageFlags waitStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
     vk::SubmitInfo         submitInfo {
-        1, &m_vkImage_acquire_sync.get( ), &waitStageMask,
+        1, &m_vkImage_acquire_syncs[ m_sync_index ].get( ), &waitStageMask,
         1, &m_vkGraphicCommandBuffers[ index ],
-        1, &m_vkRender_sync.get( ) };
+        1, &m_vkRender_syncs[ m_sync_index ].get( ) };
 
-    m_vkGraphicQueue.submit( submitInfo, { } );
+    m_vkGraphicQueue.submit( submitInfo, m_vkRender_fence_syncs[ m_sync_index ].get( ) );
 
     /**
      *
      * Present
      *
      * */
-    vk::PresentInfoKHR presentInfo { 1, &m_vkRender_sync.get( ),
+    vk::PresentInfoKHR presentInfo { 1, &m_vkRender_syncs[ m_sync_index ].get( ),
                                      1, &m_vkSwap_chain.get( ), &index };
 
     const auto         present_result = m_vkPresentQueue.presentKHR( presentInfo );
+    (void) present_result;
     assert( present_result == vk::Result::eSuccess );
+
+    m_sync_index = ( m_sync_index + 1 ) % m_sync_count;
 }

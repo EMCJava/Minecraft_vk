@@ -163,8 +163,12 @@ private:
      * Synchronization
      *
      * */
-    vk::UniqueSemaphore m_vkImage_acquire_sync;
-    vk::UniqueSemaphore m_vkRender_sync;
+
+    uint32_t                         m_sync_index = 0, m_sync_count = 1;
+    std::vector<vk::UniqueSemaphore> m_vkImage_acquire_syncs;
+    std::vector<vk::UniqueSemaphore> m_vkRender_syncs;
+    std::vector<vk::UniqueFence>     m_vkRender_fence_syncs;
+    std::vector<vk::Fence>     m_vkSwap_chain_image_fence_syncs;
 };
 
 

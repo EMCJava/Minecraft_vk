@@ -4,8 +4,8 @@
 
 #include "MainApplication.hpp"
 
-#include <Include/GlobalConfig.hpp>
-#include <Include/GraphicAPI.hpp>
+#include "Include/GlobalConfig.hpp"
+#include "Include/GraphicAPI.hpp"
 
 #include <chrono>
 #include <thread>
@@ -69,7 +69,7 @@ void
 MainApplication::renderThread( )
 {
 
-    constexpr uint32_t output_per_frame = 144 * 2;
+    constexpr uint32_t output_per_frame = 2500 * 2;
     uint32_t           frame_count      = 0;
     auto               start_time       = std::chrono::high_resolution_clock::now( );
     while ( m_render_thread_should_run )
@@ -85,6 +85,6 @@ MainApplication::renderThread( )
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
         m_graphics_api->presentFrame( image_index );
-        m_graphics_api->waitPresent( );
+        // m_graphics_api->waitPresent( );
     }
 }

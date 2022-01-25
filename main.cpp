@@ -1,4 +1,4 @@
-#include <Minecraft/MainApplication.hpp>
+#include <Minecraft/Application/MainApplication.hpp>
 #include <Include/GLM.hpp>
 #include <Include/GlobalConfig.hpp>
 #include <iostream>
