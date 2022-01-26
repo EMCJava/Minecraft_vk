@@ -1,9 +1,10 @@
-#include <Minecraft/Application/MainApplication.hpp>
 #include <Include/GLM.hpp>
 #include <Include/GlobalConfig.hpp>
+#include <Minecraft/Application/MainApplication.hpp>
 #include <iostream>
 
-int main( )
+int
+main( )
 {
     GlobalConfig::LoadFromFile( "../config.ini" );
 

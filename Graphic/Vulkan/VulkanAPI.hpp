@@ -23,7 +23,7 @@ private:
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
 
-        [[nodiscard]] bool      isComplete( ) const
+        [[nodiscard]] bool isComplete( ) const
         {
             return graphicsFamily.has_value( ) && presentFamily.has_value( );
         }
@@ -35,8 +35,8 @@ private:
         std::vector<vk::SurfaceFormatKHR> formats;
         std::vector<vk::PresentModeKHR>   presentModes;
 
-        [[nodiscard]] vk::Extent2D        getMaxSwapExtent( GLFWwindow* window ) const;
-        [[nodiscard]] bool                isComplete( ) const
+        [[nodiscard]] vk::Extent2D getMaxSwapExtent( GLFWwindow* window ) const;
+        [[nodiscard]] bool         isComplete( ) const
         {
             return !formats.empty( ) && !presentModes.empty( );
         }
@@ -79,23 +79,23 @@ private:
 public:
     explicit VulkanAPI( GLFWwindow* windows );
 
-    void                   setupAPI( std::string applicationName );
+    void setupAPI( std::string applicationName );
 
     [[nodiscard]] uint32_t acquireNextImage( );
     void                   setRenderer( std::function<void( const vk::CommandBuffer& )>&& renderer ) { m_renderer = std::move( renderer ); };
     void                   cycleGraphicCommandBuffers( bool cycle_all_buffer = true, uint32_t index = 0 );
     void                   presentFrame( uint32_t index = -1 );
 
-    inline void            waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
-    inline void            waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
+    inline void waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
+    inline void waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
 
-    inline void            invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
-    inline void            setShouldCreateSwapChain( bool should )
+    inline void invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
+    inline void setShouldCreateSwapChain( bool should )
     {
         if ( should )
         {
             m_should_create_swap_chain.test_and_set( );
-            m_should_create_swap_chain.notify_one();
+            m_should_create_swap_chain.notify_one( );
         } else
         {
             m_should_create_swap_chain.clear( );

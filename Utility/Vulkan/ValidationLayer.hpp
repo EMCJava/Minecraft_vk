@@ -16,10 +16,10 @@ private:
     std::vector<const char*>         m_requiredLayerCStr;
     std::vector<vk::LayerProperties> m_availableLayers;
 
-    void                             LoadRequiredLayers( );
-    void                             LoadLayers( );
+    void LoadRequiredLayers( );
+    void LoadLayers( );
 
-    bool                             m_isAvailable = true;
+    bool m_isAvailable = true;
 
 public:
     ValidationLayer( );

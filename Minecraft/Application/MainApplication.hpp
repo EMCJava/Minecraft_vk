@@ -23,19 +23,19 @@
 class MainApplication
 {
 
-    GLFWwindow*                m_window { };
-    int                        m_screen_width { }, m_screen_height { };
-    bool                       m_window_resizable = false;
+    GLFWwindow* m_window { };
+    int         m_screen_width { }, m_screen_height { };
+    bool        m_window_resizable = false;
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
-    void                       InitWindow( );
-    void                       cleanUp( );
+    void InitWindow( );
+    void cleanUp( );
 
-    std::atomic<bool>          m_render_thread_should_run;
-    void                       renderThread( );
+    std::atomic<bool> m_render_thread_should_run;
+    void              renderThread( );
 
-    static void                onFrameBufferResized( GLFWwindow* window, int width, int height );
+    static void onFrameBufferResized( GLFWwindow* window, int width, int height );
 
 public:
     MainApplication( );

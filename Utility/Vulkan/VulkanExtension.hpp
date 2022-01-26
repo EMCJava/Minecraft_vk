@@ -14,8 +14,8 @@ private:
     std::vector<const char*> m_device_extensions;
     std::vector<std::string> m_addtional_extensions_str;
 
-    void                     LoadRequiredExtensionsGlfw( );
-    void                     LoadRequiredExtensionsDevice( );
+    void LoadRequiredExtensionsGlfw( );
+    void LoadRequiredExtensionsDevice( );
 
 public:
     VulkanExtension( );

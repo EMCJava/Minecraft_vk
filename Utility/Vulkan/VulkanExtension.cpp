@@ -1,7 +1,7 @@
 #include "VulkanExtension.hpp"
 
+#include <Include/GraphicAPI.hpp>
 #include <Include/GlobalConfig.hpp>
-#include "Include/GraphicAPI.hpp"
 
 VulkanExtension::VulkanExtension( )
 {

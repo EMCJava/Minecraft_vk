@@ -18,10 +18,10 @@ BraceWrapping:
   AfterExternBlock: true
 
 AlignArrayOfStructures: Right
-AlignConsecutiveAssignments: AcrossEmptyLines
-AlignConsecutiveBitFields: AcrossEmptyLines
-AlignConsecutiveDeclarations: AcrossEmptyLines
-AlignConsecutiveMacros: AcrossEmptyLines
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: Consecutive
 AlignAfterOpenBracket: Align
 AlignEscapedNewlines: Right
 AlignTrailingComments: true

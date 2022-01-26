@@ -227,7 +227,7 @@ bool
 VulkanAPI::isDeviceSupportAllExtensions( const vk::PhysicalDevice& device )
 {
 
-    const auto                      vec_extension_properties = device.enumerateDeviceExtensionProperties( );
+    const auto vec_extension_properties = device.enumerateDeviceExtensionProperties( );
 
     std::unordered_set<std::string> extension_properties_name_set;
     for ( const auto& extension_properties : vec_extension_properties )
@@ -336,8 +336,8 @@ VulkanAPI::setupLogicalDevice( )
      * */
     updateQueueFamiliesIndex( m_vkPhysicalDevice );
 
-    std::unordered_set<uint32_t>           queue_index_set { m_vkQueue_family_indices.graphicsFamily.value( ), m_vkQueue_family_indices.presentFamily.value( ) };
-    float                                  queuePriority = 1.0f;
+    std::unordered_set<uint32_t> queue_index_set { m_vkQueue_family_indices.graphicsFamily.value( ), m_vkQueue_family_indices.presentFamily.value( ) };
+    float                        queuePriority = 1.0f;
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::ranges::transform( queue_index_set, std::back_inserter( queueCreateInfos ),
@@ -682,7 +682,7 @@ VulkanAPI::presentFrame( uint32_t index )
 void
 VulkanAPI::adeptSwapChainChange( )
 {
-    m_should_create_swap_chain.wait(false);
+    m_should_create_swap_chain.wait( false );
     m_vkLogicalDevice->waitIdle( );
 
     setSwapChainSupportDetails( m_vkPhysicalDevice );

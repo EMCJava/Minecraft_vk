@@ -30,7 +30,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::PipelineVertexInputStateCreateInfo   vertexInputInfo { { },
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo { { },
                                                              0,
                                                              nullptr,
                                                              0,
@@ -40,7 +40,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
                                                              vk::PrimitiveTopology::eTriangleList,
                                                              false };
 
-    vk::PipelineViewportStateCreateInfo      viewportState { { },
+    vk::PipelineViewportStateCreateInfo viewportState { { },
                                                         1,
                                                         &viewport,
                                                         1,
@@ -67,7 +67,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
 
                                                           1.0f };
 
-    vk::PipelineMultisampleStateCreateInfo   multisampling { { },
+    vk::PipelineMultisampleStateCreateInfo multisampling { { },
                                                            vk::SampleCountFlagBits::e1,
                                                            false,
                                                            1.0f,
@@ -143,15 +143,15 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      */
 
-    vk::AttachmentReference  colorAttachmentRef { 0, vk::ImageLayout::eColorAttachmentOptimal };
-    vk::SubpassDescription   subpass { { },
+    vk::AttachmentReference colorAttachmentRef { 0, vk::ImageLayout::eColorAttachmentOptimal };
+    vk::SubpassDescription  subpass { { },
                                      vk::PipelineBindPoint::eGraphics,
                                      0,
                                      nullptr,
                                      1,
                                      &colorAttachmentRef };
 
-    vk::SubpassDependency    subpassDependency { VK_SUBPASS_EXTERNAL, 0,
+    vk::SubpassDependency subpassDependency { VK_SUBPASS_EXTERNAL, 0,
                                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                               vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite };
