@@ -452,6 +452,7 @@ VulkanAPI::setupSwapChain( )
      * */
     m_vkSwap_chain_images = m_vkLogicalDevice->getSwapchainImagesKHR( m_vkSwap_chain.get( ) );
     m_vkSwap_chain_image_views.clear( );
+    m_vkSwap_chain_image_views.reserve( m_vkSwap_chain_images.size( ) );
     std::ranges::transform( m_vkSwap_chain_images, std::back_inserter( m_vkSwap_chain_image_views ),
                             [ this, &surface_format ]( const vk::Image& image ) {
                                 vk::ImageViewCreateInfo createInfo;
@@ -492,6 +493,7 @@ VulkanAPI::setupPipeline( )
      * Create frame buffers
      *
      * */
+    m_vkFrameBuffers.clear( );
     m_vkFrameBuffers.reserve( m_vkSwap_chain_image_views.size( ) );
     std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ display_extent, this ]( const auto& image_view ) {
         vk::FramebufferCreateInfo framebufferInfo { };
@@ -516,17 +518,7 @@ VulkanAPI::setupGraphicCommand( )
      * */
     m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { }, m_vkQueue_family_indices.graphicsFamily.value( ) } );
 
-    /**
-     *
-     * Creation of command buffers
-     *
-     * */
-    vk::CommandBufferAllocateInfo allocInfo { };
-    allocInfo.setCommandPool( m_vkGraphicCommandPool.get( ) );
-    allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
-    allocInfo.setCommandBufferCount( m_vkFrameBuffers.size( ) );
-
-    m_vkGraphicCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
+    setupGraphicCommandBuffers( );
 }
 
 void
@@ -552,13 +544,28 @@ VulkanAPI::setupSyncs( )
 }
 
 uint32_t
-VulkanAPI::acquireNextImage( ) const
+VulkanAPI::acquireNextImage( )
 {
-    return m_vkLogicalDevice->acquireNextImageKHR( m_vkSwap_chain.get( ), std::numeric_limits<uint64_t>::max( ), m_vkImage_acquire_syncs[ m_sync_index ].get( ), nullptr ).value;
+    if ( m_swap_chain_not_valid.test( ) )
+    {
+        adeptSwapChainChange( );
+        m_swap_chain_not_valid.clear( );
+    }
+
+    static auto next_image = [ this ]( ) { return m_vkLogicalDevice->acquireNextImageKHR( m_vkSwap_chain.get( ), std::numeric_limits<uint64_t>::max( ), m_vkImage_acquire_syncs[ m_sync_index ].get( ), nullptr ); };
+    auto        result     = next_image( );
+    while ( result.result == vk::Result::eErrorOutOfDateKHR )
+    {
+        Logger::getInstance( ).LogLine( Logger::Color::eRed, "Recreating swap chain!!!" );
+        adeptSwapChainChange( );
+        result = next_image( );
+    }
+
+    return result.value;
 }
 
 void
-VulkanAPI::cycleGraphicCommandBuffers( const std::function<void( const vk::CommandBuffer& )>& renderer, bool cycle_all_buffer, uint32_t index )
+VulkanAPI::cycleGraphicCommandBuffers( bool cycle_all_buffer, uint32_t index )
 {
     const VkExtent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
     size_t           it_index, end_index;
@@ -597,7 +604,7 @@ VulkanAPI::cycleGraphicCommandBuffers( const std::function<void( const vk::Comma
          * Rendering
          *
          * */
-        renderer( m_vkGraphicCommandBuffers[ it_index ] );
+        m_renderer( m_vkGraphicCommandBuffers[ it_index ] );
 
         m_vkGraphicCommandBuffers[ it_index ].endRenderPass( );
         m_vkGraphicCommandBuffers[ it_index ].end( );
@@ -657,9 +664,60 @@ VulkanAPI::presentFrame( uint32_t index )
     vk::PresentInfoKHR presentInfo { 1, &m_vkRender_syncs[ m_sync_index ].get( ),
                                      1, &m_vkSwap_chain.get( ), &index };
 
-    const auto         present_result = m_vkPresentQueue.presentKHR( presentInfo );
-    (void) present_result;
-    assert( present_result == vk::Result::eSuccess );
+
+    try
+    {
+        const auto present_result = m_vkPresentQueue.presentKHR( presentInfo );
+        if ( present_result == vk::Result::eSuboptimalKHR ) adeptSwapChainChange( );
+        assert( present_result == vk::Result::eSuccess );
+    }
+    catch ( vk::OutOfDateKHRError& err )
+    {
+        m_swap_chain_not_valid.test_and_set( );
+    }
 
     m_sync_index = ( m_sync_index + 1 ) % m_sync_count;
+}
+
+void
+VulkanAPI::adeptSwapChainChange( )
+{
+    m_should_create_swap_chain.wait(false);
+    m_vkLogicalDevice->waitIdle( );
+
+    setSwapChainSupportDetails( m_vkPhysicalDevice );
+
+    /**
+     *
+     * Setup render detail
+     *
+     * */
+    setupSwapChain( );
+    setupPipeline( );
+
+    /**
+     *
+     * Graphic command setup ( only command buffer )
+     *
+     * */
+    setupGraphicCommandBuffers( );
+    cycleGraphicCommandBuffers( );
+}
+
+void
+VulkanAPI::setupGraphicCommandBuffers( )
+{
+    m_vkGraphicCommandBuffers.clear( );
+
+    /**
+     *
+     * Creation of command buffers
+     *
+     * */
+    vk::CommandBufferAllocateInfo allocInfo { };
+    allocInfo.setCommandPool( m_vkGraphicCommandPool.get( ) );
+    allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
+    allocInfo.setCommandBufferCount( m_vkFrameBuffers.size( ) );
+
+    m_vkGraphicCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
 }

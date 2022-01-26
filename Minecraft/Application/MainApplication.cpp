@@ -29,7 +29,8 @@ MainApplication::~MainApplication( )
 void
 MainApplication::run( )
 {
-    m_graphics_api->cycleGraphicCommandBuffers( []( const auto& command_buffer ) { command_buffer.draw( 3, 1, 0, 0 ); } );
+    m_graphics_api->setRenderer( []( const auto& command_buffer ) { command_buffer.draw( 3, 1, 0, 0 ); } );
+    m_graphics_api->cycleGraphicCommandBuffers( );
 
     m_render_thread_should_run = true;
     std::thread render_thread( &MainApplication::renderThread, this );
@@ -56,6 +57,8 @@ MainApplication::InitWindow( )
     glfwWindowHint( GLFW_CLIENT_API, GLFW_NO_API );
     glfwWindowHint( GLFW_RESIZABLE, m_window_resizable ? GLFW_TRUE : GLFW_FALSE );
     m_window = glfwCreateWindow( m_screen_width, m_screen_height, "Vulkan window", nullptr, nullptr );
+    glfwSetWindowUserPointer( m_window, this );
+    glfwSetFramebufferSizeCallback( m_window, onFrameBufferResized );
 }
 
 void
@@ -87,4 +90,15 @@ MainApplication::renderThread( )
         m_graphics_api->presentFrame( image_index );
         // m_graphics_api->waitPresent( );
     }
+}
+
+void
+MainApplication::onFrameBufferResized( GLFWwindow* window, int width, int height )
+{
+    auto app = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
+    assert( window == app->m_window );
+
+    app->m_graphics_api->setShouldCreateSwapChain( width * height );
+    app->m_graphics_api->invalidateSwapChain( );
+    std::tie( app->m_screen_width, app->m_screen_height ) = { width, height };
 }

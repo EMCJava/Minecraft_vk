@@ -33,7 +33,9 @@ class MainApplication
     void                       cleanUp( );
 
     std::atomic<bool>          m_render_thread_should_run;
-    void renderThread();
+    void                       renderThread( );
+
+    static void                onFrameBufferResized( GLFWwindow* window, int width, int height );
 
 public:
     MainApplication( );
