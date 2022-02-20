@@ -29,9 +29,46 @@ MainApplication::~MainApplication( )
 void
 MainApplication::run( )
 {
-    m_graphics_api->setRenderer( []( const auto& command_buffer ) { command_buffer.draw( 3, 1, 0, 0 ); } );
+    /*
+     *
+     * Setup vertex buffer
+     *
+     * */
+    const std::vector<DataType::ColoredVertex> vertices = {
+        {{ 0.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }},
+        { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
+        {{ -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }}
+    };
+    const auto size_of_data = sizeof( vertices[ 0 ] ) * vertices.size( );
+
+    auto vertex_buffer   = m_graphics_api->getLogicalDevice( ).createBufferUnique( { { }, size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive } );
+    auto memRequirements = m_graphics_api->getLogicalDevice( ).getBufferMemoryRequirements( vertex_buffer.get( ) );
+    auto memProperties   = m_graphics_api->getPhysicalDevice( ).getMemoryProperties( );
+
+    auto findMemoryType = [ &memProperties ]( uint32_t typeFilter, vk::MemoryPropertyFlags properties ) -> uint32_t {
+        for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
+            if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
+        throw std::runtime_error( "failed to find suitable memory type!" );
+    };
+
+    auto vertex_buffer_memory = m_graphics_api->getLogicalDevice( ).allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent ) } );
+    m_graphics_api->getLogicalDevice( ).bindBufferMemory( vertex_buffer.get( ), vertex_buffer_memory.get( ), 0 );
+
+    memcpy( m_graphics_api->getLogicalDevice( ).mapMemory( vertex_buffer_memory.get( ), 0, size_of_data ), vertices.data( ), (size_t) size_of_data );
+    m_graphics_api->getLogicalDevice( ).unmapMemory( vertex_buffer_memory.get( ) );
+
+    m_graphics_api->setRenderer( [ &vertex_buffer ]( const vk::CommandBuffer& command_buffer ) {
+        vk::Buffer     vertexBuffers[] = { vertex_buffer.get() };
+        vk::DeviceSize offsets[]       = { 0 };
+        command_buffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+        command_buffer.draw( 3, 1, 0, 0 ); } );
     m_graphics_api->cycleGraphicCommandBuffers( );
 
+    /*
+     *
+     * Start game loop
+     *
+     * */
     m_render_thread_should_run = true;
     std::thread render_thread( &MainApplication::renderThread, this );
     while ( !glfwWindowShouldClose( m_window ) )
@@ -82,7 +119,7 @@ MainApplication::renderThread( )
         if ( frame_count % output_per_frame == 0 )
         {
             auto time_used = std::chrono::high_resolution_clock::now( ) - start_time;
-            Logger::getInstance( ).LogLine( "Time used:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ), "milliseconds" );
+            Logger::getInstance( ).LogLine( "fps:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ) );
             start_time = std::chrono::high_resolution_clock::now( );
         }
 

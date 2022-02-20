@@ -478,7 +478,7 @@ VulkanAPI::setupPipeline( )
      *
      * */
     std::unique_ptr<VulkanShader> shader = std::make_unique<VulkanShader>( );
-    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/basic.vert", "../Resources/Shader/basic.frag" );
+    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/vertex_buffer.vert", "../Resources/Shader/vertex_buffer.frag" );
 
     /**
      *
@@ -486,7 +486,7 @@ VulkanAPI::setupPipeline( )
      *
      * */
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
-    m_vkPipeline->Create( display_extent.width, display_extent.height, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
+    m_vkPipeline->Create<DataType::ColoredVertex>( display_extent.width, display_extent.height, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
 
     /**
      *

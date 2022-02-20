@@ -5,7 +5,7 @@
 #ifndef MINECRAFT_VK_VULKAN_VULKANAPI_HPP
 #define MINECRAFT_VK_VULKAN_VULKANAPI_HPP
 
-#include "Include/GraphicAPI.hpp"
+#include <Include/GraphicAPI.hpp>
 
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
@@ -15,6 +15,46 @@
 #include <memory>
 #include <optional>
 #include <vector>
+
+namespace DataType
+{
+
+struct ColoredVertex : VertexDetail {
+    glm::vec2 pos;
+    glm::vec3 color;
+
+    ColoredVertex(glm::vec2 p, glm::vec3 c) : pos(p), color(c) {}
+
+    static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
+    {
+        std::vector<vk::VertexInputAttributeDescription> attributeDescriptions( 2 );
+
+        attributeDescriptions[ 0 ].setBinding( 0 );
+        attributeDescriptions[ 0 ].setLocation( 0 );
+        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32Sfloat );
+        attributeDescriptions[ 0 ].setOffset( offsetof( ColoredVertex, pos ) );
+
+        attributeDescriptions[ 1 ].setBinding( 0 );
+        attributeDescriptions[ 1 ].setLocation( 1 );
+        attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32B32Sfloat );
+        attributeDescriptions[ 1 ].setOffset( offsetof( ColoredVertex, color ) );
+
+        return attributeDescriptions;
+    }
+
+    static std::vector<vk::VertexInputBindingDescription> getBindingDescriptions( )
+    {
+        std::vector<vk::VertexInputBindingDescription> bindingDescription( 1 );
+
+        bindingDescription[ 0 ].setBinding( 0 );
+        bindingDescription[ 0 ].setStride( sizeof( ColoredVertex ) );
+        bindingDescription[ 0 ].setInputRate( vk::VertexInputRate::eVertex );
+
+        return bindingDescription;
+    }
+};
+
+}   // namespace DataType
 
 class VulkanAPI
 {
@@ -83,11 +123,25 @@ public:
 
     [[nodiscard]] uint32_t acquireNextImage( );
     void                   setRenderer( std::function<void( const vk::CommandBuffer& )>&& renderer ) { m_renderer = std::move( renderer ); };
-    void                   cycleGraphicCommandBuffers( bool cycle_all_buffer = true, uint32_t index = 0 );
-    void                   presentFrame( uint32_t index = -1 );
 
+    /*
+     *
+     * Run(cycle) renderer on command buffer
+     *
+     * */
+    void cycleGraphicCommandBuffers( bool cycle_all_buffer = true, uint32_t index = 0 );
+    void presentFrame( uint32_t index = -1 );
+
+    /*
+     *
+     * sync function
+     *
+     * */
     inline void waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
     inline void waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
+
+    inline vk::Device& getLogicalDevice() { return m_vkLogicalDevice.get(); }
+    inline vk::PhysicalDevice& getPhysicalDevice() { return m_vkPhysicalDevice; }
 
     inline void invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
     inline void setShouldCreateSwapChain( bool should )
