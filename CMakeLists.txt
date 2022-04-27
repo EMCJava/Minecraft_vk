@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(Minecraft_vk CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
@@ -13,17 +13,20 @@ include_directories(.)
 find_package(Threads)
 find_package(Vulkan REQUIRED)
 
+add_executable(Minecraft_vk main.cpp)
+
 if (WIN32 OR MSVC)
 
     find_package(glfw3 CONFIG REQUIRED)
 
     set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
-    set(GLFW_PLATFORM_LIB "glfw3")
+    set(GLFW_PLATFORM_LIB glfw)
     message(STATUS "Assume platform window")
 
 else ()
     find_package(glfw3 3.3 REQUIRED)
+    include_directories(${glfw3_INCLUDE_DIRS})
 
     set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "dl;X11;Xxf86vm;Xrandr;Xi;dl")
@@ -32,8 +35,9 @@ else ()
 
 endif ()
 
-add_executable(Minecraft_vk main.cpp)
+include_directories(${Vulkan_INCLUDE_DIRS})
 
+add_subdirectory(Include)
 add_subdirectory(Utility)
 add_subdirectory(Graphic)
 add_subdirectory(Minecraft)

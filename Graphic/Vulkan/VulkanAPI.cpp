@@ -1,6 +1,6 @@
 #include "VulkanAPI.hpp"
 //
-// Created by samsa on 1/24/2022.
+// Created by loys on 1/24/2022.
 //
 
 #include <Utility/Logger.hpp>
@@ -470,7 +470,7 @@ void
 VulkanAPI::setupPipeline( )
 {
 
-    const VkExtent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
+    const vk::Extent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
 
     /**
      *
@@ -567,7 +567,7 @@ VulkanAPI::acquireNextImage( )
 void
 VulkanAPI::cycleGraphicCommandBuffers( bool cycle_all_buffer, uint32_t index )
 {
-    const VkExtent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
+    const vk::Extent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
     size_t           it_index, end_index;
     if ( cycle_all_buffer )
     {
