@@ -23,6 +23,17 @@ public:
         eColorSize
     };
 
+    Logger( )
+    {
+        std::ios_base::sync_with_stdio( false );
+        std::cin.tie( nullptr );
+    }
+
+    Logger( Logger const& )            = delete;
+    Logger& operator=( Logger const& ) = delete;
+    Logger( Logger&& )                 = delete;
+    Logger& operator=( Logger&& )      = delete;
+
     inline static Logger&
     getInstance( )
     {
