@@ -1,12 +1,17 @@
 #include <Include/GLM.hpp>
 #include <Include/GlobalConfig.hpp>
 #include <Minecraft/Application/MainApplication.hpp>
+
 #include <iostream>
+#include <cassert>
 
 int
 main( )
 {
-    GlobalConfig::LoadFromFile( "../config.ini" );
+    if ( !GlobalConfig::LoadFromFile( "../config.ini" ) )
+    {
+        assert( GlobalConfig::LoadFromFile( "../../config.ini" ) );
+    }
 
     bool success = true;
 

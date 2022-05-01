@@ -7,19 +7,43 @@
 
 #include "VulkanPipeline.hpp"
 
+
+template <typename VertexClass>
+void
+VulkanPipeline::SetupInputStage( float width, float height )
+{
+    createInfo.viewport = vk::Viewport{ 0.0f, 0.0f, width, height, 0.0f, 1.0f };
+    createInfo.scissor  = {
+         {0, 0},
+         vk::Extent2D( static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) )
+    };
+
+    createInfo.shaderBindingDescriptions   = VertexClass::getBindingDescriptions( );
+    createInfo.shaderAttributeDescriptions = VertexClass::getAttributeDescriptions( );
+
+    createInfo.vertexInputInfo = { { },
+                                   static_cast<uint32_t>( createInfo.shaderBindingDescriptions.size( ) ),
+                                   createInfo.shaderBindingDescriptions.data( ),
+                                   static_cast<uint32_t>( createInfo.shaderAttributeDescriptions.size( ) ),
+                                   createInfo.shaderAttributeDescriptions.data( ) };
+
+    createInfo.inputAssembly = { { },
+                                 vk::PrimitiveTopology::eTriangleList,
+                                 false };
+
+    createInfo.viewportState = { { },
+                                 1,
+                                 &createInfo.viewport,
+                                 1,
+                                 &createInfo.scissor };
+}
+
+
 template <typename VertexClass, typename>
 void
 VulkanPipeline::Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format )
 {
-    vk::Viewport viewport { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
-    vk::Rect2D   scissor {
-        {0, 0},
-        vk::Extent2D( width, height )
-    };
-
-    vk::PipelineShaderStageCreateInfo                vert_createInfo { { }, vk::ShaderStageFlagBits::eVertex, m_vkShader->m_vkVertex_shader_module.get( ), "main" };
-    vk::PipelineShaderStageCreateInfo                frag_createInfo { { }, vk::ShaderStageFlagBits::eFragment, m_vkShader->m_vkFragment_shader_module.get( ), "main" };
-    std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages { vert_createInfo, frag_createInfo };
+    SetupPipelineShaderStage( );
 
     /**
      *
@@ -27,24 +51,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    const auto vertex_binding_descriptions   = VertexClass::getBindingDescriptions( );
-    const auto vertex_attribute_descriptions = VertexClass::getAttributeDescriptions( );
-
-    vk::PipelineVertexInputStateCreateInfo vertexInputInfo { { },
-                                                             static_cast<uint32_t>( vertex_binding_descriptions.size( ) ),
-                                                             vertex_binding_descriptions.data( ),
-                                                             static_cast<uint32_t>( vertex_attribute_descriptions.size( ) ),
-                                                             vertex_attribute_descriptions.data( ) };
-
-    vk::PipelineInputAssemblyStateCreateInfo inputAssembly { { },
-                                                             vk::PrimitiveTopology::eTriangleList,
-                                                             false };
-
-    vk::PipelineViewportStateCreateInfo viewportState { { },
-                                                        1,
-                                                        &viewport,
-                                                        1,
-                                                        &scissor };
+    SetupInputStage<VertexClass>( width, height );
 
     /**
      *
@@ -53,27 +60,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::PipelineRasterizationStateCreateInfo rasterizer { { },
-                                                          false,
-                                                          false,
-                                                          vk::PolygonMode::eFill,
-                                                          vk::CullModeFlagBits::eNone,
-                                                          vk::FrontFace::eCounterClockwise,
-
-                                                          vk::Bool32( false ),
-                                                          { },
-                                                          { },
-                                                          { },
-
-                                                          1.0f };
-
-    vk::PipelineMultisampleStateCreateInfo multisampling { { },
-                                                           vk::SampleCountFlagBits::e1,
-                                                           false,
-                                                           1.0f,
-                                                           nullptr,
-                                                           false,
-                                                           false };
+    SetupRasterizationStage( );
 
     /**
      *
@@ -81,23 +68,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::PipelineColorBlendAttachmentState colorBlendAttachment { false,
-                                                                 vk::BlendFactor::eOne,
-                                                                 vk::BlendFactor::eZero,
-                                                                 vk::BlendOp::eAdd,
-                                                                 vk::BlendFactor::eOne,
-                                                                 vk::BlendFactor::eZero,
-                                                                 vk::BlendOp::eAdd,
-                                                                 vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB };
-
-    vk::PipelineColorBlendStateCreateInfo colorBlending {
-        { },
-        false,
-        vk::LogicOp::eCopy,
-        1,
-        &colorBlendAttachment,
-        { 0, 0, 0, 0 }
-    };
+    SetupBlendingStage( );
 
     /**
      *
@@ -105,11 +76,7 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::DynamicState dynamicStates[] = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eLineWidth };
-
-    vk::PipelineDynamicStateCreateInfo dynamicState { { }, std::size( dynamicStates ), dynamicStates };
+    SetupDynamicStage( );
 
     /**
      *
@@ -117,74 +84,32 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      *
      * */
 
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo { { }, 0, nullptr, 0, nullptr };
-    m_vkPipelineLayout = device.createPipelineLayoutUnique( pipelineLayoutInfo );
-
+    SetupPipelineLayout( device );
 
     /**
      *
      * Render pass
      *
      * */
+    SetupRenderPass( device, format );
 
-    vk::AttachmentDescription colorAttachment {
-        { },
-        format.format,
-        vk::SampleCountFlagBits::e1,
-        vk::AttachmentLoadOp::eClear,
-        vk::AttachmentStoreOp::eStore,
-        vk::AttachmentLoadOp::eDontCare,
-        vk::AttachmentStoreOp::eDontCare,
-        vk::ImageLayout::eUndefined,
-        vk::ImageLayout::ePresentSrcKHR };
+    createInfo.createInfo.setStageCount( createInfo.shaderStages.size( ) );
+    createInfo.createInfo.setStages( createInfo.shaderStages );
+    createInfo.createInfo.setPVertexInputState( &createInfo.vertexInputInfo );
+    createInfo.createInfo.setPInputAssemblyState( &createInfo.inputAssembly );
+    createInfo.createInfo.setPViewportState( &createInfo.viewportState );
+    createInfo.createInfo.setPRasterizationState( &createInfo.rasterizer );
+    createInfo.createInfo.setPMultisampleState( &createInfo.multisampling );
+    createInfo.createInfo.setPColorBlendState( &createInfo.colorBlending );
+    createInfo.createInfo.setLayout( m_vkPipelineLayout.get( ) );
+    createInfo.createInfo.setRenderPass( m_vkRenderPass.get( ) );
+    createInfo.createInfo.setSubpass( 0 );
 
-    /**
-     * @brief Creation of subpass
-     *
-     */
+    createInfo.createInfo.setPTessellationState( nullptr );
+    createInfo.createInfo.setPDepthStencilState( nullptr );
+    createInfo.createInfo.setPDynamicState( nullptr );
 
-    vk::AttachmentReference colorAttachmentRef { 0, vk::ImageLayout::eColorAttachmentOptimal };
-    vk::SubpassDescription  subpass { { },
-                                     vk::PipelineBindPoint::eGraphics,
-                                     0,
-                                     nullptr,
-                                     1,
-                                     &colorAttachmentRef };
-
-    vk::SubpassDependency subpassDependency { VK_SUBPASS_EXTERNAL, 0,
-                                              vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                              vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                              vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite };
-
-    vk::RenderPassCreateInfo renderPassInfo {
-        { },
-        1,
-        &colorAttachment,
-        1,
-        &subpass,
-        1,
-        &subpassDependency };
-
-    m_vkRenderPass = device.createRenderPassUnique( renderPassInfo );
-
-    vk::GraphicsPipelineCreateInfo createInfo {
-        { },
-        shaderStages.size( ),
-        shaderStages.data( ),
-        &vertexInputInfo,
-        &inputAssembly,
-        nullptr,
-        &viewportState,
-        &rasterizer,
-        &multisampling,
-        nullptr,
-        &colorBlending,
-        nullptr,
-        m_vkPipelineLayout.get( ),
-        m_vkRenderPass.get( ),
-        0 };
-
-    auto result = device.createGraphicsPipelinesUnique( nullptr, createInfo );
+    auto result = device.createGraphicsPipelinesUnique( nullptr, createInfo.createInfo );
     assert( result.result == vk::Result::eSuccess );
 
     m_vkPipeline = std::move( result.value );

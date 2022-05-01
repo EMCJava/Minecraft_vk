@@ -60,7 +60,7 @@ public:
         return j;
     }
 
-    static void
+    static bool
     LoadFromFile( const std::string& path )
     {
         // initialize config instance
@@ -71,6 +71,7 @@ public:
 
         if ( file )
             file >> j;
+        else return false;
 
         bool hasData = !j.is_null( );
         if ( hasData )
@@ -82,6 +83,7 @@ public:
         ReplaceConfig( j, getConfigData( ), { } );
 
         file.close( );
+        return true;
     }
 };
 
