@@ -124,8 +124,8 @@ MainApplication::renderThread( )
         }
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
-        m_graphics_api->cycleGraphicCommandBuffers( image_index );
-        m_graphics_api->presentFrame<false>( image_index );
+        // m_graphics_api->cycleGraphicCommandBuffers( image_index );
+        m_graphics_api->presentFrame<true>( image_index );
         // m_graphics_api->waitPresent( );
     }
 }
