@@ -516,7 +516,7 @@ VulkanAPI::setupGraphicCommand( )
      * Creation of command pool
      *
      * */
-    m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { }, m_vkQueue_family_indices.graphicsFamily.value( ) } );
+    m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.value( ) } );
 
     setupGraphicCommandBuffers( );
 }
@@ -565,11 +565,11 @@ VulkanAPI::acquireNextImage( )
 }
 
 void
-VulkanAPI::cycleGraphicCommandBuffers( bool cycle_all_buffer, uint32_t index )
+VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
 {
     const vk::Extent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
-    size_t           it_index, end_index;
-    if ( cycle_all_buffer )
+    size_t             it_index, end_index;
+    if ( index == (uint32_t) -1 )
     {
 
         it_index  = 0;
@@ -584,6 +584,8 @@ VulkanAPI::cycleGraphicCommandBuffers( bool cycle_all_buffer, uint32_t index )
     vk::ClearValue clearColor { { std::array<float, 4> { 0.0f, 0.0f, 0.0f, 1.0f } } };
     for ( ; it_index != end_index; ++it_index )
     {
+        // implicit call
+        // m_vkGraphicCommandBuffers[ it_index ].reset( );
         m_vkGraphicCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr } );
 
         vk::RenderPassBeginInfo render_pass_begin_info;
@@ -609,74 +611,6 @@ VulkanAPI::cycleGraphicCommandBuffers( bool cycle_all_buffer, uint32_t index )
         m_vkGraphicCommandBuffers[ it_index ].endRenderPass( );
         m_vkGraphicCommandBuffers[ it_index ].end( );
     }
-}
-
-void
-VulkanAPI::presentFrame( uint32_t index )
-{
-    /**
-     *
-     * Sync in renderer
-     *
-     * */
-    auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[ m_sync_index ].get( ), true, std::numeric_limits<uint64_t>::max( ) );
-    assert( wait_fence_result == vk::Result::eSuccess );
-
-    /**
-     *
-     * Sync in swap chain image
-     * In-case too many synced render on the same image
-     *
-     * */
-    if ( m_vkSwap_chain_image_fence_syncs[ index ] )
-    {
-        wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkSwap_chain_image_fence_syncs[ m_sync_index ], true, std::numeric_limits<uint64_t>::max( ) );
-        assert( wait_fence_result == vk::Result::eSuccess );
-    }
-
-    m_vkSwap_chain_image_fence_syncs[ index ] = m_vkRender_fence_syncs[ m_sync_index ].get( );
-
-    /**
-     *
-     * Reset fence to unsignaled state
-     *
-     * */
-    m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[ m_sync_index ].get( ) );
-
-    /**
-     *
-     * Submit
-     *
-     * */
-    vk::PipelineStageFlags waitStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    vk::SubmitInfo         submitInfo {
-        1, &m_vkImage_acquire_syncs[ m_sync_index ].get( ), &waitStageMask,
-        1, &m_vkGraphicCommandBuffers[ index ],
-        1, &m_vkRender_syncs[ m_sync_index ].get( ) };
-
-    m_vkGraphicQueue.submit( submitInfo, m_vkRender_fence_syncs[ m_sync_index ].get( ) );
-
-    /**
-     *
-     * Present
-     *
-     * */
-    vk::PresentInfoKHR presentInfo { 1, &m_vkRender_syncs[ m_sync_index ].get( ),
-                                     1, &m_vkSwap_chain.get( ), &index };
-
-
-    try
-    {
-        const auto present_result = m_vkPresentQueue.presentKHR( presentInfo );
-        if ( present_result == vk::Result::eSuboptimalKHR ) adeptSwapChainChange( );
-        assert( present_result == vk::Result::eSuccess );
-    }
-    catch ( vk::OutOfDateKHRError& err )
-    {
-        m_swap_chain_not_valid.test_and_set( );
-    }
-
-    m_sync_index = ( m_sync_index + 1 ) % m_sync_count;
 }
 
 void

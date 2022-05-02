@@ -128,8 +128,12 @@ public:
      *
      * Run(cycle) renderer on command buffer
      *
+     *  @param index Set to -1 to cycle all buffer
+     *
      * */
-    void cycleGraphicCommandBuffers( bool cycle_all_buffer = true, uint32_t index = 0 );
+    void cycleGraphicCommandBuffers( uint32_t index = -1 );
+
+    template<bool doRender = false>
     void presentFrame( uint32_t index = -1 );
 
     /*
@@ -254,5 +258,6 @@ private:
     std::function<void( const vk::CommandBuffer& )> m_renderer;
 };
 
+#include "VulkanAPI_Impl.hpp"
 
 #endif   // MINECRAFT_VK_VULKAN_VULKANAPI_HPP
