@@ -14,12 +14,14 @@ class Logger
 
 private:
     static constexpr auto RED         = "\033[38;5;9m";
+    static constexpr auto YELLOW         = "\033[38;5;11m";
     static constexpr auto RESET_COLOR = "\033[38;5;15m";
 
 public:
     enum class Color {
         wReset,
         eRed,
+        eYellow,
         eColorSize
     };
 
@@ -50,6 +52,8 @@ public:
             return RESET_COLOR;
         case Color::eRed:
             return RED;
+        case Color::eYellow:
+            return YELLOW;
         default:
             break;
         }
