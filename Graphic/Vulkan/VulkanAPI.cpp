@@ -5,6 +5,7 @@
 
 #include <Utility/Logger.hpp>
 
+#include <filesystem>
 #include <unordered_set>
 
 #include "VulkanAPI.hpp"
@@ -466,6 +467,25 @@ VulkanAPI::setupSwapChain( )
                             } );
 }
 
+std::string
+FindResourcePath( )
+{
+    std::string resourcePath = "Resources";
+    for ( int i = 0; i < 10; ++i )
+    {
+        Logger::getInstance( ).LogLine( Logger::Color::eYellow, "Checking resource path " + resourcePath );
+        if ( !std::filesystem::exists( std::filesystem::path( resourcePath ) ) )
+        {
+            resourcePath.insert( 0, "../" );
+			continue;
+        }
+
+		return resourcePath;
+    }
+
+	throw std::runtime_error("Can't locate resource path");
+}
+
 void
 VulkanAPI::setupPipeline( )
 {
@@ -478,7 +498,9 @@ VulkanAPI::setupPipeline( )
      *
      * */
     std::unique_ptr<VulkanShader> shader = std::make_unique<VulkanShader>( );
-    shader->InitGLSLFile( m_vkLogicalDevice.get( ), "../Resources/Shader/vertex_buffer.vert", "../Resources/Shader/vertex_buffer.frag" );
+
+    std::string resourcePath = FindResourcePath( );
+    shader->InitGLSLFile( m_vkLogicalDevice.get( ), resourcePath + "/Shader/vertex_buffer.vert", resourcePath + "/Shader/vertex_buffer.frag" );
 
     /**
      *
@@ -516,6 +538,8 @@ VulkanAPI::setupGraphicCommand( )
      * Creation of command pool
      *
      * */
+
+    Logger::getInstance( ).LogLine( Logger::Color::eYellow, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
     m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.value( ) } );
 
     setupGraphicCommandBuffers( );
