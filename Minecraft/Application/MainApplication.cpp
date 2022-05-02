@@ -41,8 +41,10 @@ MainApplication::run( )
     };
     const auto size_of_data = sizeof( vertices[ 0 ] ) * vertices.size( );
 
-    auto vertex_buffer   = m_graphics_api->getLogicalDevice( ).createBufferUnique( { { }, size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive } );
-    auto memRequirements = m_graphics_api->getLogicalDevice( ).getBufferMemoryRequirements( vertex_buffer.get( ) );
+    auto& logicalDevice = m_graphics_api->getLogicalDevice( );
+
+    auto vertex_buffer   = logicalDevice.createBufferUnique( { { }, size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive } );
+    auto memRequirements = logicalDevice.getBufferMemoryRequirements( vertex_buffer.get( ) );
     auto memProperties   = m_graphics_api->getPhysicalDevice( ).getMemoryProperties( );
 
     auto findMemoryType = [ &memProperties ]( uint32_t typeFilter, vk::MemoryPropertyFlags properties ) -> uint32_t {
@@ -51,11 +53,11 @@ MainApplication::run( )
         throw std::runtime_error( "failed to find suitable memory type!" );
     };
 
-    auto vertex_buffer_memory = m_graphics_api->getLogicalDevice( ).allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent ) } );
-    m_graphics_api->getLogicalDevice( ).bindBufferMemory( vertex_buffer.get( ), vertex_buffer_memory.get( ), 0 );
+    auto vertex_buffer_memory = logicalDevice.allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent ) } );
+    logicalDevice.bindBufferMemory( vertex_buffer.get( ), vertex_buffer_memory.get( ), 0 );
 
-    memcpy( m_graphics_api->getLogicalDevice( ).mapMemory( vertex_buffer_memory.get( ), 0, size_of_data ), vertices.data( ), (size_t) size_of_data );
-    m_graphics_api->getLogicalDevice( ).unmapMemory( vertex_buffer_memory.get( ) );
+    memcpy( logicalDevice.mapMemory( vertex_buffer_memory.get( ), 0, size_of_data ), vertices.data( ), (size_t) size_of_data );
+    logicalDevice.unmapMemory( vertex_buffer_memory.get( ) );
 
     m_graphics_api->setRenderer( [ &vertex_buffer ]( const vk::CommandBuffer& command_buffer ) {
         vk::Buffer     vertexBuffers[] = { vertex_buffer.get() };
