@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_UTILITY_LOGGER_HPP
 #define MINECRAFT_VK_UTILITY_LOGGER_HPP
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -12,7 +13,7 @@
 
 #include <Utility/String/StringConcatConstexpr.hpp>
 
-template <bool LogColorPrefix = true>
+template <bool LogColorPrefix = true, bool IncludeTime = true>
 class LoggerBase
 {
 
@@ -24,6 +25,7 @@ private:
     };
 
     static constexpr std::string_view ErrorStr = "[ ERROR ] ";
+    static constexpr std::string_view WarnStr  = "[ WARN ] ";
     static constexpr std::string_view InfoStr  = "[ INFO ] ";
 
     static constexpr std::string_view RedStr    = "\033[38;5;9m";
@@ -43,6 +45,7 @@ public:
 
     enum class LogType {
         eError,
+        eWarn,
         eInfo,
         eLogTypeSize
     };
@@ -72,6 +75,8 @@ public:
         {
         case LogType::eError:
             return ErrorPrefix;
+        case LogType::eWarn:
+            return WarnStr;
         case LogType::eInfo:
             return InfoPrefix;
         default:
@@ -116,6 +121,13 @@ public:
         } else
         {
             std::stringstream output;
+
+            if constexpr ( IncludeTime )
+            {
+                std::time_t t = std::time( nullptr );
+                output << "[ " << std::put_time( std::localtime( &t ), "%F %T" ) << " ] ";
+            }
+
             output << std::forward<Ty>( elm );
             ( ( output << ' ' << std::forward<Tys>( elms ) ), ... ) << std::flush;
 

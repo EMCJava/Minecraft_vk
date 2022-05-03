@@ -521,7 +521,7 @@ VulkanAPI::setupGraphicCommand( )
      *
      * */
 
-    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
+    Logger::getInstance( ).LogLine( Logger::LogType::eWarn, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
     m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.first } );
 
     setupGraphicCommandBuffers( );
