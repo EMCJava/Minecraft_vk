@@ -43,7 +43,7 @@ ValidationLayer::debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void*                                       pUserData )
 {
-    Logger::Color log_color = Logger::Color::wReset;
+    Logger::LogType log_type = Logger::LogType::eInfo;
 
     switch ( messageSeverity )
     {
@@ -53,10 +53,10 @@ ValidationLayer::debugCallback(
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        log_color = Logger::Color::eRed;
+        log_type = Logger::LogType::eError;
     }
 
-    Logger::getInstance( ).LogLine( log_color, "validation layer: [",
+    Logger::getInstance( ).LogLine( log_type, "validation layer: [",
                                     vk::to_string( (vk::DebugUtilsMessageSeverityFlagBitsEXT) messageSeverity ),
                                     "] -> [",
                                     vk::to_string( (vk::DebugUtilsMessageTypeFlagBitsEXT) messageType ),
@@ -69,5 +69,5 @@ ValidationLayer::debugCallback(
 void
 ValidationLayer::glfwErrorCallback( int code, const char* description )
 {
-    Logger::getInstance( ).LogLine( Logger::Color::eRed, "GLFW Error [", code, "]", description );
+    Logger::getInstance( ).LogLine( Logger::LogType::eError, "GLFW Error [", code, "]", description );
 }

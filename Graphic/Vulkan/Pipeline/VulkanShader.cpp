@@ -54,7 +54,7 @@ VulkanShader::InitGLSLString( const vk::Device& device, const std::string& verte
         compiler.CompileGlslToSpv( vertexShader, shaderc_glsl_vertex_shader, "vertex shader", options );
     if ( vertShaderModule.GetCompilationStatus( ) != shaderc_compilation_status_success )
     {
-        Logger::getInstance( ).LogLine( Logger::Color::eRed, vertShaderModule.GetErrorMessage( ) );
+        Logger::getInstance( ).LogLine( Logger::LogType::eError, vertShaderModule.GetErrorMessage( ) );
         throw std::runtime_error( "vertex shader compilation failed !" );
     }
 
@@ -62,7 +62,7 @@ VulkanShader::InitGLSLString( const vk::Device& device, const std::string& verte
         fragmentShader, shaderc_glsl_fragment_shader, "fragment shader", options );
     if ( fragShaderModule.GetCompilationStatus( ) != shaderc_compilation_status_success )
     {
-        Logger::getInstance( ).LogLine( Logger::Color::eRed, fragShaderModule.GetErrorMessage( ) );
+        Logger::getInstance( ).LogLine( Logger::LogType::eError, fragShaderModule.GetErrorMessage( ) );
         throw std::runtime_error( "fragment shader compilation failed !" );
     }
 

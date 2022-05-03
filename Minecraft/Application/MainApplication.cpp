@@ -18,7 +18,7 @@ MainApplication::MainApplication( )
     m_graphics_api = std::make_unique<VulkanAPI>( m_window );
     m_graphics_api->setupAPI( "Minecraft" );
 
-    Logger::getInstance( ).LogLine( "Finished Initializing" );
+    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
 
 MainApplication::~MainApplication( )
@@ -121,7 +121,7 @@ MainApplication::renderThread( )
         if ( frame_count % output_per_frame == 0 )
         {
             auto time_used = std::chrono::high_resolution_clock::now( ) - start_time;
-            Logger::getInstance( ).LogLine( "fps:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ) );
+            Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "fps:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ) );
             start_time = std::chrono::high_resolution_clock::now( );
         }
 
@@ -135,7 +135,7 @@ MainApplication::renderThread( )
 void
 MainApplication::onFrameBufferResized( GLFWwindow* window, int width, int height )
 {
-    auto app = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
+    auto* app = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
     assert( window == app->m_window );
 
     app->m_graphics_api->setShouldCreateSwapChain( width * height );
