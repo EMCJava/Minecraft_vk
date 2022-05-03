@@ -11,8 +11,11 @@
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
 
+#include "QueueFamilyManager.hpp"
+
 #include <functional>
 #include <memory>
+#include <atomic>
 #include <optional>
 #include <vector>
 
@@ -23,7 +26,10 @@ struct ColoredVertex : VertexDetail {
     glm::vec2 pos;
     glm::vec3 color;
 
-    ColoredVertex(glm::vec2 p, glm::vec3 c) : pos(p), color(c) {}
+    ColoredVertex( glm::vec2 p, glm::vec3 c )
+        : pos( p )
+        , color( c )
+    { }
 
     static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
     {
@@ -60,13 +66,8 @@ class VulkanAPI
 {
 private:
     struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
-
-        [[nodiscard]] bool isComplete( ) const
-        {
-            return graphicsFamily.has_value( ) && presentFamily.has_value( );
-        }
+        std::pair<uint32_t, uint32_t> graphicsFamily;
+        uint32_t                      presentFamily;
     };
 
     struct SwapChainSupportDetails {
@@ -90,8 +91,6 @@ private:
     bool isDeviceUsable( const vk::PhysicalDevice& device );
     bool isDeviceSupportAllExtensions( const vk::PhysicalDevice& device );
     bool setSwapChainSupportDetails( const vk::PhysicalDevice& device );
-
-    void updateQueueFamiliesIndex( const vk::PhysicalDevice& );
 
     void setupDynamicDispatch( );
 
@@ -133,7 +132,7 @@ public:
      * */
     void cycleGraphicCommandBuffers( uint32_t index = -1 );
 
-    template<bool doRender = false>
+    template <bool doRender = false>
     void presentFrame( uint32_t index = -1 );
 
     /*
@@ -144,8 +143,8 @@ public:
     inline void waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
     inline void waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
 
-    inline vk::Device& getLogicalDevice() { return m_vkLogicalDevice.get(); }
-    inline vk::PhysicalDevice& getPhysicalDevice() { return m_vkPhysicalDevice; }
+    inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
+    inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
 
     inline void invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
     inline void setShouldCreateSwapChain( bool should )
@@ -207,9 +206,10 @@ private:
      * Queues
      *
      * */
-    QueueFamilyIndices m_vkQueue_family_indices;
-    vk::Queue          m_vkGraphicQueue;
-    vk::Queue          m_vkPresentQueue;
+    std::unique_ptr<QueueFamilyManager> m_queue_family_manager;
+    QueueFamilyIndices                  m_vkQueue_family_indices;
+    vk::Queue                           m_vkGraphicQueue;
+    vk::Queue                           m_vkPresentQueue;
 
     /**
      *

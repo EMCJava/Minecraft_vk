@@ -1,14 +1,13 @@
-#include "VulkanAPI.hpp"
 //
 // Created by loys on 1/24/2022.
 //
+
+#include "VulkanAPI.hpp"
 
 #include <Utility/Logger.hpp>
 
 #include <filesystem>
 #include <unordered_set>
-
-#include "VulkanAPI.hpp"
 
 namespace
 {
@@ -188,7 +187,7 @@ VulkanAPI::selectPhysicalDevice( )
     for ( auto& device : vec_physical_device )
     {
         const auto device_properties = device.getProperties( );
-        Logger::getInstance( ).LogLine( "Found device: [", vk::to_string( device_properties.deviceType ), "]", device_properties.deviceName );
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Found device: [", vk::to_string( device_properties.deviceType ), "]", device_properties.deviceName );
 
         /**
          *
@@ -217,7 +216,7 @@ VulkanAPI::selectPhysicalDevice( )
         m_vkPhysicalDevice           = device_priorities.rbegin( )->second;
         const auto device_properties = m_vkPhysicalDevice.getProperties( );
 
-        Logger::getInstance( ).LogLine( "Using device: [", vk::to_string( device_properties.deviceType ), "]", device_properties.deviceName );
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using device: [", vk::to_string( device_properties.deviceType ), "]", device_properties.deviceName );
     } else
     {
         throw std::runtime_error( "failed to find a suitable GPU!" );
@@ -335,9 +334,20 @@ VulkanAPI::setupLogicalDevice( )
      * Fresh queue family
      *
      * */
-    updateQueueFamiliesIndex( m_vkPhysicalDevice );
+    m_queue_family_manager = std::make_unique<QueueFamilyManager>( m_vkPhysicalDevice );
+    auto graphicQueueList  = m_queue_family_manager->GetQueue( { vk::QueueFlagBits::eGraphics } );
 
-    std::unordered_set<uint32_t> queue_index_set { m_vkQueue_family_indices.graphicsFamily.value( ), m_vkQueue_family_indices.presentFamily.value( ) };
+    // check for surface support
+    bool isSurfaceSupport = m_vkPhysicalDevice.getSurfaceSupportKHR( graphicQueueList[ 0 ].first, m_vkSurface.get( ) );
+    if ( !isSurfaceSupport )
+    {
+        throw std::runtime_error( "No surface support for the first vk::QueueFlagBits::eGraphics" );
+    }
+
+    m_vkQueue_family_indices.graphicsFamily = graphicQueueList[ 0 ];
+    m_vkQueue_family_indices.presentFamily  = graphicQueueList[ 0 ].first;
+
+    std::unordered_set<uint32_t> queue_index_set { m_vkQueue_family_indices.graphicsFamily.first, m_vkQueue_family_indices.presentFamily };
     float                        queuePriority = 1.0f;
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -367,36 +377,8 @@ VulkanAPI::setupLogicalDevice( )
      * Setup queues
      *
      * */
-    m_vkGraphicQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.graphicsFamily.value( ), 0 );
-    m_vkPresentQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.presentFamily.value( ), 0 );
-}
-
-void
-VulkanAPI::updateQueueFamiliesIndex( const vk::PhysicalDevice& phy_device )
-{
-
-    m_vkQueue_family_indices.graphicsFamily.reset( );
-    m_vkQueue_family_indices.presentFamily.reset( );
-
-    auto queueFamilies = phy_device.getQueueFamilyProperties( );
-
-    for ( int i = 0; i < queueFamilies.size( ); ++i )
-    {
-        if ( queueFamilies[ i ].queueCount > 0 && queueFamilies[ i ].queueFlags & vk::QueueFlagBits::eGraphics )
-        {
-            m_vkQueue_family_indices.graphicsFamily = i;
-        }
-
-        if ( queueFamilies[ i ].queueCount > 0 && phy_device.getSurfaceSupportKHR( i, m_vkSurface.get( ) ) )
-        {
-            m_vkQueue_family_indices.presentFamily = i;
-        }
-
-        if ( m_vkQueue_family_indices.isComplete( ) )
-        {
-            break;
-        }
-    }
+    m_vkGraphicQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.graphicsFamily.first, m_vkQueue_family_indices.graphicsFamily.second );
+    m_vkPresentQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.presentFamily, m_vkQueue_family_indices.graphicsFamily.second );
 }
 
 void
@@ -410,8 +392,8 @@ VulkanAPI::setupSwapChain( )
     const auto imageCount     = m_vkSwap_chain_detail.capabilities.minImageCount + 1;
     assert( imageCount <= m_vkSwap_chain_detail.capabilities.maxImageCount );
 
-    uint32_t queueFamilyIndices[] = { m_vkQueue_family_indices.graphicsFamily.value( ),
-                                      m_vkQueue_family_indices.presentFamily.value( ) };
+    uint32_t queueFamilyIndices[] = { m_vkQueue_family_indices.graphicsFamily.first,
+                                      m_vkQueue_family_indices.presentFamily };
 
     /**
      *
@@ -432,7 +414,7 @@ VulkanAPI::setupSwapChain( )
     createInfo.setPresentMode( present_mode );
     createInfo.setClipped( true );
     createInfo.setOldSwapchain( m_vkSwap_chain.get( ) );
-    if ( m_vkQueue_family_indices.graphicsFamily != m_vkQueue_family_indices.presentFamily )
+    if ( m_vkQueue_family_indices.graphicsFamily.first != m_vkQueue_family_indices.presentFamily )
     {
         createInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
         createInfo.queueFamilyIndexCount = std::size( queueFamilyIndices );
@@ -473,17 +455,17 @@ FindResourcePath( )
     std::string resourcePath = "Resources";
     for ( int i = 0; i < 10; ++i )
     {
-        Logger::getInstance( ).LogLine( Logger::Color::eYellow, "Checking resource path " + resourcePath );
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Checking resource path " + resourcePath );
         if ( !std::filesystem::exists( std::filesystem::path( resourcePath ) ) )
         {
             resourcePath.insert( 0, "../" );
-			continue;
+            continue;
         }
 
-		return resourcePath;
+        return resourcePath;
     }
 
-	throw std::runtime_error("Can't locate resource path");
+    throw std::runtime_error( "Can't locate resource path" );
 }
 
 void
@@ -539,8 +521,8 @@ VulkanAPI::setupGraphicCommand( )
      *
      * */
 
-    Logger::getInstance( ).LogLine( Logger::Color::eYellow, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
-    m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.value( ) } );
+    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
+    m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.first } );
 
     setupGraphicCommandBuffers( );
 }
@@ -580,7 +562,7 @@ VulkanAPI::acquireNextImage( )
     auto        result     = next_image( );
     while ( result.result == vk::Result::eErrorOutOfDateKHR )
     {
-        Logger::getInstance( ).LogLine( Logger::Color::eRed, "Recreating swap chain!!!" );
+        Logger::getInstance( ).LogLine( Logger::LogType::eError, "Recreating swap chain!!!" );
         adeptSwapChainChange( );
         result = next_image( );
     }
