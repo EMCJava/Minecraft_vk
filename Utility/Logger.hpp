@@ -33,6 +33,7 @@ private:
     static constexpr std::string_view ResetStr  = "\033[38;5;15m";
 
     static constexpr auto ErrorPrefix = JoinColorSrt<RedStr, ErrorStr>::value;
+    static constexpr auto WarnPrefix  = JoinColorSrt<YellowStr, WarnStr>::value;
     static constexpr auto InfoPrefix  = JoinColorSrt<YellowStr, InfoStr>::value;
 
 public:
@@ -76,7 +77,7 @@ public:
         case LogType::eError:
             return ErrorPrefix;
         case LogType::eWarn:
-            return WarnStr;
+            return WarnPrefix;
         case LogType::eInfo:
             return InfoPrefix;
         default:
