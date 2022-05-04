@@ -452,16 +452,28 @@ VulkanAPI::setupSwapChain( )
 std::string
 FindResourcePath( )
 {
-    std::string resourcePath = "Resources";
-    for ( int i = 0; i < 10; ++i )
-    {
-        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Checking resource path " + resourcePath );
-        if ( !std::filesystem::exists( std::filesystem::path( resourcePath ) ) )
-        {
-            resourcePath.insert( 0, "../" );
-            continue;
-        }
+    static constexpr auto searchDepth       = 10;
+    static bool           foundResourcePath = false;
+    static std::string    resourcePath;
 
+    if ( resourcePath.empty( ) )
+    {
+        resourcePath = "Resources";
+        for ( int i = 0; i < searchDepth; ++i )
+        {
+            Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Checking resource path " + resourcePath );
+            if ( !std::filesystem::exists( std::filesystem::path( resourcePath ) ) )
+            {
+                resourcePath.insert( 0, "../" );
+                continue;
+            }
+
+            foundResourcePath = true;
+            return resourcePath;
+        }
+    } else if ( foundResourcePath )
+    {
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using cached resource path " + resourcePath );
         return resourcePath;
     }
 
