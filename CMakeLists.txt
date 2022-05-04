@@ -18,6 +18,7 @@ add_executable(Minecraft_vk main.cpp)
 if (WIN32 OR MSVC)
 
     find_package(glfw3 CONFIG REQUIRED)
+    find_package(glm CONFIG REQUIRED)
 
     set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
