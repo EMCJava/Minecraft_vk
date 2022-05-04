@@ -13,9 +13,9 @@
 
 #include "QueueFamilyManager.hpp"
 
+#include <atomic>
 #include <functional>
 #include <memory>
-#include <atomic>
 #include <optional>
 #include <vector>
 
@@ -64,6 +64,40 @@ struct ColoredVertex : VertexDetail {
 
 class VulkanAPI
 {
+public:
+    struct VKBufferMeta {
+
+        vk::UniqueBuffer                   buffer;
+        vk::MemoryRequirements             memRequirements;
+        vk::PhysicalDeviceMemoryProperties memProperties;
+        vk::UniqueDeviceMemory             deviceMemory;
+
+        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::SharingMode sharingMode = vk::SharingMode::eExclusive,
+                     const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent )
+        {
+
+            buffer          = api.m_vkLogicalDevice->createBufferUnique( { { }, size, usage, sharingMode } );
+            memRequirements = api.m_vkLogicalDevice->getBufferMemoryRequirements( buffer.get( ) );
+            memProperties   = api.m_vkPhysicalDevice.getMemoryProperties( );
+
+            auto findMemoryType = [ this ]( uint32_t typeFilter, vk::MemoryPropertyFlags properties ) -> uint32_t {
+                for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
+                    if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
+                throw std::runtime_error( "failed to find suitable memory type!" );
+            };
+
+            deviceMemory = api.m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, memoryProperties ) } );
+            api.m_vkLogicalDevice->bindBufferMemory( buffer.get( ), deviceMemory.get( ), 0 );
+        }
+
+        void BindBuffer( const void* bindingData, size_t dataSize, const VulkanAPI& api )
+        {
+            auto* bindingPoint = api.m_vkLogicalDevice->mapMemory( deviceMemory.get( ), 0, dataSize );
+            memcpy( bindingPoint, bindingData, dataSize );
+            api.m_vkLogicalDevice->unmapMemory( deviceMemory.get( ) );
+        }
+    };
+
 private:
     struct QueueFamilyIndices {
         std::pair<uint32_t, uint32_t> graphicsFamily;

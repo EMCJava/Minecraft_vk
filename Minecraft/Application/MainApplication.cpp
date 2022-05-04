@@ -41,26 +41,12 @@ MainApplication::run( )
     };
     const auto size_of_data = sizeof( vertices[ 0 ] ) * vertices.size( );
 
-    auto& logicalDevice = m_graphics_api->getLogicalDevice( );
+    VulkanAPI::VKBufferMeta vertexBuffer;
+    vertexBuffer.Create( size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, *m_graphics_api );
+    vertexBuffer.BindBuffer( vertices.data( ), size_of_data, *m_graphics_api );
 
-    auto vertex_buffer   = logicalDevice.createBufferUnique( { { }, size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, vk::SharingMode::eExclusive } );
-    auto memRequirements = logicalDevice.getBufferMemoryRequirements( vertex_buffer.get( ) );
-    auto memProperties   = m_graphics_api->getPhysicalDevice( ).getMemoryProperties( );
-
-    auto findMemoryType = [ &memProperties ]( uint32_t typeFilter, vk::MemoryPropertyFlags properties ) -> uint32_t {
-        for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
-            if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
-        throw std::runtime_error( "failed to find suitable memory type!" );
-    };
-
-    auto vertex_buffer_memory = logicalDevice.allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent ) } );
-    logicalDevice.bindBufferMemory( vertex_buffer.get( ), vertex_buffer_memory.get( ), 0 );
-
-    memcpy( logicalDevice.mapMemory( vertex_buffer_memory.get( ), 0, size_of_data ), vertices.data( ), (size_t) size_of_data );
-    logicalDevice.unmapMemory( vertex_buffer_memory.get( ) );
-
-    m_graphics_api->setRenderer( [ &vertex_buffer ]( const vk::CommandBuffer& command_buffer ) {
-        vk::Buffer     vertexBuffers[] = { vertex_buffer.get() };
+    m_graphics_api->setRenderer( [ &vertexBuffer ]( const vk::CommandBuffer& command_buffer ) {
+        vk::Buffer     vertexBuffers[] = { vertexBuffer.buffer.get() };
         vk::DeviceSize offsets[]       = { 0 };
         command_buffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
         command_buffer.draw( 3, 1, 0, 0 ); } );
