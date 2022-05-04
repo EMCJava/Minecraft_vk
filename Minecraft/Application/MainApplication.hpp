@@ -24,18 +24,22 @@ class MainApplication
 {
 
     GLFWwindow* m_window { };
+    int         m_backup_screen_width { }, m_backup_screen_height { };
     int         m_screen_width { }, m_screen_height { };
+    int         m_screen_pos_x { }, m_screen_pos_y { };
     bool        m_window_resizable = false;
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
     void InitWindow( );
+    void RecreateWindow( bool isFullScreen );
     void cleanUp( );
 
     std::atomic<bool> m_render_thread_should_run;
     void              renderThread( );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
+    static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );
 
 public:
     MainApplication( );
