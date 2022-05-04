@@ -134,9 +134,7 @@ MainApplication::onFrameBufferResized( GLFWwindow* window, int width, int height
 void
 MainApplication::RecreateWindow( bool isFullScreen )
 {
-    const bool isCurrentFullScreen = glfwGetWindowMonitor( m_window ) != nullptr;
-
-    if ( isCurrentFullScreen == isFullScreen )
+    if ( m_window_fullscreen == isFullScreen )
     {
         Logger::getInstance( ).LogLine( Logger::LogType::eWarn, "Setting fullscreen(", isFullScreen, "), stays the same" );
         return;
@@ -158,6 +156,7 @@ MainApplication::RecreateWindow( bool isFullScreen )
         glfwSetWindowMonitor( m_window, nullptr, m_screen_pos_x, m_screen_pos_y, m_backup_screen_width, m_backup_screen_height, 0 );
     }
 
+    m_window_fullscreen = !m_window_fullscreen;
     m_graphics_api->setShouldCreateSwapChain( true );
     m_graphics_api->invalidateSwapChain( );
 }
@@ -173,7 +172,7 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
         if ( key == GLFW_KEY_F11 )
         {
             // toggle fullscreen
-            app->RecreateWindow( glfwGetWindowMonitor( app->m_window ) == nullptr );
+            app->RecreateWindow( !app->m_window_fullscreen );
         }
         break;
     case GLFW_RELEASE:

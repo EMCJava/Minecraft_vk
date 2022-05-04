@@ -27,7 +27,8 @@ class MainApplication
     int         m_backup_screen_width { }, m_backup_screen_height { };
     int         m_screen_width { }, m_screen_height { };
     int         m_screen_pos_x { }, m_screen_pos_y { };
-    bool        m_window_resizable = false;
+    bool        m_window_resizable  = false;
+    bool        m_window_fullscreen = false;
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
