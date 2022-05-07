@@ -61,14 +61,14 @@ MainApplication::run( )
                              vk::MemoryPropertyFlagBits::eDeviceLocal );
 
         bufferRegion.setSize( verticesDataSize );
-        vertexBuffer.CopyBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
+        vertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
 
         stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, *m_graphics_api );
         indexBuffer.Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst, *m_graphics_api,
                             vk::MemoryPropertyFlagBits::eDeviceLocal );
 
         bufferRegion.setSize( indicesDataSize );
-        indexBuffer.CopyBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
+        indexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
     }
 
     m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer ]( const vk::CommandBuffer& command_buffer ) {

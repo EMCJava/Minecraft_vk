@@ -97,7 +97,7 @@ public:
             api.m_vkLogicalDevice->unmapMemory( deviceMemory.get( ) );
         }
 
-        void CopyBuffer( const VKBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
+        void CopyFromBuffer( const VKBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
         {
             vk::CommandBufferAllocateInfo allocInfo { };
             allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
