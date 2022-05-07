@@ -35,34 +35,49 @@ MainApplication::run( )
      *
      * */
     const std::vector<DataType::ColoredVertex> vertices = {
-        {{ 0.0f, -0.5f }, { 1.0f, 1.0f, 1.0f }},
-        { { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
-        {{ -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }}
+        {{ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
+        { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }},
+        {  { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }},
+        { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
     };
-    const auto size_of_data = sizeof( vertices[ 0 ] ) * vertices.size( );
 
-    VulkanAPI::VKBufferMeta vertexBuffer;
+    const std::vector<uint16_t> indices = {
+        0, 1, 2, 2, 3, 0 };
+
+    const auto verticesDataSize = sizeof( vertices[ 0 ] ) * vertices.size( );
+    const auto indicesDataSize  = sizeof( indices[ 0 ] ) * indices.size( );
+
+    VulkanAPI::VKBufferMeta vertexBuffer, indexBuffer;
 
     {
         VulkanAPI::VKBufferMeta stagingBuffer;
+        vk::BufferCopy          bufferRegion;
         using Usage = vk::BufferUsageFlagBits;
 
-        stagingBuffer.Create( size_of_data, Usage::eVertexBuffer | Usage::eTransferSrc, *m_graphics_api );
-        stagingBuffer.BindBuffer( vertices.data( ), size_of_data, *m_graphics_api );
+        stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc, *m_graphics_api );
 
-        vertexBuffer.Create( size_of_data, Usage::eVertexBuffer | Usage::eTransferDst, *m_graphics_api,
+        stagingBuffer.BindBuffer( vertices.data( ), verticesDataSize, *m_graphics_api );
+        vertexBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst, *m_graphics_api,
                              vk::MemoryPropertyFlagBits::eDeviceLocal );
-        vertexBuffer.CopyBuffer( stagingBuffer, {
-                                                    {0, 0, size_of_data}
-        },
-                                 *m_graphics_api );
+
+        bufferRegion.setSize( verticesDataSize );
+        vertexBuffer.CopyBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
+
+        stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, *m_graphics_api );
+        indexBuffer.Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst, *m_graphics_api,
+                            vk::MemoryPropertyFlagBits::eDeviceLocal );
+
+        bufferRegion.setSize( indicesDataSize );
+        indexBuffer.CopyBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
     }
 
-    m_graphics_api->setRenderer( [ &vertexBuffer ]( const vk::CommandBuffer& command_buffer ) {
-        vk::Buffer     vertexBuffers[] = { vertexBuffer.buffer.get() };
-        vk::DeviceSize offsets[]       = { 0 };
-        command_buffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-        command_buffer.draw( 3, 1, 0, 0 ); } );
+    m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer ]( const vk::CommandBuffer& command_buffer ) {
+        command_buffer.bindVertexBuffers( 0, vertexBuffer.buffer.get( ), vk::DeviceSize( 0 ) );
+        command_buffer.bindIndexBuffer( indexBuffer.buffer.get( ), 0, vk::IndexType::eUint16 );
+
+        // command_buffer.draw( 3, 1, 0, 0 );
+        command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+    } );
     m_graphics_api->cycleGraphicCommandBuffers( );
 
     /*
