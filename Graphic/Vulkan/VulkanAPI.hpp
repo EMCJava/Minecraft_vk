@@ -72,8 +72,8 @@ public:
         vk::PhysicalDeviceMemoryProperties memProperties;
         vk::UniqueDeviceMemory             deviceMemory;
 
-        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::SharingMode sharingMode = vk::SharingMode::eExclusive,
-                     const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent )
+        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                     const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
         {
 
             buffer          = api.m_vkLogicalDevice->createBufferUnique( { { }, size, usage, sharingMode } );
@@ -95,6 +95,29 @@ public:
             auto* bindingPoint = api.m_vkLogicalDevice->mapMemory( deviceMemory.get( ), 0, dataSize );
             memcpy( bindingPoint, bindingData, dataSize );
             api.m_vkLogicalDevice->unmapMemory( deviceMemory.get( ) );
+        }
+
+        void CopyBuffer( const VKBufferMeta& bufferData, const std::vector<vk::BufferCopy>& dataRegion, const VulkanAPI& api )
+        {
+            vk::CommandBufferAllocateInfo allocInfo { };
+            allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
+            allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
+            allocInfo.setCommandBufferCount( 1 );
+
+            auto  commandBuffers = api.m_vkLogicalDevice->allocateCommandBuffersUnique( allocInfo );
+            auto& commandBuffer  = commandBuffers.begin( )->get( );
+
+            commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
+            commandBuffer.copyBuffer( *bufferData.buffer, *buffer, dataRegion );
+            commandBuffer.end( );
+
+            const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
+            auto        transferQueue         = api.m_vkLogicalDevice->getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
+
+            vk::SubmitInfo submitInfo;
+            submitInfo.setCommandBuffers( commandBuffer );
+            transferQueue.submit( submitInfo, nullptr );
+            transferQueue.waitIdle( );
         }
     };
 
@@ -242,6 +265,7 @@ private:
      * */
     std::unique_ptr<QueueFamilyManager> m_queue_family_manager;
     QueueFamilyIndices                  m_vkQueue_family_indices;
+    std::pair<uint32_t, uint32_t>       m_vkTransfer_family_indices;
     vk::Queue                           m_vkGraphicQueue;
     vk::Queue                           m_vkPresentQueue;
 
@@ -271,6 +295,7 @@ private:
      *
      * */
     vk::UniqueCommandPool          m_vkGraphicCommandPool;
+    vk::UniqueCommandPool          m_vkTransferCommandPool;
     std::vector<vk::CommandBuffer> m_vkGraphicCommandBuffers;
 
     /**

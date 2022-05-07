@@ -42,8 +42,21 @@ MainApplication::run( )
     const auto size_of_data = sizeof( vertices[ 0 ] ) * vertices.size( );
 
     VulkanAPI::VKBufferMeta vertexBuffer;
-    vertexBuffer.Create( size_of_data, vk::BufferUsageFlagBits::eVertexBuffer, *m_graphics_api );
-    vertexBuffer.BindBuffer( vertices.data( ), size_of_data, *m_graphics_api );
+
+    {
+        VulkanAPI::VKBufferMeta stagingBuffer;
+        using Usage = vk::BufferUsageFlagBits;
+
+        stagingBuffer.Create( size_of_data, Usage::eVertexBuffer | Usage::eTransferSrc, *m_graphics_api );
+        stagingBuffer.BindBuffer( vertices.data( ), size_of_data, *m_graphics_api );
+
+        vertexBuffer.Create( size_of_data, Usage::eVertexBuffer | Usage::eTransferDst, *m_graphics_api,
+                             vk::MemoryPropertyFlagBits::eDeviceLocal );
+        vertexBuffer.CopyBuffer( stagingBuffer, {
+                                                    {0, 0, size_of_data}
+        },
+                                 *m_graphics_api );
+    }
 
     m_graphics_api->setRenderer( [ &vertexBuffer ]( const vk::CommandBuffer& command_buffer ) {
         vk::Buffer     vertexBuffers[] = { vertexBuffer.buffer.get() };
@@ -114,7 +127,7 @@ MainApplication::renderThread( )
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
         // m_graphics_api->cycleGraphicCommandBuffers( image_index );
-        m_graphics_api->presentFrame<true>( image_index );
+        m_graphics_api->presentFrame<false>( image_index );
         // m_graphics_api->waitPresent( );
     }
 }
@@ -173,6 +186,9 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
         {
             // toggle fullscreen
             app->RecreateWindow( !app->m_window_fullscreen );
+        } else if ( key == GLFW_KEY_ESCAPE )
+        {
+            glfwSetWindowShouldClose( app->m_window, true );
         }
         break;
     case GLFW_RELEASE:

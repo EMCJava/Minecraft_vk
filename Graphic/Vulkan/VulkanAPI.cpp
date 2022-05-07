@@ -335,7 +335,7 @@ VulkanAPI::setupLogicalDevice( )
      *
      * */
     m_queue_family_manager = std::make_unique<QueueFamilyManager>( m_vkPhysicalDevice );
-    auto graphicQueueList  = m_queue_family_manager->GetQueue( { vk::QueueFlagBits::eGraphics } );
+    auto graphicQueueList  = m_queue_family_manager->GetQueue( { vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer } );
 
     // check for surface support
     bool isSurfaceSupport = m_vkPhysicalDevice.getSurfaceSupportKHR( graphicQueueList[ 0 ].first, m_vkSurface.get( ) );
@@ -346,13 +346,22 @@ VulkanAPI::setupLogicalDevice( )
 
     m_vkQueue_family_indices.graphicsFamily = graphicQueueList[ 0 ];
     m_vkQueue_family_indices.presentFamily  = graphicQueueList[ 0 ].first;
+    m_vkTransfer_family_indices             = graphicQueueList[ 1 ];
 
-    std::unordered_set<uint32_t> queue_index_set { m_vkQueue_family_indices.graphicsFamily.first, m_vkQueue_family_indices.presentFamily };
-    float                        queuePriority = 1.0f;
+
+    std::size_t                                                maxPrioritySize = 0;
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> queue_index_set;
+    for ( const auto& pair : graphicQueueList )
+    {
+        queue_index_set[ pair.first ].insert( pair.second );
+        maxPrioritySize = std::max( maxPrioritySize, queue_index_set[ pair.first ].size( ) );
+    }
+
+    auto queuePriority = std::vector<float>( maxPrioritySize, 1.f );
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::ranges::transform( queue_index_set, std::back_inserter( queueCreateInfos ),
-                            [ queuePriority = &queuePriority ]( uint32_t index ) { return vk::DeviceQueueCreateInfo { vk::DeviceQueueCreateFlags( ), index, 1, queuePriority }; } );
+                            [ &queuePriority ]( auto& index ) { return vk::DeviceQueueCreateInfo { vk::DeviceQueueCreateFlags( ), index.first, (uint32_t) index.second.size( ), queuePriority.data( ) }; } );
 
 
     /**
@@ -534,7 +543,8 @@ VulkanAPI::setupGraphicCommand( )
      * */
 
     Logger::getInstance( ).LogLine( Logger::LogType::eWarn, "Using vk::CommandPoolCreateFlagBits::eResetCommandBuffer" );
-    m_vkGraphicCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.first } );
+    m_vkGraphicCommandPool  = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkQueue_family_indices.graphicsFamily.first } );
+    m_vkTransferCommandPool = m_vkLogicalDevice->createCommandPoolUnique( { { vk::CommandPoolCreateFlagBits::eResetCommandBuffer }, m_vkTransfer_family_indices.first } );
 
     setupGraphicCommandBuffers( );
 }
@@ -604,7 +614,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
     {
         // implicit call
         // m_vkGraphicCommandBuffers[ it_index ].reset( );
-        m_vkGraphicCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr } );
+        m_vkGraphicCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eSimultaneousUse } );
 
         vk::RenderPassBeginInfo render_pass_begin_info;
         render_pass_begin_info.setRenderPass( m_vkPipeline->getRenderPass( ) );
