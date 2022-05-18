@@ -175,10 +175,10 @@ private:
 public:
     explicit VulkanAPI( GLFWwindow* windows );
 
-    void setupAPI( std::string applicationName );
+    void setupAPI( const std::string& applicationName );
 
     [[nodiscard]] uint32_t acquireNextImage( );
-    void                   setRenderer( std::function<void( const vk::CommandBuffer& )>&& renderer ) { m_renderer = std::move( renderer ); };
+    void                   setRenderer( std::function<void( const vk::CommandBuffer&, uint32_t index )>&& renderer ) { m_renderer = std::move( renderer ); };
 
     /*
      *
@@ -202,6 +202,9 @@ public:
 
     inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
     inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
+
+    inline std::size_t getSwapChainImagesCount( ) { return m_vkSwap_chain_images.size( ); }
+    inline const auto& getDisplayExtent( ) { return m_vkDisplayExtent; }
 
     inline void invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
     inline void setShouldCreateSwapChain( bool should )
@@ -254,6 +257,7 @@ private:
      * Physical properties
      *
      * */
+    vk::Extent2D         m_vkDisplayExtent;
     vk::UniqueSurfaceKHR m_vkSurface;
     vk::UniqueDevice     m_vkLogicalDevice;
     vk::PhysicalDevice   m_vkPhysicalDevice;
@@ -314,7 +318,7 @@ private:
      * Custom detail(s)
      *
      * */
-    std::function<void( const vk::CommandBuffer& )> m_renderer;
+    std::function<void( const vk::CommandBuffer&, uint32_t index )> m_renderer;
 };
 
 #include "VulkanAPI_Impl.hpp"
