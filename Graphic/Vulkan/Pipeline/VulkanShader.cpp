@@ -50,6 +50,8 @@ VulkanShader::InitGLSLString( const vk::Device& device, const std::string& verte
     shaderc::CompileOptions options;
     options.SetOptimizationLevel( shaderc_optimization_level_performance );
 
+    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Compiling shader" );
+
     shaderc::SpvCompilationResult vertShaderModule =
         compiler.CompileGlslToSpv( vertexShader, shaderc_glsl_vertex_shader, "vertex shader", options );
     if ( vertShaderModule.GetCompilationStatus( ) != shaderc_compilation_status_success )
