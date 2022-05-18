@@ -20,6 +20,10 @@ if (WIN32 OR MSVC)
     find_package(glfw3 CONFIG REQUIRED)
     find_package(glm CONFIG REQUIRED)
 
+    if (MSVC)
+        add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    endif ()
+
     set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB glfw)

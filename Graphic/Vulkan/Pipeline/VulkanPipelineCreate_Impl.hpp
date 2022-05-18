@@ -12,7 +12,7 @@ template <typename VertexClass>
 void
 VulkanPipeline::SetupInputStage( float width, float height )
 {
-    createInfo.viewport = vk::Viewport{ 0.0f, 0.0f, width, height, 0.0f, 1.0f };
+    createInfo.viewport = vk::Viewport { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
     createInfo.scissor  = {
          {0, 0},
          vk::Extent2D( static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) )
@@ -27,21 +27,21 @@ VulkanPipeline::SetupInputStage( float width, float height )
                                    static_cast<uint32_t>( createInfo.shaderAttributeDescriptions.size( ) ),
                                    createInfo.shaderAttributeDescriptions.data( ) };
 
-    createInfo.inputAssembly = { { },
-                                 vk::PrimitiveTopology::eTriangleList,
-                                 false };
+    createInfo.inputAssemblyCreateInfo = { { },
+                                           vk::PrimitiveTopology::eTriangleList,
+                                           false };
 
-    createInfo.viewportState = { { },
-                                 1,
-                                 &createInfo.viewport,
-                                 1,
-                                 &createInfo.scissor };
+    createInfo.viewportStateCreateInfo = { { },
+                                           1,
+                                           &createInfo.viewport,
+                                           1,
+                                           &createInfo.scissor };
 }
 
 
 template <typename VertexClass, typename>
 void
-VulkanPipeline::Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format )
+VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR format )
 {
     SetupPipelineShaderStage( );
 
@@ -85,6 +85,8 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      * */
 
     SetupPipelineLayout( device );
+    SetupDescriptorPool( device, descriptorCount );
+    SetupDescriptorSet( device, descriptorCount );
 
     /**
      *
@@ -93,14 +95,14 @@ VulkanPipeline::Create( float width, float height, vk::Device& device, vk::Surfa
      * */
     SetupRenderPass( device, format );
 
-    createInfo.createInfo.setStageCount( createInfo.shaderStages.size( ) );
-    createInfo.createInfo.setStages( createInfo.shaderStages );
+    createInfo.createInfo.setStageCount( createInfo.shaderStagesCreateInfo.size( ) );
+    createInfo.createInfo.setStages( createInfo.shaderStagesCreateInfo );
     createInfo.createInfo.setPVertexInputState( &createInfo.vertexInputInfo );
-    createInfo.createInfo.setPInputAssemblyState( &createInfo.inputAssembly );
-    createInfo.createInfo.setPViewportState( &createInfo.viewportState );
-    createInfo.createInfo.setPRasterizationState( &createInfo.rasterizer );
-    createInfo.createInfo.setPMultisampleState( &createInfo.multisampling );
-    createInfo.createInfo.setPColorBlendState( &createInfo.colorBlending );
+    createInfo.createInfo.setPInputAssemblyState( &createInfo.inputAssemblyCreateInfo );
+    createInfo.createInfo.setPViewportState( &createInfo.viewportStateCreateInfo );
+    createInfo.createInfo.setPRasterizationState( &createInfo.rasterizerCreateInfo );
+    createInfo.createInfo.setPMultisampleState( &createInfo.multisamplingCreateInfo );
+    createInfo.createInfo.setPColorBlendState( &createInfo.colorBlendingCreateInfo );
     createInfo.createInfo.setLayout( m_vkPipelineLayout.get( ) );
     createInfo.createInfo.setRenderPass( m_vkRenderPass.get( ) );
     createInfo.createInfo.setSubpass( 0 );

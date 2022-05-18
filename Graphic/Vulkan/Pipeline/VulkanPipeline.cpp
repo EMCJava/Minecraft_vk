@@ -16,54 +16,54 @@ VulkanPipeline::SetupPipelineShaderStage( )
 {
     vk::PipelineShaderStageCreateInfo vert_createInfo { { }, vk::ShaderStageFlagBits::eVertex, m_vkShader->m_vkVertex_shader_module.get( ), "main" };
     vk::PipelineShaderStageCreateInfo frag_createInfo { { }, vk::ShaderStageFlagBits::eFragment, m_vkShader->m_vkFragment_shader_module.get( ), "main" };
-    createInfo.shaderStages = { vert_createInfo, frag_createInfo };
+    createInfo.shaderStagesCreateInfo = { vert_createInfo, frag_createInfo };
 }
 
 void
 VulkanPipeline::SetupRasterizationStage( )
 {
-    createInfo.rasterizer = { { },
-                              false,
-                              false,
-                              vk::PolygonMode::eFill,
-                              vk::CullModeFlagBits::eNone,
-                              vk::FrontFace::eCounterClockwise,
+    createInfo.rasterizerCreateInfo = { { },
+                                        false,
+                                        false,
+                                        vk::PolygonMode::eFill,
+                                        vk::CullModeFlagBits::eNone,
+                                        vk::FrontFace::eCounterClockwise,
 
-                              vk::Bool32( false ),
-                              { },
-                              { },
-                              { },
+                                        vk::Bool32( false ),
+                                        { },
+                                        { },
+                                        { },
 
-                              1.0f };
+                                        1.0f };
 
-    createInfo.multisampling = { { },
-                                 vk::SampleCountFlagBits::e1,
-                                 false,
-                                 1.0f,
-                                 nullptr,
-                                 false,
-                                 false };
+    createInfo.multisamplingCreateInfo = { { },
+                                           vk::SampleCountFlagBits::e1,
+                                           false,
+                                           1.0f,
+                                           nullptr,
+                                           false,
+                                           false };
 }
 
 void
 VulkanPipeline::SetupBlendingStage( )
 {
 
-    createInfo.colorBlendAttachment = { false,
-                                        vk::BlendFactor::eOne,
-                                        vk::BlendFactor::eZero,
-                                        vk::BlendOp::eAdd,
-                                        vk::BlendFactor::eOne,
-                                        vk::BlendFactor::eZero,
-                                        vk::BlendOp::eAdd,
-                                        vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB };
+    createInfo.colorBlendAttachmentState = { false,
+                                             vk::BlendFactor::eOne,
+                                             vk::BlendFactor::eZero,
+                                             vk::BlendOp::eAdd,
+                                             vk::BlendFactor::eOne,
+                                             vk::BlendFactor::eZero,
+                                             vk::BlendOp::eAdd,
+                                             vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB };
 
-    createInfo.colorBlending = {
+    createInfo.colorBlendingCreateInfo = {
         { },
         false,
         vk::LogicOp::eCopy,
         1,
-        &createInfo.colorBlendAttachment,
+        &createInfo.colorBlendAttachmentState,
         { 0, 0, 0, 0 }
     };
 }
@@ -72,17 +72,29 @@ void
 VulkanPipeline::SetupDynamicStage( )
 {
     createInfo.dynamicStates = {
-        vk::DynamicState::eViewport,
-        vk::DynamicState::eLineWidth };
+        vk::DynamicState::eViewport };
 
-    createInfo.dynamicState = { { }, static_cast<uint32_t>( std::size( createInfo.dynamicStates ) ), createInfo.dynamicStates.data( ) };
+    createInfo.dynamicStateCreateInfo = { { }, static_cast<uint32_t>( std::size( createInfo.dynamicStates ) ), createInfo.dynamicStates.data( ) };
 }
 
 
 void
 VulkanPipeline::SetupPipelineLayout( vk::Device& device )
 {
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo { { }, 0, nullptr, 0, nullptr };
+    vk::DescriptorSetLayoutBinding uboLayoutBinding;
+    uboLayoutBinding.setBinding( 0 )
+        .setDescriptorType( vk::DescriptorType::eUniformBuffer )
+        .setDescriptorCount( 1 )
+        .setStageFlags( vk::ShaderStageFlagBits::eVertex )
+        .setPImmutableSamplers( nullptr );
+
+    vk::DescriptorSetLayoutCreateInfo layoutInfo;
+    layoutInfo.setBindings( uboLayoutBinding );
+
+    createInfo.vertexUniformDescriptorSetLayout = device.createDescriptorSetLayoutUnique( layoutInfo );
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+    pipelineLayoutInfo.setSetLayouts( *createInfo.vertexUniformDescriptorSetLayout );
     m_vkPipelineLayout = device.createPipelineLayoutUnique( pipelineLayoutInfo );
 }
 
@@ -120,7 +132,7 @@ VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format
                                      vk::PipelineStageFlagBits::eColorAttachmentOutput,
                                      vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite };
 
-    createInfo.renderPassInfo = {
+    createInfo.renderPassCreateInfo = {
         { },
         1,
         &createInfo.colorAttachment,
@@ -129,5 +141,32 @@ VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format
         1,
         &createInfo.subpassDependency };
 
-    m_vkRenderPass = device.createRenderPassUnique( createInfo.renderPassInfo );
+    m_vkRenderPass = device.createRenderPassUnique( createInfo.renderPassCreateInfo );
+}
+
+void
+VulkanPipeline::SetupDescriptorPool( vk::Device& device, uint32_t descriptorCount )
+{
+    createInfo.descriptorPoolSize.setType( vk::DescriptorType::eUniformBuffer );
+    createInfo.descriptorPoolSize.setDescriptorCount( descriptorCount );
+
+    createInfo.descriptorPoolCreateInfo.setPoolSizes( createInfo.descriptorPoolSize );
+    createInfo.descriptorPoolCreateInfo.setMaxSets( descriptorCount );
+
+    createInfo.descriptorPool = device.createDescriptorPoolUnique( createInfo.descriptorPoolCreateInfo );
+}
+
+void
+VulkanPipeline::SetupDescriptorSet( vk::Device& device, uint32_t descriptorCount )
+{
+    // TODO: save?
+    std::vector<vk::DescriptorSetLayout> layouts( descriptorCount, *createInfo.vertexUniformDescriptorSetLayout );
+
+    vk::DescriptorSetAllocateInfo allocInfo;
+    allocInfo.setDescriptorPool( *createInfo.descriptorPool )
+        .setDescriptorSetCount( descriptorCount )
+        .setSetLayouts( layouts );
+
+    createInfo.vertexUniformDescriptorSetsPtr.resize( descriptorCount );
+    createInfo.vertexUniformDescriptorSetsPtr = device.allocateDescriptorSets( allocInfo );
 }

@@ -32,24 +32,29 @@ protected:
 
         std::vector<vk::VertexInputAttributeDescription> shaderAttributeDescriptions;
         std::vector<vk::VertexInputBindingDescription>   shaderBindingDescriptions;
-        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages;
+        std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesCreateInfo;
+        std::vector<vk::DescriptorSet>                   vertexUniformDescriptorSetsPtr;
 
-        vk::PipelineVertexInputStateCreateInfo           vertexInputInfo;
-        vk::PipelineInputAssemblyStateCreateInfo         inputAssembly;
-        vk::PipelineViewportStateCreateInfo              viewportState;
-        vk::PipelineRasterizationStateCreateInfo         rasterizer;
-        vk::PipelineMultisampleStateCreateInfo           multisampling;
-        vk::PipelineColorBlendAttachmentState            colorBlendAttachment;
-        vk::PipelineColorBlendStateCreateInfo            colorBlending;
-        std::vector<vk::DynamicState>                    dynamicStates;
-        vk::PipelineDynamicStateCreateInfo               dynamicState;
-        vk::PipelineLayoutCreateInfo                     pipelineLayoutInfo;
-        vk::AttachmentDescription                        colorAttachment;
-        vk::AttachmentReference                          colorAttachmentRef;
-        vk::SubpassDescription                           subpass;
-        vk::SubpassDependency                            subpassDependency;
-        vk::RenderPassCreateInfo                         renderPassInfo;
-
+        // should be destruct inorder
+        vk::PipelineVertexInputStateCreateInfo   vertexInputInfo;
+        vk::PipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo;
+        vk::PipelineViewportStateCreateInfo      viewportStateCreateInfo;
+        vk::PipelineRasterizationStateCreateInfo rasterizerCreateInfo;
+        vk::PipelineMultisampleStateCreateInfo   multisamplingCreateInfo;
+        vk::PipelineColorBlendAttachmentState    colorBlendAttachmentState;
+        vk::PipelineColorBlendStateCreateInfo    colorBlendingCreateInfo;
+        std::vector<vk::DynamicState>            dynamicStates;
+        vk::PipelineDynamicStateCreateInfo       dynamicStateCreateInfo;
+        vk::PipelineLayoutCreateInfo             pipelineLayoutCreateInfo;
+        vk::AttachmentDescription                colorAttachment;
+        vk::AttachmentReference                  colorAttachmentRef;
+        vk::SubpassDescription                   subpass;
+        vk::SubpassDependency                    subpassDependency;
+        vk::RenderPassCreateInfo                 renderPassCreateInfo;
+        vk::UniqueDescriptorSetLayout            vertexUniformDescriptorSetLayout;
+        vk::DescriptorPoolSize                   descriptorPoolSize;
+        vk::DescriptorPoolCreateInfo             descriptorPoolCreateInfo;
+        vk::UniqueDescriptorPool                 descriptorPool;
 
         vk::GraphicsPipelineCreateInfo createInfo;
     };
@@ -74,16 +79,22 @@ protected:
 
     virtual void SetupPipelineLayout( vk::Device& );
 
+    virtual void SetupDescriptorPool( vk::Device&, uint32_t descriptorCount );
+
+    virtual void SetupDescriptorSet( vk::Device&, uint32_t descriptorCount );
+
     virtual void SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format );
 
 public:
     explicit VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader );
 
     template <typename VertexClass = DataType::VertexDetail, typename = std::enable_if_t<std::is_base_of_v<DataType::VertexDetail, VertexClass>>>
-    void Create( float width, float height, vk::Device& device, vk::SurfaceFormatKHR format );
+    void Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR format );
 
     [[nodiscard]] vk::Pipeline   getPipeline( ) const { return m_vkPipeline.begin( )->get( ); }
     [[nodiscard]] vk::RenderPass getRenderPass( ) const { return m_vkRenderPass.get( ); }
+
+    friend class VulkanAPI;
 };
 
 #include "VulkanPipelineCreate_Impl.hpp"

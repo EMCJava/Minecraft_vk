@@ -203,6 +203,17 @@ public:
     inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
     inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
 
+    inline const auto& getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
+    inline auto&                  getDescriptorSets( ) { return m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr; }
+    inline vk::WriteDescriptorSet getWriteDescriptorSetSetup( size_t index )
+    {
+        assert( m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr.size( ) > index );
+
+        vk::WriteDescriptorSet descriptorWrite;
+        descriptorWrite.setDstSet( m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr[ index ] );
+        return descriptorWrite;
+    }
+
     inline std::size_t getSwapChainImagesCount( ) { return m_vkSwap_chain_images.size( ); }
     inline const auto& getDisplayExtent( ) { return m_vkDisplayExtent; }
 

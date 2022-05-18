@@ -2,6 +2,11 @@
 // Created by loys on 16/1/2022.
 //
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+
 #include "MainApplication.hpp"
 
 #include "Include/GlobalConfig.hpp"
@@ -10,6 +15,12 @@
 #include <chrono>
 #include <thread>
 #include <unordered_set>
+
+struct TransformUniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
 
 MainApplication::MainApplication( )
 {
@@ -71,7 +82,45 @@ MainApplication::run( )
         indexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
     }
 
-    m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer ]( const vk::CommandBuffer& command_buffer ) {
+    const auto                           swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
+    std::vector<VulkanAPI::VKBufferMeta> uniformBuffers( swapChainImagesCount );
+
+    {
+        for ( auto& buffer : uniformBuffers )
+            buffer.Create( sizeof( TransformUniformBufferObject ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
+
+        for ( size_t i = 0; i < swapChainImagesCount; i++ )
+        {
+            vk::DescriptorBufferInfo bufferInfo;
+            bufferInfo.setBuffer( *uniformBuffers[ i ].buffer )
+                .setOffset( 0 )
+                .setRange( sizeof( TransformUniformBufferObject ) );
+
+            m_graphics_api->getLogicalDevice( ).updateDescriptorSets( m_graphics_api->getWriteDescriptorSetSetup( i )
+                                                                          .setDstBinding( 0 )
+                                                                          .setDstArrayElement( 0 )
+                                                                          .setDescriptorType( vk::DescriptorType::eUniformBuffer )
+                                                                          .setDescriptorCount( 1 )
+                                                                          .setBufferInfo( bufferInfo ),
+                                                                      nullptr );
+        }
+    }
+    m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer, &uniformBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
+        static auto startTime = std::chrono::high_resolution_clock::now( );
+
+        auto  currentTime = std::chrono::high_resolution_clock::now( );
+        float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
+
+        TransformUniformBufferObject ubo { };
+        ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 0.0f, 1.0f ) );
+        ubo.view  = glm::lookAt( glm::vec3( 2.0f, 2.0f, 2.0f ), glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( 0.0f, 0.0f, 1.0f ) );
+        ubo.proj  = glm::perspective( glm::radians( 45.0f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 10.0f );
+
+        // for vulkan coordinate system
+        ubo.proj[ 1 ][ 1 ] *= -1;
+        uniformBuffers[ index ].BindBuffer( &ubo, sizeof( TransformUniformBufferObject ), *m_graphics_api );
+        command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
+
         command_buffer.bindVertexBuffers( 0, vertexBuffer.buffer.get( ), vk::DeviceSize( 0 ) );
         command_buffer.bindIndexBuffer( indexBuffer.buffer.get( ), 0, vk::IndexType::eUint16 );
 
@@ -142,7 +191,7 @@ MainApplication::renderThread( )
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
         // m_graphics_api->cycleGraphicCommandBuffers( image_index );
-        m_graphics_api->presentFrame<false>( image_index );
+        m_graphics_api->presentFrame<true>( image_index );
         // m_graphics_api->waitPresent( );
     }
 }
