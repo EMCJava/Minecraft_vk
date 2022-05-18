@@ -531,6 +531,8 @@ VulkanAPI::setupPipeline( )
 
         return m_vkLogicalDevice->createFramebufferUnique( framebufferInfo );
     } );
+
+    if ( m_pipeline_create_callback ) m_pipeline_create_callback( );
 }
 
 void

@@ -84,11 +84,7 @@ MainApplication::run( )
 
     const auto                           swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
     std::vector<VulkanAPI::VKBufferMeta> uniformBuffers( swapChainImagesCount );
-
-    {
-        for ( auto& buffer : uniformBuffers )
-            buffer.Create( sizeof( TransformUniformBufferObject ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
-
+    const auto                           updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers ]( ) {
         for ( size_t i = 0; i < swapChainImagesCount; i++ )
         {
             vk::DescriptorBufferInfo bufferInfo;
@@ -97,14 +93,23 @@ MainApplication::run( )
                 .setRange( sizeof( TransformUniformBufferObject ) );
 
             m_graphics_api->getLogicalDevice( ).updateDescriptorSets( m_graphics_api->getWriteDescriptorSetSetup( i )
-                                                                          .setDstBinding( 0 )
-                                                                          .setDstArrayElement( 0 )
-                                                                          .setDescriptorType( vk::DescriptorType::eUniformBuffer )
-                                                                          .setDescriptorCount( 1 )
-                                                                          .setBufferInfo( bufferInfo ),
-                                                                      nullptr );
+                                                                                                    .setDstBinding( 0 )
+                                                                                                    .setDstArrayElement( 0 )
+                                                                                                    .setDescriptorType( vk::DescriptorType::eUniformBuffer )
+                                                                                                    .setDescriptorCount( 1 )
+                                                                                                    .setBufferInfo( bufferInfo ),
+                                                                                                nullptr );
         }
+    };
+
+    {
+        for ( auto& buffer : uniformBuffers )
+            buffer.Create( sizeof( TransformUniformBufferObject ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
+
+        updateDescriptorSet( );
+        m_graphics_api->setPipelineCreateCallback( updateDescriptorSet );
     }
+
     m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer, &uniformBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
         static auto startTime = std::chrono::high_resolution_clock::now( );
 

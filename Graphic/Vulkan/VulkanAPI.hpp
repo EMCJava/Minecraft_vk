@@ -179,6 +179,7 @@ public:
 
     [[nodiscard]] uint32_t acquireNextImage( );
     void                   setRenderer( std::function<void( const vk::CommandBuffer&, uint32_t index )>&& renderer ) { m_renderer = std::move( renderer ); };
+    void                   setPipelineCreateCallback( std::function<void( )>&& callback ) { m_pipeline_create_callback = std::move( callback ); };
 
     /*
      *
@@ -203,7 +204,7 @@ public:
     inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
     inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
 
-    inline const auto& getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
+    inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
     inline auto&                  getDescriptorSets( ) { return m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr; }
     inline vk::WriteDescriptorSet getWriteDescriptorSetSetup( size_t index )
     {
@@ -330,6 +331,7 @@ private:
      *
      * */
     std::function<void( const vk::CommandBuffer&, uint32_t index )> m_renderer;
+    std::function<void( )>                                          m_pipeline_create_callback;
 };
 
 #include "VulkanAPI_Impl.hpp"
