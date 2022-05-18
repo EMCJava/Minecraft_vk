@@ -59,7 +59,7 @@ VulkanAPI::VulkanAPI( GLFWwindow* windows )
 }
 
 void
-VulkanAPI::setupAPI( std::string applicationName )
+VulkanAPI::setupAPI( const std::string& applicationName )
 {
     vk::ApplicationInfo appInfo;
     appInfo.setPApplicationName( applicationName.c_str( ) );
@@ -493,7 +493,7 @@ void
 VulkanAPI::setupPipeline( )
 {
 
-    const vk::Extent2D display_extent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
+    m_vkDisplayExtent = m_vkSwap_chain_detail.getMaxSwapExtent( m_window );
 
     /**
      *
@@ -511,7 +511,7 @@ VulkanAPI::setupPipeline( )
      *
      * */
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
-    m_vkPipeline->Create<DataType::ColoredVertex>( display_extent.width, display_extent.height, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
+    m_vkPipeline->Create<DataType::ColoredVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
 
     /**
      *
@@ -520,13 +520,13 @@ VulkanAPI::setupPipeline( )
      * */
     m_vkFrameBuffers.clear( );
     m_vkFrameBuffers.reserve( m_vkSwap_chain_image_views.size( ) );
-    std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ display_extent, this ]( const auto& image_view ) {
+    std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ this ]( const auto& image_view ) {
         vk::FramebufferCreateInfo framebufferInfo { };
         framebufferInfo.setRenderPass( m_vkPipeline->getRenderPass( ) );
         framebufferInfo.setAttachmentCount( 1 );
         framebufferInfo.setAttachments( image_view.get( ) );
-        framebufferInfo.setWidth( display_extent.width );
-        framebufferInfo.setHeight( display_extent.height );
+        framebufferInfo.setWidth( m_vkDisplayExtent.width );
+        framebufferInfo.setHeight( m_vkDisplayExtent.height );
         framebufferInfo.setLayers( 1 );
 
         return m_vkLogicalDevice->createFramebufferUnique( framebufferInfo );
@@ -634,7 +634,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
          * Rendering
          *
          * */
-        m_renderer( m_vkGraphicCommandBuffers[ it_index ] );
+        m_renderer( m_vkGraphicCommandBuffers[ it_index ], it_index );
 
         m_vkGraphicCommandBuffers[ it_index ].endRenderPass( );
         m_vkGraphicCommandBuffers[ it_index ].end( );
