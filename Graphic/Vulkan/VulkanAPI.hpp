@@ -201,10 +201,24 @@ public:
     inline void waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
     inline void waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
 
+    inline vk::Instance&       getVulkanInstance( ) { return *m_vkInstance; };
     inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
     inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
 
+    inline const std::pair<uint32_t, uint32_t>& getDesiredQueueIndices( const void* key ) const
+    {
+        return m_saved_queue_index.at( m_requested_queue.at( key ).first );
+    }
+
+    inline void addDesiredQueueType( const void* key, const vk::QueueFlagBits& type )
+    {
+        assert( !m_requested_queue.contains( key ) );
+        m_requested_queue[ key ] = { 0, type };
+    }
+
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
+    inline auto&                  getRenderPass( ) { return *m_vkPipeline->m_vkRenderPass; }
+    inline auto&                  getDescriptorPool( ) { return *m_vkPipeline->createInfo.descriptorPool; }
     inline auto&                  getDescriptorSets( ) { return m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr; }
     inline vk::WriteDescriptorSet getWriteDescriptorSetSetup( size_t index )
     {
@@ -279,11 +293,12 @@ private:
      * Queues
      *
      * */
-    std::unique_ptr<QueueFamilyManager> m_queue_family_manager;
-    QueueFamilyIndices                  m_vkQueue_family_indices;
-    std::pair<uint32_t, uint32_t>       m_vkTransfer_family_indices;
-    vk::Queue                           m_vkGraphicQueue;
-    vk::Queue                           m_vkPresentQueue;
+    std::unique_ptr<QueueFamilyManager>        m_queue_family_manager;
+    std::vector<std::pair<uint32_t, uint32_t>> m_saved_queue_index;
+    QueueFamilyIndices                         m_vkQueue_family_indices;
+    std::pair<uint32_t, uint32_t>              m_vkTransfer_family_indices;
+    vk::Queue                                  m_vkGraphicQueue;
+    vk::Queue                                  m_vkPresentQueue;
 
     /**
      *
@@ -330,8 +345,9 @@ private:
      * Custom detail(s)
      *
      * */
-    std::function<void( const vk::CommandBuffer&, uint32_t index )> m_renderer;
-    std::function<void( )>                                          m_pipeline_create_callback;
+    std::unordered_map<const void*, std::pair<uint32_t, vk::QueueFlagBits>> m_requested_queue;
+    std::function<void( const vk::CommandBuffer&, uint32_t index )>         m_renderer;
+    std::function<void( )>                                                  m_pipeline_create_callback;
 };
 
 #include "VulkanAPI_Impl.hpp"

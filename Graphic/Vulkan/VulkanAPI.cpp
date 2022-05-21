@@ -334,24 +334,36 @@ VulkanAPI::setupLogicalDevice( )
      * Fresh queue family
      *
      * */
+
+    std::vector<vk::QueueFlagBits> queueList { vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer };
+
+    // preserved indices
+    assert( !( m_requested_queue.contains( reinterpret_cast<void* const>( 0 ) ) && m_requested_queue.contains( reinterpret_cast<void* const>( 1 ) ) ) );
+    
+    for ( auto& queue : m_requested_queue )
+    {
+        queue.second.first = queueList.size( );
+        queueList.emplace_back( queue.second.second );
+    }
+
     m_queue_family_manager = std::make_unique<QueueFamilyManager>( m_vkPhysicalDevice );
-    auto graphicQueueList  = m_queue_family_manager->GetQueue( { vk::QueueFlagBits::eGraphics, vk::QueueFlagBits::eTransfer } );
+    m_saved_queue_index    = m_queue_family_manager->GetQueue( queueList );
 
     // check for surface support
-    bool isSurfaceSupport = m_vkPhysicalDevice.getSurfaceSupportKHR( graphicQueueList[ 0 ].first, m_vkSurface.get( ) );
+    bool isSurfaceSupport = m_vkPhysicalDevice.getSurfaceSupportKHR( m_saved_queue_index[ 0 ].first, m_vkSurface.get( ) );
     if ( !isSurfaceSupport )
     {
         throw std::runtime_error( "No surface support for the first vk::QueueFlagBits::eGraphics" );
     }
 
-    m_vkQueue_family_indices.graphicsFamily = graphicQueueList[ 0 ];
-    m_vkQueue_family_indices.presentFamily  = graphicQueueList[ 0 ].first;
-    m_vkTransfer_family_indices             = graphicQueueList[ 1 ];
+    m_vkQueue_family_indices.graphicsFamily = m_saved_queue_index[ 0 ];
+    m_vkQueue_family_indices.presentFamily  = m_saved_queue_index[ 0 ].first;
+    m_vkTransfer_family_indices             = m_saved_queue_index[ 1 ];
 
 
     std::size_t                                                maxPrioritySize = 0;
     std::unordered_map<uint32_t, std::unordered_set<uint32_t>> queue_index_set;
-    for ( const auto& pair : graphicQueueList )
+    for ( const auto& pair : m_saved_queue_index )
     {
         queue_index_set[ pair.first ].insert( pair.second );
         maxPrioritySize = std::max( maxPrioritySize, queue_index_set[ pair.first ].size( ) );
