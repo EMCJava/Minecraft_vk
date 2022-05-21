@@ -32,12 +32,17 @@ class MainApplication
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
+    struct ImGuiIO* m_imgui_io;
+    vk::UniqueDescriptorPool m_imguiDescriptorPool;
+
     void InitWindow( );
+    void InitImgui( );
     void RecreateWindow( bool isFullScreen );
     void cleanUp( );
 
     std::atomic<bool> m_render_thread_should_run;
     void              renderThread( );
+    void              renderImgui( );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );

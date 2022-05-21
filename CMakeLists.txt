@@ -41,6 +41,8 @@ else ()
 endif ()
 
 include_directories(${Vulkan_INCLUDE_DIRS})
+include_directories(Include/Imgui/)
+include_directories(Include/Imgui/backends)
 
 add_subdirectory(Include)
 add_subdirectory(Utility)
