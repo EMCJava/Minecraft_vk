@@ -73,19 +73,18 @@ MainApplication::run( )
         using Usage = vk::BufferUsageFlagBits;
 
         stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc, *m_graphics_api );
-
-        stagingBuffer.BindBuffer( vertices.data( ), verticesDataSize, *m_graphics_api );
         vertexBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst, *m_graphics_api,
                              vk::MemoryPropertyFlagBits::eDeviceLocal );
-
-        bufferRegion.setSize( verticesDataSize );
-        vertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
-
-        stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, *m_graphics_api );
         indexBuffer.Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst, *m_graphics_api,
                             vk::MemoryPropertyFlagBits::eDeviceLocal );
 
+
+        bufferRegion.setSize( verticesDataSize );
+        stagingBuffer.BindBuffer( vertices.data( ), verticesDataSize, *m_graphics_api );
+        vertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
+
         bufferRegion.setSize( indicesDataSize );
+        stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, *m_graphics_api );
         indexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
     }
 
