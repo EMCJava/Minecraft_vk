@@ -1,9 +1,7 @@
-#include <Include/GLM.hpp>
 #include <Include/GlobalConfig.hpp>
 #include <Minecraft/Application/MainApplication.hpp>
 
 #include <iostream>
-#include <cassert>
 
 int
 main( )
