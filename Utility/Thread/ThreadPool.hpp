@@ -5,6 +5,10 @@
 #ifndef MINECRAFT_VK_THREADPOOL_HPP
 #define MINECRAFT_VK_THREADPOOL_HPP
 
+#if _MSC_VER
+#include <Utility/MSVC.hpp>
+#endif
+
 #include <boost/sort/sort.hpp>
 
 #include <thread>

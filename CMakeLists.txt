@@ -12,6 +12,7 @@ include_directories(.)
 
 find_package(Threads)
 find_package(Vulkan REQUIRED)
+find_package(Boost 1.79.0 COMPONENTS)
 
 add_executable(Minecraft_vk main.cpp)
 
@@ -43,6 +44,7 @@ endif ()
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(Include/Imgui/)
 include_directories(Include/Imgui/backends)
+include_directories(${Boost_INCLUDE_DIRS})
 
 add_subdirectory(Include)
 add_subdirectory(Utility)
