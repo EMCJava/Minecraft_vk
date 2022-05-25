@@ -60,18 +60,25 @@ public:
         return j;
     }
 
+    static inline nlohmann::json&
+    getMinecraftConfigData( )
+    {
+        return getConfigData( )[ "minecraft" ];
+    }
+
     static bool
     LoadFromFile( const std::string& path )
     {
         // initialize config instance
-        auto&          existing_config = getConfigData( );
+        auto& existing_config = getConfigData( );
 
         std::ifstream  file( path );
         nlohmann::json j;
 
         if ( file )
             file >> j;
-        else return false;
+        else
+            return false;
 
         bool hasData = !j.is_null( );
         if ( hasData )

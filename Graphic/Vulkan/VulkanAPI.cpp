@@ -238,7 +238,7 @@ VulkanAPI::isDeviceSupportAllExtensions( const vk::PhysicalDevice& device )
      * Get user config
      *
      * */
-    auto required_extension_properties = GlobalConfig::getConfigData( )[ "logical_device_extensions" ];
+    auto required_extension_properties = GlobalConfig::getConfigData( )["vulkan"][ "logical_device_extensions" ];
     return std::ranges::all_of( required_extension_properties.begin( ), required_extension_properties.end( ),
                                 [ &extension_properties_name_set ]( const auto& property ) { return extension_properties_name_set.contains( property.template get<std::string>( ) ); } );
 }

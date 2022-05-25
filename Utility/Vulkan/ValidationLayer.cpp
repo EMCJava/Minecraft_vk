@@ -32,7 +32,7 @@ ValidationLayer::LoadLayers( )
 void
 ValidationLayer::LoadRequiredLayers( )
 {
-    for ( auto& layer : GlobalConfig::getConfigData( )[ "validation_layer" ] )
+    for ( auto& layer : GlobalConfig::getConfigData( )["vulkan"][ "validation_layer" ] )
         m_requiredLayer.emplace_back( layer.get<std::string>( ) );
 }
 
