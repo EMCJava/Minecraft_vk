@@ -7,11 +7,13 @@
 
 #include "ChunkCache.hpp"
 
+#include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
 
 class ChunkPool : public ThreadPool<ChunkCache>
 {
 private:
+    CoordinateType                                   m_RemoveJobAfterRange = 0;
     BlockCoordinate                                  m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread>                    m_UpdateThread;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
@@ -26,17 +28,29 @@ private:
     {
         while ( !st.stop_requested( ) )
         {
+            if ( m_RemoveJobAfterRange > 0 )
+            {
+
+                m_PendingThreads.erase( std::remove_if( m_PendingThreads.begin( ), m_PendingThreads.end( ),
+                                                        [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) > range; } ),
+                                        m_PendingThreads.end( ) );
+            }
+
             auto finished = UpdateSorted( &ChunkPool::LoadChunk,
                                           [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
                                               return a->chunk.ManhattanDistance( centre ) < b->chunk.ManhattanDistance( centre );
                                           } );
-            for ( auto& cache : finished )
+            if ( !finished.empty( ) )
             {
-                cache->initializing = false;
-                cache->initialized  = true;
+                for ( auto& cache : finished )
+                {
+                    cache->initializing = false;
+                    cache->initialized  = true;
+                }
+            } else
+            {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
             }
-
-            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
         }
 
         while ( !m_RunningThreads.empty( ) )
@@ -61,6 +75,11 @@ public:
     void SetCentre( BlockCoordinate centre )
     {
         m_PrioritizeCoordinate = centre;
+    }
+
+    void SetValidRange( CoordinateType range )
+    {
+        m_RemoveJobAfterRange = range;
     }
 
     void StartThread( )
