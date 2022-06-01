@@ -8,7 +8,7 @@
 class Tickable
 {
 public:
-    void Tick( );
+    inline void Tick( float deltaTime ) { };
 };
 
 #endif   // MINECRAFT_VK_TICKABLE_HPP
