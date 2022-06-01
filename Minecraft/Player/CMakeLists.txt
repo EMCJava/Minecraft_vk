@@ -1,0 +1,1 @@
+add_library(PlayerLib Player.hpp Player.cpp)

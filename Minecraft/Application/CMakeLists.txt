@@ -1,2 +1,2 @@
 add_library(MainApplicationLib MainApplication.hpp MainApplication.cpp)
-target_link_libraries(MainApplicationLib ImguiLib VulkanAPILib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib ${WINDOW_PLATFORM_LIB})
+target_link_libraries(MainApplicationLib ImguiLib VulkanAPILib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib MinecraftLib ${WINDOW_PLATFORM_LIB})

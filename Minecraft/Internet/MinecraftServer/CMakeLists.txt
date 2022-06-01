@@ -1,0 +1,3 @@
+add_library(MinecraftServerLib MinecraftServer.hpp MinecraftServer.cpp)
+
+target_link_libraries(MinecraftServerLib MinecraftWorldLib)

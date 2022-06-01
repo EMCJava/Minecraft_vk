@@ -4,6 +4,9 @@ project(Minecraft_vk CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+
 # set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
 # set(BUILD_SHARED_LIBS ON)
 # set(CMAKE_EXE_LINKER_FLAGS "-static")
@@ -12,7 +15,7 @@ include_directories(.)
 
 find_package(Threads)
 find_package(Vulkan REQUIRED)
-find_package(Boost 1.79.0 COMPONENTS)
+find_package(Boost 1.78.0 COMPONENTS)
 
 add_executable(Minecraft_vk main.cpp)
 
@@ -53,3 +56,4 @@ add_subdirectory(Minecraft)
 
 target_link_libraries(Minecraft_vk MainApplicationLib)
 target_link_libraries(Minecraft_vk MinecraftWorldLib)
+target_link_libraries(Minecraft_vk ChunkPoolLib)

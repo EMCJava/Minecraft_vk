@@ -1,2 +1,3 @@
 add_subdirectory(Chunk)
 add_library(MinecraftWorldLib MinecraftWorld.hpp MinecraftWorld.cpp)
+target_link_libraries(MinecraftWorldLib MinecraftServerLib)
