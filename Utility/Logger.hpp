@@ -13,8 +13,45 @@
 
 #include <Utility/String/StringConcatConstexpr.hpp>
 
-template <bool LogColorPrefix = true, bool IncludeTime = true>
-class LoggerBase
+
+template <bool UseMutex = true>
+class LogFunction
+{
+    template <typename Ty>
+    inline void
+    LogFunc( Ty&& elm );
+};
+
+template <>
+class LogFunction<true>
+{
+public:
+    std::mutex output_mutex;
+
+    template <typename Ty>
+    inline void
+    LogFunc( Ty&& elm )
+    {
+        std::lock_guard<std::mutex> lock( output_mutex );
+        std::cout << std::forward<Ty>( elm ) << std::flush;
+    }
+};
+
+template <>
+class LogFunction<false>
+{
+public:
+    template <typename Ty>
+    inline void
+    LogFunc( Ty&& elm )
+    {
+        std::cout << std::forward<Ty>( elm ) << std::flush;
+    }
+};
+
+
+template <bool UseMutex = true, bool LogColorPrefix = true, bool IncludeTime = true>
+class LoggerBase : public LogFunction<UseMutex>
 {
 
 private:
@@ -120,7 +157,7 @@ public:
     {
         if constexpr ( std::is_same<typename std::decay<Ty>::type, Color>::value || std::is_same<typename std::decay<Ty>::type, LogType>::value )
         {
-            LogWithColor( elm, elms... );
+            LogWithPrefix( elm, elms... );
         } else
         {
             std::stringstream output;
@@ -132,30 +169,30 @@ public:
             }
 
             output << std::forward<Ty>( elm );
-            ( ( output << ' ' << std::forward<Tys>( elms ) ), ... ) << std::flush;
+            ( ( output << ' ' << std::forward<Tys>( elms ) ), ... );
+            output << std::flush;
 
-            Log( output.str( ) );
+            this->LogFunc( output.str( ) );
         }
     }
 
     template <typename Ty, typename... Tys>
     void
-    LogWithColor( Ty&& colorElement, Tys&&... elms )
+    LogWithPrefix( Ty&& colorElement, Tys&&... elms )
     {
-        if constexpr ( LogColorPrefix || !std::is_same<typename std::decay<Ty>::type, Color>::value )
-            Log( prefix( colorElement ) );
+        std::stringstream output;
 
-        Log( std::forward<Tys>( elms )... );
+        if constexpr ( LogColorPrefix || !std::is_same<typename std::decay<Ty>::type, Color>::value )
+            output << prefix( colorElement );
+
+        ( ( output << ' ' << std::forward<Tys>( elms ) ), ... );
 
         if constexpr ( LogColorPrefix )
-            Log( prefix( Color::wReset ) );
-    }
+            output << prefix( Color::wReset );
 
-    template <typename Ty>
-    inline void
-    Log( Ty&& elm )
-    {
-        std::cout << std::forward<Ty>( elm ) << std::flush;
+        output << std::flush;
+
+        this->LogFunc( output.str( ) );
     }
 
     template <typename Ty>
@@ -167,6 +204,6 @@ public:
     }
 };
 
-using Logger = LoggerBase<false>;
+using Logger = LoggerBase<false, false>;
 
 #endif   // MINECRAFT_VK_UTILITY_LOGGER_HPP
