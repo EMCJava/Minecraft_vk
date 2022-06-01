@@ -3,3 +3,8 @@
 //
 
 #include "Chunk.hpp"
+
+Chunk::~Chunk( )
+{
+    delete[] m_Blocks;
+}

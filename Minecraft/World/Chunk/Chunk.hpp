@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_CHUNK_HPP
 #define MINECRAFT_VK_CHUNK_HPP
 
+#include <Minecraft/Block/Block.hpp>
+#include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 
 #include <cmath>
@@ -14,7 +16,18 @@ class Chunk
 
     ChunkCoordinate m_coordinate;
 
+    Block* m_Blocks { };
+
 public:
+    Chunk( ) = default;
+    ~Chunk( );
+
+    Chunk( const Chunk& ) = delete;
+    Chunk( Chunk&& )      = delete;
+
+    Chunk operator=( const Chunk& ) = delete;
+    Chunk operator=( Chunk&& )      = delete;
+
     inline const ChunkCoordinate& SetCoordinate( const ChunkCoordinate& coordinate ) { return m_coordinate = coordinate; }
     inline const ChunkCoordinate& GetCoordinate( ) { return m_coordinate; }
 
@@ -29,6 +42,8 @@ public:
             + std::abs( std::get<1>( m_coordinate ) - std::get<1>( other ) )
             + std::abs( std::get<2>( m_coordinate ) - std::get<2>( other ) );
     }
+
+    friend class ChunkCache;
 };
 
 
