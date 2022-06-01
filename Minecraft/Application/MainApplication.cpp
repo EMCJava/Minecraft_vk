@@ -36,6 +36,9 @@ MainApplication::MainApplication( )
 
     InitImgui( );
 
+    m_MinecraftInstance = std::make_unique<Minecraft>( );
+    m_MinecraftInstance->InitServer();
+
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
 
@@ -322,6 +325,19 @@ MainApplication::renderThread( )
             Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "fps:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ) );
             start_time = std::chrono::high_resolution_clock::now( );
         }
+
+        /*
+         *
+         * Update game loop
+         *
+         * */
+        m_MinecraftInstance->Tick(m_imgui_io->DeltaTime);
+
+        /*
+         *
+         * Render
+         *
+         * */
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
         // m_graphics_api->cycleGraphicCommandBuffers( image_index );

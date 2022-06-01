@@ -10,6 +10,7 @@
 #include "Graphic/Vulkan/Pipeline/VulkanPipeline.hpp"
 #include "Graphic/Vulkan/VulkanAPI.hpp"
 #include "Include/GlobalConfig.hpp"
+#include "Minecraft/Minecraft.hpp"
 #include "Utility/Logger.hpp"
 #include "Utility/Vulkan/ValidationLayer.hpp"
 #include "Utility/Vulkan/VulkanExtension.hpp"
@@ -34,6 +35,13 @@ class MainApplication
 
     struct ImGuiIO* m_imgui_io;
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
+
+    /*
+     *
+     * Minecraft
+     *
+     * */
+    std::unique_ptr<Minecraft> m_MinecraftInstance;
 
     void InitWindow( );
     void InitImgui( );
