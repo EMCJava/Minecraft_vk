@@ -9,7 +9,6 @@
 
 #include <Minecraft/util/MinecraftType.h>
 
-#include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
 
 #include <unordered_map>
@@ -21,11 +20,7 @@ public:
     bool  initialized  = false;
     bool  initializing = false;
 
-    void ResetLoad( )
-    {
-//        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Loading [", std::get<0>( chunk.GetCoordinate( ) ), "][",
-//                                        std::get<1>( chunk.GetCoordinate( ) ), "][", std::get<2>( chunk.GetCoordinate( ) ), "]" );
-    }
+    void ResetLoad( );
 };
 
 

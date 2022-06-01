@@ -3,3 +3,11 @@
 //
 
 #include "ChunkCache.hpp"
+
+#include <Utility/Logger.hpp>
+
+void
+ChunkCache::ResetLoad( )
+{
+    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, chunk.GetCoordinate( ) );
+}
