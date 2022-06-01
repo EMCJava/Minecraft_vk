@@ -14,8 +14,21 @@ class MinecraftWorld : public Tickable
 {
     std::unique_ptr<ChunkPool> m_ChunkPool;
 
+    /*
+     *
+     * Config
+     *
+     * */
+    CoordinateType m_ChunkLoadingRange { };
+
+    float m_TimeSinceChunkLoad { };
+
 public:
     MinecraftWorld( );
+
+    void IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius );
+
+    void Tick( float deltaTime );
 };
 
 
