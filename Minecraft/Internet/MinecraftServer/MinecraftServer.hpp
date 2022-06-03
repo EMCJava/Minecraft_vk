@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_MINECRAFTSERVER_HPP
 #define MINECRAFT_VK_MINECRAFTSERVER_HPP
 
+#include <Utility/Singleton.hpp>
+
 #include <Minecraft/Player/Player.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/util/Tickable.hpp>
@@ -12,15 +14,14 @@
 #include <vector>
 
 class MinecraftServer : public Tickable
+    , public Singleton<MinecraftServer>
 {
 private:
-    static MinecraftServer* m_Instance;
-
     std::vector<Player>             m_PlayerList;
     std::unique_ptr<MinecraftWorld> m_MainWorld;
 
 public:
-    MinecraftServer( );
+    MinecraftServer( ) = default;
 
     MinecraftServer( const MinecraftServer& ) = delete;
     MinecraftServer( MinecraftServer&& )      = delete;
@@ -34,8 +35,6 @@ public:
     void InitWorld( );
 
     Player GetPlayer( int playerID );
-
-    static MinecraftServer& GetInstance( ) { return *m_Instance; }
 };
 
 

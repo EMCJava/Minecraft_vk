@@ -54,6 +54,4 @@ add_subdirectory(Utility)
 add_subdirectory(Graphic)
 add_subdirectory(Minecraft)
 
-target_link_libraries(Minecraft_vk MainApplicationLib)
-target_link_libraries(Minecraft_vk MinecraftWorldLib)
-target_link_libraries(Minecraft_vk ChunkPoolLib)
+target_link_libraries(Minecraft_vk MainApplicationLib MinecraftWorldLib ChunkPoolLib)

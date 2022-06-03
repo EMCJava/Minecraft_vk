@@ -4,19 +4,13 @@
 
 #include "MinecraftServer.hpp"
 
-MinecraftServer* MinecraftServer::m_Instance { };
-
-MinecraftServer::MinecraftServer( )
-{
-    assert( m_Instance == nullptr );
-    m_Instance = this;
-}
-
 void
 MinecraftServer::Tick( float deltaTime )
 {
     Tickable::Tick( deltaTime );
 
+    for ( auto& player : m_PlayerList )
+        player.Tick( deltaTime );
     m_MainWorld->Tick( deltaTime );
 }
 

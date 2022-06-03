@@ -5,10 +5,13 @@
 #ifndef MINECRAFT_VK_PLAYER_HPP
 #define MINECRAFT_VK_PLAYER_HPP
 
+#include <Minecraft/Application/Camera/Camera.hpp>
 #include <Minecraft/util/MinecraftType.h>
+#include <Minecraft/util/Tickable.hpp>
 
-class Player
+class Player : Tickable
 {
+    Camera           m_Camera { glm::vec3( 2.0f, 2.0f, 2.0f ) };
     EntityCoordinate m_Coordinate;
 
 public:
@@ -17,10 +20,18 @@ public:
         SetCoordinate( coordinate );
     }
 
+    // returns the player's view matrix
+    [[nodiscard]] inline const glm::mat4& GetViewMatrix( ) const
+    {
+        return m_Camera.GetViewMatrix( );
+    }
+
     void SetCoordinate( EntityCoordinate coordinate ) { m_Coordinate = coordinate; };
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
     BlockCoordinate  GetIntCoordinate( ) { return { std::get<0>( m_Coordinate ), std::get<1>( m_Coordinate ), std::get<2>( m_Coordinate ) }; };
+
+    void Tick( float deltaTime );
 };
 
 

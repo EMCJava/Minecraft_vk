@@ -5,15 +5,16 @@
 #ifndef MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP
 #define MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP
 
-#include "Include/GraphicAPI.hpp"
+#include <Include/GraphicAPI.hpp>
 
-#include "Graphic/Vulkan/Pipeline/VulkanPipeline.hpp"
-#include "Graphic/Vulkan/VulkanAPI.hpp"
-#include "Include/GlobalConfig.hpp"
-#include "Minecraft/Minecraft.hpp"
-#include "Utility/Logger.hpp"
-#include "Utility/Vulkan/ValidationLayer.hpp"
-#include "Utility/Vulkan/VulkanExtension.hpp"
+#include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
+#include <Graphic/Vulkan/VulkanAPI.hpp>
+#include <Include/GlobalConfig.hpp>
+#include <Minecraft/Minecraft.hpp>
+#include <Utility/Logger.hpp>
+#include <Utility/Singleton.hpp>
+#include <Utility/Vulkan/ValidationLayer.hpp>
+#include <Utility/Vulkan/VulkanExtension.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -21,7 +22,7 @@
 #include <stdexcept>
 #include <vulkan/vulkan_handles.hpp>
 
-class MainApplication
+class MainApplication : public Singleton<MainApplication>
 {
 
     GLFWwindow* m_window { };
@@ -31,9 +32,14 @@ class MainApplication
     bool        m_window_resizable  = false;
     bool        m_window_fullscreen = false;
 
+    std::pair<double, double> m_MousePos;
+
+    std::atomic_flag          m_deltaMouseShouldReset;
+    std::pair<double, double> m_NegDeltaMouse;
+
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
-    struct ImGuiIO* m_imgui_io;
+    struct ImGuiIO*          m_imgui_io;
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
 
     /*
@@ -54,10 +60,18 @@ class MainApplication
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );
+    static void onMousePositionInput( GLFWwindow* window, double xpos, double ypos );
 
 public:
     MainApplication( );
     ~MainApplication( );
+
+    inline const std::pair<double, double>& GetDeltaMouse( )
+    {
+        return m_NegDeltaMouse;
+    }
+
+    std::pair<float, float> GetMovementDelta( );
 
     void run( );
 };

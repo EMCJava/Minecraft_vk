@@ -37,7 +37,7 @@ MainApplication::MainApplication( )
     InitImgui( );
 
     m_MinecraftInstance = std::make_unique<Minecraft>( );
-    m_MinecraftInstance->InitServer();
+    m_MinecraftInstance->InitServer( );
 
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
@@ -56,10 +56,10 @@ MainApplication::run( )
      *
      * */
     const std::vector<DataType::ColoredVertex> vertices = {
-        {{ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
-        { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }},
-        {  { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }},
-        { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
+        {{ -0.5f, -0.5f }, { 1.0f, 0.0f , 0.0f }},
+        { { 0.5f, -0.5f }, { 0.0f, 0.0f , 1.0f }},
+        {  { 0.5f, 0.5f }, { 0.0f, 1.0f , 0.0f }},
+        { { -0.5f, 0.5f }, { 1.0f, 1.0f , 1.0f }}
     };
 
     const std::vector<uint16_t> indices = {
@@ -129,9 +129,9 @@ MainApplication::run( )
         float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
 
         TransformUniformBufferObject ubo { };
-        ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 0.0f, 1.0f ) );
-        ubo.view  = glm::lookAt( glm::vec3( 2.0f, 2.0f, 2.0f ), glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3( 0.0f, 0.0f, 1.0f ) );
-        ubo.proj  = glm::perspective( glm::radians( 45.0f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 10.0f );
+        ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+        ubo.view  = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
+        ubo.proj  = glm::perspective( glm::radians( 45.0f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
 
         // for vulkan coordinate system
         ubo.proj[ 1 ][ 1 ] *= -1;
@@ -143,6 +143,8 @@ MainApplication::run( )
 
         // command_buffer.draw( 3, 1, 0, 0 );
         command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+
+        return;
 
         ImGui_ImplVulkan_NewFrame( );
         ImGui_ImplGlfw_NewFrame( );
@@ -189,7 +191,9 @@ MainApplication::InitWindow( )
     m_window = glfwCreateWindow( m_screen_width, m_screen_height, "Vulkan window", nullptr, nullptr );
     glfwSetWindowUserPointer( m_window, this );
     glfwSetFramebufferSizeCallback( m_window, onFrameBufferResized );
+    glfwSetCursorPosCallback( m_window, onMousePositionInput );
     glfwSetKeyCallback( m_window, onKeyboardInput );
+    glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
 }
 
 void
@@ -326,12 +330,22 @@ MainApplication::renderThread( )
             start_time = std::chrono::high_resolution_clock::now( );
         }
 
+        m_deltaMouseShouldReset.test_and_set( );
+
         /*
          *
          * Update game loop
          *
          * */
-        m_MinecraftInstance->Tick(m_imgui_io->DeltaTime);
+        m_MinecraftInstance->Tick( m_imgui_io->DeltaTime );
+
+        /*
+         *
+         * Reset delta input
+         *
+         * */
+        m_NegDeltaMouse = { };
+        m_deltaMouseShouldReset.clear( );
 
         /*
          *
@@ -389,7 +403,7 @@ MainApplication::RecreateWindow( bool isFullScreen )
         glfwSetWindowMonitor( m_window, nullptr, m_screen_pos_x, m_screen_pos_y, m_backup_screen_width, m_backup_screen_height, 0 );
     }
 
-    m_window_fullscreen = !m_window_fullscreen;
+    m_window_fullscreen = isFullScreen;
     m_graphics_api->setShouldCreateSwapChain( true );
     m_graphics_api->invalidateSwapChain( );
 }
@@ -463,4 +477,32 @@ MainApplication::renderImgui( )
             show_another_window = false;
         ImGui::End( );
     }
+}
+
+void
+MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double ypos )
+{
+    auto* mainApplication = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
+
+    if ( !mainApplication->m_deltaMouseShouldReset.test( ) )
+        mainApplication->m_NegDeltaMouse = { xpos - mainApplication->m_MousePos.first, mainApplication->m_MousePos.second - ypos };
+    mainApplication->m_MousePos = { xpos, ypos };
+
+    /*
+        Logger::getInstance( ).LogLine( xpos, ypos );
+        auto mousePos = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) )->m_imgui_io->MousePos;
+        Logger::getInstance( ).LogLine( mousePos.x, mousePos.y );
+    */
+}
+
+std::pair<float, float>
+MainApplication::GetMovementDelta( )
+{
+    std::pair<float, float> offset;
+    if ( glfwGetKey( m_window, GLFW_KEY_A ) == GLFW_PRESS ) offset.first = -1;
+    if ( glfwGetKey( m_window, GLFW_KEY_D ) == GLFW_PRESS ) offset.first += 1;
+    if ( glfwGetKey( m_window, GLFW_KEY_S ) == GLFW_PRESS ) offset.second = -1;
+    if ( glfwGetKey( m_window, GLFW_KEY_W ) == GLFW_PRESS ) offset.second += 1;
+
+    return offset;
 }
