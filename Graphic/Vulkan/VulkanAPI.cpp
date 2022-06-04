@@ -623,7 +623,6 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
         end_index = index + 1;
     }
 
-    vk::ClearValue clearColor { { std::array<float, 4> { 0.0f, 0.0f, 0.0f, 1.0f } } };
     for ( ; it_index != end_index; ++it_index )
     {
         // implicit call
@@ -638,7 +637,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
             display_extent
         } );
         render_pass_begin_info.setClearValueCount( 1 );
-        render_pass_begin_info.setClearValues( clearColor );
+        render_pass_begin_info.setClearValues( m_clearColor );
 
         m_vkGraphicCommandBuffers[ it_index ].beginRenderPass( render_pass_begin_info, vk::SubpassContents::eInline );
         m_vkGraphicCommandBuffers[ it_index ].bindPipeline( vk::PipelineBindPoint::eGraphics, m_vkPipeline->getPipeline( ) );

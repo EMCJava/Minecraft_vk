@@ -56,10 +56,10 @@ MainApplication::run( )
      *
      * */
     const std::vector<DataType::ColoredVertex> vertices = {
-        {{ -0.5f, -0.5f }, { 1.0f, 0.0f , 0.0f }},
-        { { 0.5f, -0.5f }, { 0.0f, 0.0f , 1.0f }},
-        {  { 0.5f, 0.5f }, { 0.0f, 1.0f , 0.0f }},
-        { { -0.5f, 0.5f }, { 1.0f, 1.0f , 1.0f }}
+        {{ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
+        { { 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }},
+        {  { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
+        { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
     };
 
     const std::vector<uint16_t> indices = {
@@ -144,8 +144,6 @@ MainApplication::run( )
         // command_buffer.draw( 3, 1, 0, 0 );
         command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
 
-        return;
-
         ImGui_ImplVulkan_NewFrame( );
         ImGui_ImplGlfw_NewFrame( );
         ImGui::NewFrame( );
@@ -193,7 +191,6 @@ MainApplication::InitWindow( )
     glfwSetFramebufferSizeCallback( m_window, onFrameBufferResized );
     glfwSetCursorPosCallback( m_window, onMousePositionInput );
     glfwSetKeyCallback( m_window, onKeyboardInput );
-    glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
 }
 
 void
@@ -422,7 +419,8 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
             app->RecreateWindow( !app->m_window_fullscreen );
         } else if ( key == GLFW_KEY_ESCAPE )
         {
-            glfwSetWindowShouldClose( app->m_window, true );
+            app->UnlockMouse( );
+            // glfwSetWindowShouldClose( app->m_window, true );
         }
         break;
     case GLFW_RELEASE:
@@ -436,9 +434,9 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
 void
 MainApplication::renderImgui( )
 {
-    static bool   show_demo_window    = true;
+    static bool   show_demo_window    = false;
     static bool   show_another_window = false;
-    static ImVec4 clear_color         = ImVec4( 0.45f, 0.55f, 0.60f, 1.00f );
+    static ImVec4 clear_color         = ImVec4( 0.0515186f, 0.504163f, 0.656863f, 1.0f );
 
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -456,13 +454,22 @@ MainApplication::renderImgui( )
         ImGui::Checkbox( "Demo Window", &show_demo_window );   // Edit bools storing our window open/close state
         ImGui::Checkbox( "Another Window", &show_another_window );
 
-        ImGui::SliderFloat( "float", &f, 0.0f, 1.0f );               // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3( "clear color", (float*) &clear_color );   // Edit 3 floats representing a color
+        ImGui::SliderFloat( "float", &f, 0.0f, 1.0f );                     // Edit 1 float using a slider from 0.0f to 1.0f
+        if ( ImGui::ColorEdit3( "clear color", (float*) &clear_color ) )   // Edit 3 floats representing a color
+        {
+            Logger::getInstance( ).LogLine( "Background", std::make_tuple( clear_color.x, clear_color.y, clear_color.z, 1.0f ) );
+            m_graphics_api->setClearColor( { clear_color.x, clear_color.y, clear_color.z, 1.0f } );
+        }
 
         if ( ImGui::Button( "Button" ) )   // Buttons return true when clicked (most widgets return true when edited/activated)
             counter++;
         ImGui::SameLine( );
         ImGui::Text( "counter = %d", counter );
+
+        if ( ImGui::Button( "Fps mode" ) )
+        {
+            LockMouse( );
+        }
 
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
         ImGui::End( );

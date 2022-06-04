@@ -180,6 +180,7 @@ public:
     [[nodiscard]] uint32_t acquireNextImage( );
     void                   setRenderer( std::function<void( const vk::CommandBuffer&, uint32_t index )>&& renderer ) { m_renderer = std::move( renderer ); };
     void                   setPipelineCreateCallback( std::function<void( )>&& callback ) { m_pipeline_create_callback = std::move( callback ); };
+    void                   setClearColor( const std::array<float, 4>& clearColor ) { m_clearColor.setColor( clearColor ); }
 
     /*
      *
@@ -348,6 +349,7 @@ private:
     std::unordered_map<const void*, std::pair<uint32_t, vk::QueueFlagBits>> m_requested_queue;
     std::function<void( const vk::CommandBuffer&, uint32_t index )>         m_renderer;
     std::function<void( )>                                                  m_pipeline_create_callback;
+    vk::ClearValue                                                          m_clearColor { { std::array<float, 4> { 0.0515186f, 0.504163f, 0.656863f, 1.0f } } };
 };
 
 #include "VulkanAPI_Impl.hpp"

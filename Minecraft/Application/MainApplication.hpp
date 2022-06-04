@@ -73,6 +73,9 @@ public:
 
     std::pair<float, float> GetMovementDelta( );
 
+    void LockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED ); }
+    void UnlockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL ); }
+
     void run( );
 };
 
