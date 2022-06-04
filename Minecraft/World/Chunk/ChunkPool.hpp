@@ -116,6 +116,16 @@ public:
         }
         return false;
     }
+
+    auto GetChunkIterBegin( )
+    {
+        return m_ChunkCache.begin( );
+    }
+
+    auto GetChunkIterEnd( )
+    {
+        return m_ChunkCache.end( );
+    }
 };
 
 
