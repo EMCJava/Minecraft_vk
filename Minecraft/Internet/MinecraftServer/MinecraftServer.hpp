@@ -34,7 +34,8 @@ public:
     void AddDemoPlayer( EntityCoordinate coordinate );
     void InitWorld( );
 
-    Player GetPlayer( int playerID );
+    Player&         GetPlayer( int playerID );
+    MinecraftWorld& GetWorld( ) { return *m_MainWorld; }
 };
 
 

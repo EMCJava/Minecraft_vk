@@ -14,7 +14,7 @@ MinecraftServer::Tick( float deltaTime )
     m_MainWorld->Tick( deltaTime );
 }
 
-Player
+Player&
 MinecraftServer::GetPlayer( int playerID )
 {
     return m_PlayerList[ playerID ];
