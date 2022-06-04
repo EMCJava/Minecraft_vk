@@ -13,7 +13,7 @@ MinecraftWorld::MinecraftWorld( )
     m_ChunkPool         = std::make_unique<ChunkPool>( GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
     m_ChunkLoadingRange = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( );
     m_ChunkPool->SetValidRange( m_ChunkLoadingRange );
-    m_ChunkPool->StartThread();
+    m_ChunkPool->StartThread( );
 }
 
 void
@@ -34,7 +34,10 @@ MinecraftWorld::Tick( float deltaTime )
     m_TimeSinceChunkLoad += deltaTime;
     if ( m_TimeSinceChunkLoad > 0.2f )
     {
-        IntroduceChunkInRange( MinecraftServer::GetInstance().GetPlayer(0).GetIntCoordinate(), m_ChunkLoadingRange );
+        auto chunkCoordinate      = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetIntCoordinate( );
+        get<1>( chunkCoordinate ) = get<2>( chunkCoordinate );
+        get<2>( chunkCoordinate ) = 0;
+        IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
         m_TimeSinceChunkLoad = 0;
     }
 }
