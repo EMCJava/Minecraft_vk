@@ -76,6 +76,8 @@ public:
     void LockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED ); }
     void UnlockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL ); }
 
+    [[nodiscard]] VulkanAPI& GetVulkanAPI( ) const { return *m_graphics_api.get( ); }
+
     void run( );
 };
 

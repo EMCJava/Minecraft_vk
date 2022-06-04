@@ -56,10 +56,10 @@ MainApplication::run( )
      *
      * */
     const std::vector<DataType::ColoredVertex> vertices = {
-        {{ -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
-        { { 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }},
-        {  { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
-        { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
+        {{ -0.5f, 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
+        { { 0.5f, 0.0f, -0.5f }, { 0.0f, 0.0f, 1.0f }},
+        {  { 0.5f, 0.0f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
+        { { -0.5f, 0.0f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
     };
 
     const std::vector<uint16_t> indices = {
@@ -129,7 +129,8 @@ MainApplication::run( )
         float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
 
         TransformUniformBufferObject ubo { };
-        ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+        // ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+        ubo.model = glm::mat4( 1.0f );
         ubo.view  = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
         ubo.proj  = glm::perspective( glm::radians( 45.0f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
 
@@ -143,6 +144,20 @@ MainApplication::run( )
 
         // command_buffer.draw( 3, 1, 0, 0 );
         command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+
+        auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
+        auto  iterBegin = chunkPool.GetChunkIterBegin( );
+        auto  iterEnd   = chunkPool.GetChunkIterEnd( );
+        for ( auto it = iterBegin; it != iterEnd; ++it )
+        {
+            if ( it->second->initialized )
+            {
+                command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
+                // command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
+
+                command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+            }
+        }
 
         ImGui_ImplVulkan_NewFrame( );
         ImGui_ImplGlfw_NewFrame( );
