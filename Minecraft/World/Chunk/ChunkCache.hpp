@@ -11,16 +11,25 @@
 
 #include <Utility/Thread/ThreadPool.hpp>
 
+#include <Graphic/Vulkan/VulkanAPI.hpp>
+
 #include <unordered_map>
 
 class ChunkCache
 {
+private:
+    VulkanAPI::VKBufferMeta m_VertexBuffer;
+    VulkanAPI::VKBufferMeta m_IndexBuffer;
+
 public:
     Chunk chunk;
     bool  initialized  = false;
     bool  initializing = false;
 
     void ResetLoad( );
+
+    const VulkanAPI::VKBufferMeta& GetVertexBuffer( ) const { return m_VertexBuffer; }
+    const VulkanAPI::VKBufferMeta& GetIndexBuffer( ) const { return m_IndexBuffer; }
 };
 
 
