@@ -31,8 +31,8 @@ public:
     // constructor with vectors
     explicit Camera( glm::vec3 position = glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3 up = glm::vec3( 0.0f, 1.0f, 0.0f ), float yaw = glm::radians( -90.0f ), float pitch = 0.0f )
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
-        , MovementSpeed( 2.5f )
-        , MouseSensitivity( 0.001f )
+        , MovementSpeed( 20.5f )
+        , MouseSensitivity( 0.005f )
         , Zoom( 45.0f )
     {
         Position = position;
@@ -44,8 +44,8 @@ public:
     // constructor with scalar values
     Camera( float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch )
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
-        , MovementSpeed( 2.5f )
-        , MouseSensitivity( 0.001f )
+        , MovementSpeed( 20.5f )
+        , MouseSensitivity( 0.005f )
         , Zoom( 45.0f )
     {
         Position = glm::vec3( posX, posY, posZ );
@@ -73,6 +73,14 @@ public:
     {
         const float velocity = MovementSpeed * deltaTime;
         Position += velocity * ( Front * direction.second + Right * direction.first );
+        UpdateViewMatrix( );
+    }
+
+    // Same as ProcessKeyboard, but moves horizontal to the ground
+    inline void ProcessKeyboardHorizontal( const std::pair<float, float>& direction, float deltaTime )
+    {
+        const float velocity = MovementSpeed * deltaTime;
+        Position += velocity * ( glm::normalize( glm::vec3 { Front.x, 0, Front.z } ) * direction.second + Right * direction.first );
         UpdateViewMatrix( );
     }
 
