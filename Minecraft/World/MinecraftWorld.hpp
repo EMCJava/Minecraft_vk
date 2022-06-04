@@ -29,6 +29,8 @@ public:
     void IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius );
 
     void Tick( float deltaTime );
+
+    ChunkPool& GetChunkPool( ) { return *m_ChunkPool; }
 };
 
 
