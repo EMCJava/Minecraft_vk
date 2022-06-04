@@ -23,10 +23,10 @@ namespace DataType
 {
 
 struct ColoredVertex : VertexDetail {
-    glm::vec2 pos;
+    glm::vec3 pos;
     glm::vec3 color;
 
-    ColoredVertex( glm::vec2 p, glm::vec3 c )
+    ColoredVertex( glm::vec3 p, glm::vec3 c )
         : pos( p )
         , color( c )
     { }
@@ -37,7 +37,7 @@ struct ColoredVertex : VertexDetail {
 
         attributeDescriptions[ 0 ].setBinding( 0 );
         attributeDescriptions[ 0 ].setLocation( 0 );
-        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32Sfloat );
+        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sfloat );
         attributeDescriptions[ 0 ].setOffset( offsetof( ColoredVertex, pos ) );
 
         attributeDescriptions[ 1 ].setBinding( 0 );
@@ -99,6 +99,9 @@ public:
 
         void CopyFromBuffer( const VKBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
         {
+            static std::mutex           copy_buffer_lock;
+            std::lock_guard<std::mutex> guard( copy_buffer_lock );
+
             vk::CommandBufferAllocateInfo allocInfo { };
             allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
             allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
