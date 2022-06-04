@@ -76,7 +76,10 @@ public:
         nlohmann::json j;
 
         if ( file )
-            file >> j;
+            j = nlohmann::json::parse( file,
+                                       /* callback */ nullptr,
+                                       /* allow exceptions */ true,
+                                       /* ignore_comments */ true );
         else
             return false;
 
