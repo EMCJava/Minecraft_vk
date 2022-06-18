@@ -18,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <mutex>
 
 namespace DataType
 {
