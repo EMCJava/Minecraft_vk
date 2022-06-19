@@ -10,6 +10,9 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+#include <Include/implot/implot.h>
+#include <Include/implot/implot_internal.h>
+
 #include "MainApplication.hpp"
 
 #include "Include/GlobalConfig.hpp"
@@ -101,13 +104,14 @@ MainApplication::run( )
                 .setOffset( 0 )
                 .setRange( sizeof( TransformUniformBufferObject ) );
 
-            m_graphics_api->getLogicalDevice( ).updateDescriptorSets( m_graphics_api->getWriteDescriptorSetSetup( i )
-                                                                                                    .setDstBinding( 0 )
-                                                                                                    .setDstArrayElement( 0 )
-                                                                                                    .setDescriptorType( vk::DescriptorType::eUniformBuffer )
-                                                                                                    .setDescriptorCount( 1 )
-                                                                                                    .setBufferInfo( bufferInfo ),
-                                                                                                nullptr );
+            m_graphics_api->getLogicalDevice( )
+                .updateDescriptorSets( m_graphics_api->getWriteDescriptorSetSetup( i )
+                                                                     .setDstBinding( 0 )
+                                                                     .setDstArrayElement( 0 )
+                                                                     .setDescriptorType( vk::DescriptorType::eUniformBuffer )
+                                                                     .setDescriptorCount( 1 )
+                                                                     .setBufferInfo( bufferInfo ),
+                                                                 nullptr );
         }
     };
 
@@ -220,6 +224,7 @@ MainApplication::InitImgui( )
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION( );
     ImGui::CreateContext( );
+    ImPlot::CreateContext( );
     m_imgui_io = &ImGui::GetIO( );
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -321,6 +326,42 @@ MainApplication::InitImgui( )
         m_graphics_api->getLogicalDevice( ).waitIdle( );
         ImGui_ImplVulkan_DestroyFontUploadObjects( );
     }
+
+    ImGuiStyle& style       = ImGui::GetStyle( );
+    style.WindowRounding    = 5.3f;
+    style.FrameRounding     = 2.3f;
+    style.ScrollbarRounding = 0;
+
+    style.Colors[ ImGuiCol_Text ]                 = ImVec4( 0.00f, 0.00f, 0.00f, 1.00f );
+    style.Colors[ ImGuiCol_TextDisabled ]         = ImVec4( 0.60f, 0.60f, 0.60f, 1.00f );
+    style.Colors[ ImGuiCol_WindowBg ]             = ImVec4( 0.94f, 0.94f, 0.94f, 1.00f );
+    style.Colors[ ImGuiCol_Border ]               = ImVec4( 0.00f, 0.00f, 0.00f, 0.39f );
+    style.Colors[ ImGuiCol_BorderShadow ]         = ImVec4( 1.00f, 1.00f, 1.00f, 0.10f );
+    style.Colors[ ImGuiCol_FrameBg ]              = ImVec4( 1.00f, 1.00f, 1.00f, 1.00f );
+    style.Colors[ ImGuiCol_FrameBgHovered ]       = ImVec4( 0.26f, 0.59f, 0.98f, 0.40f );
+    style.Colors[ ImGuiCol_FrameBgActive ]        = ImVec4( 0.26f, 0.59f, 0.98f, 0.67f );
+    style.Colors[ ImGuiCol_TitleBg ]              = ImVec4( 0.96f, 0.96f, 0.96f, 1.00f );
+    style.Colors[ ImGuiCol_TitleBgCollapsed ]     = ImVec4( 1.00f, 1.00f, 1.00f, 0.51f );
+    style.Colors[ ImGuiCol_TitleBgActive ]        = ImVec4( 0.82f, 0.82f, 0.82f, 1.00f );
+    style.Colors[ ImGuiCol_MenuBarBg ]            = ImVec4( 0.86f, 0.86f, 0.86f, 1.00f );
+    style.Colors[ ImGuiCol_ScrollbarBg ]          = ImVec4( 0.98f, 0.98f, 0.98f, 0.53f );
+    style.Colors[ ImGuiCol_ScrollbarGrab ]        = ImVec4( 0.69f, 0.69f, 0.69f, 0.80f );
+    style.Colors[ ImGuiCol_ScrollbarGrabHovered ] = ImVec4( 0.49f, 0.49f, 0.49f, 0.80f );
+    style.Colors[ ImGuiCol_ScrollbarGrabActive ]  = ImVec4( 0.49f, 0.49f, 0.49f, 1.00f );
+    style.Colors[ ImGuiCol_SliderGrab ]           = ImVec4( 0.26f, 0.59f, 0.98f, 0.78f );
+    style.Colors[ ImGuiCol_SliderGrabActive ]     = ImVec4( 0.26f, 0.59f, 0.98f, 1.00f );
+    style.Colors[ ImGuiCol_Button ]               = ImVec4( 0.26f, 0.59f, 0.98f, 0.40f );
+    style.Colors[ ImGuiCol_ButtonHovered ]        = ImVec4( 0.26f, 0.59f, 0.98f, 1.00f );
+    style.Colors[ ImGuiCol_ButtonActive ]         = ImVec4( 0.06f, 0.53f, 0.98f, 1.00f );
+    style.Colors[ ImGuiCol_Header ]               = ImVec4( 0.26f, 0.59f, 0.98f, 0.31f );
+    style.Colors[ ImGuiCol_HeaderHovered ]        = ImVec4( 0.26f, 0.59f, 0.98f, 0.80f );
+    style.Colors[ ImGuiCol_HeaderActive ]         = ImVec4( 0.26f, 0.59f, 0.98f, 1.00f );
+    style.Colors[ ImGuiCol_ResizeGripHovered ]    = ImVec4( 0.26f, 0.59f, 0.98f, 0.67f );
+    style.Colors[ ImGuiCol_ResizeGripActive ]     = ImVec4( 0.26f, 0.59f, 0.98f, 0.95f );
+    style.Colors[ ImGuiCol_PlotLinesHovered ]     = ImVec4( 1.00f, 0.43f, 0.35f, 1.00f );
+    style.Colors[ ImGuiCol_PlotHistogram ]        = ImVec4( 0.90f, 0.70f, 0.00f, 1.00f );
+    style.Colors[ ImGuiCol_PlotHistogramHovered ] = ImVec4( 1.00f, 0.60f, 0.00f, 1.00f );
+    style.Colors[ ImGuiCol_TextSelectedBg ]       = ImVec4( 0.26f, 0.59f, 0.98f, 0.35f );
 }
 
 void
@@ -381,6 +422,7 @@ MainApplication::renderThread( )
 
     ImGui_ImplVulkan_Shutdown( );
     ImGui_ImplGlfw_Shutdown( );
+    ImPlot::DestroyContext( );
     ImGui::DestroyContext( );
 }
 
@@ -459,19 +501,18 @@ MainApplication::renderImgui( )
     static bool   show_another_window = false;
     static ImVec4 clear_color         = ImVec4( 0.0515186f, 0.504163f, 0.656863f, 1.0f );
 
+    if ( m_is_mouse_locked ) return;
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
     if ( show_demo_window )
         ImGui::ShowDemoWindow( &show_demo_window );
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    // 2. Show a simple window that weF create ourselves. We use a Begin/End pair to created a named window.
     {
         static float f       = 0.0f;
         static int   counter = 0;
 
-        ImGui::Begin( "Hello, world!" );   // Create a window called "Hello, world!" and append into it.
-
-        ImGui::Text( "This is some useful text." );            // Display some text (you can use a format strings too)
+        ImGui::Begin( "Debuger" );                             // Create a window called "Hello, world!" and append into it.
         ImGui::Checkbox( "Demo Window", &show_demo_window );   // Edit bools storing our window open/close state
         ImGui::Checkbox( "Another Window", &show_another_window );
 
@@ -482,28 +523,45 @@ MainApplication::renderImgui( )
             m_graphics_api->setClearColor( { clear_color.x, clear_color.y, clear_color.z, 1.0f } );
         }
 
-        if ( ImGui::Button( "Button" ) )   // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine( );
-        ImGui::Text( "counter = %d", counter );
-
         if ( ImGui::Button( "Fps mode" ) )
         {
             LockMouse( );
         }
 
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
+
+        {
+            static float t = 0;
+            t += ImGui::GetIO( ).DeltaTime;
+            static float history = 10.0f;
+            ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
+            static ImVector<ImVec2> chunkData;
+            static ImVector<float>  x, y;
+
+            float xmod = fmodf( t, history );
+            if ( !chunkData.empty( ) && xmod < chunkData.back( ).x ) chunkData.shrink( 0 );
+            auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
+            chunkData.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
+
+            static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
+            if ( ImPlot::BeginPlot( "Chunk Loading##Scrolling", ImVec2( -1, 150 ) ) )
+            {
+                ImPlot::SetupAxes( NULL, NULL, flags, flags );
+                ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
+                ImPlot::SetupAxisLimits( ImAxis_Y1, -1, chunkPool.GetMaxThread( ) + 1 );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
+                ImPlot::PlotStems( "Chunk thread", &chunkData[ 0 ].x, &chunkData[ 0 ].y, chunkData.size( ) / 32, 0, 0, 0, 32 * 2 * sizeof( float ) );
+                ImPlot::EndPlot( );
+            }
+        }
+
         ImGui::End( );
     }
 
     // 3. Show another simple window.
     if ( show_another_window )
     {
-        ImGui::Begin( "Another Window", &show_another_window );   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text( "Hello from another window!" );
-        if ( ImGui::Button( "Close Me" ) )
-            show_another_window = false;
-        ImGui::End( );
+        ImPlot::ShowDemoWindow( &show_another_window );
     }
 }
 

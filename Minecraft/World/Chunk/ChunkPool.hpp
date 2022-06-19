@@ -128,6 +128,16 @@ public:
         return false;
     }
 
+    size_t GetPendingCount( )
+    {
+        return m_PendingThreads.size( );
+    }
+
+    size_t GetLoadingCount( )
+    {
+        return m_RunningThreads.size( );
+    }
+
     auto& GetChunkCacheLock( )
     {
         return m_ChunkCacheLock;

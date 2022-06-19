@@ -6,7 +6,7 @@
 #define MINECRAFT_VK_THREADPOOL_HPP
 
 #if _MSC_VER
-#include <Utility/MSVC.hpp>
+#    include <Utility/MSVC.hpp>
 #endif
 
 #include <boost/sort/sort.hpp>
@@ -168,6 +168,11 @@ public:
     {
 
         return m_RunningThreads.size( ) + m_PendingThreads.size( );
+    }
+
+    inline size_t GetMaxThread( )
+    {
+        return m_maxThread;
     }
 };
 

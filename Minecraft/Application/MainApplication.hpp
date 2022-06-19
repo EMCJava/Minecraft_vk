@@ -31,6 +31,7 @@ class MainApplication : public Singleton<MainApplication>
     int         m_screen_pos_x { }, m_screen_pos_y { };
     bool        m_window_resizable  = false;
     bool        m_window_fullscreen = false;
+    bool        m_is_mouse_locked   = false;
 
     std::pair<double, double> m_MousePos;
 
@@ -73,8 +74,17 @@ public:
 
     std::pair<float, float> GetMovementDelta( );
 
-    void LockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED ); }
-    void UnlockMouse( ) { glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL ); }
+    void LockMouse( )
+    {
+        m_is_mouse_locked = true;
+        glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
+    }
+    
+    void UnlockMouse( )
+    {
+        m_is_mouse_locked = false;
+        glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+    }
 
     [[nodiscard]] VulkanAPI& GetVulkanAPI( ) const { return *m_graphics_api.get( ); }
 
