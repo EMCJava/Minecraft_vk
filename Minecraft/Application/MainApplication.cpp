@@ -531,26 +531,32 @@ MainApplication::renderImgui( )
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
 
         {
-            static float t = 0;
-            t += ImGui::GetIO( ).DeltaTime;
-            static float history = 10.0f;
-            ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
+            static float            t         = 0;
+            static float            previousT = 0;
+            static float            history   = 10.0f;
             static ImVector<ImVec2> chunkData;
             static ImVector<float>  x, y;
+            auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
-            float xmod = fmodf( t, history );
-            if ( !chunkData.empty( ) && xmod < chunkData.back( ).x ) chunkData.shrink( 0 );
-            auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
-            chunkData.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
+            t += ImGui::GetIO( ).DeltaTime;
+            ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
+
+            if ( chunkData.empty( ) || t > previousT + 0.25 )
+            {
+                previousT  = t;
+                float xmod = fmodf( t, history );
+                if ( !chunkData.empty( ) && xmod < chunkData.back( ).x ) chunkData.shrink( 0 );
+                chunkData.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
+            }
 
             static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
-            if ( ImPlot::BeginPlot( "Chunk Loading##Scrolling", ImVec2( -1, 150 ) ) )
+            if ( ImPlot::BeginPlot( "Chunk Loading##Scrolling", ImVec2( -1, 300 ) ) )
             {
                 ImPlot::SetupAxes( NULL, NULL, flags, flags );
                 ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
                 ImPlot::SetupAxisLimits( ImAxis_Y1, -1, chunkPool.GetMaxThread( ) + 1 );
                 ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
-                ImPlot::PlotStems( "Chunk thread", &chunkData[ 0 ].x, &chunkData[ 0 ].y, chunkData.size( ) / 32, 0, 0, 0, 32 * 2 * sizeof( float ) );
+                ImPlot::PlotStems( "Chunk thread", &chunkData[ 0 ].x, &chunkData[ 0 ].y, chunkData.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
         }
@@ -570,7 +576,7 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
 {
     auto* mainApplication = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
 
-    if ( !mainApplication->m_deltaMouseShouldReset.test( ) )
+    if ( !mainApplication->m_deltaMouseShouldReset.test( ) && mainApplication->m_is_mouse_locked )
         mainApplication->m_NegDeltaMouse = { xpos - mainApplication->m_MousePos.first, mainApplication->m_MousePos.second - ypos };
     mainApplication->m_MousePos = { xpos, ypos };
 
