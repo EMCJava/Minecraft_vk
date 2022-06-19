@@ -409,10 +409,10 @@ MainApplication::RecreateWindow( bool isFullScreen )
         const GLFWvidmode* mode = glfwGetVideoMode( glfwGetPrimaryMonitor( ) );
 
         // switch to full screen
-        glfwSetWindowMonitor( m_window, glfwGetPrimaryMonitor( ), 0, 0, mode->width, mode->height, 0 );
+        glfwSetWindowMonitor( m_window, glfwGetPrimaryMonitor( ), 0, 0, mode->width, mode->height, GLFW_DONT_CARE );
     } else
     {
-        glfwSetWindowMonitor( m_window, nullptr, m_screen_pos_x, m_screen_pos_y, m_backup_screen_width, m_backup_screen_height, 0 );
+        glfwSetWindowMonitor( m_window, nullptr, m_screen_pos_x, m_screen_pos_y, m_backup_screen_width, m_backup_screen_height, GLFW_DONT_CARE );
     }
 
     m_window_fullscreen = isFullScreen;
