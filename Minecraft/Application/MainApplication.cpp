@@ -146,16 +146,20 @@ MainApplication::run( )
         command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
 
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
-        auto  iterBegin = chunkPool.GetChunkIterBegin( );
-        auto  iterEnd   = chunkPool.GetChunkIterEnd( );
-        for ( auto it = iterBegin; it != iterEnd; ++it )
-        {
-            if ( it->second->initialized )
-            {
-                command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
-                // command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
 
-                command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+        {
+            std::lock_guard cacheIterLocker( chunkPool.GetChunkCacheLock( ) );
+            auto            iterBegin = chunkPool.GetChunkIterBegin( );
+            auto            iterEnd   = chunkPool.GetChunkIterEnd( );
+            for ( auto it = iterBegin; it != iterEnd; ++it )
+            {
+                if ( it->second->initialized )
+                {
+                    command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
+                    // command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
+
+                    command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+                }
             }
         }
 
@@ -206,6 +210,8 @@ MainApplication::InitWindow( )
     glfwSetFramebufferSizeCallback( m_window, onFrameBufferResized );
     glfwSetCursorPosCallback( m_window, onMousePositionInput );
     glfwSetKeyCallback( m_window, onKeyboardInput );
+
+    LockMouse( );
 }
 
 void

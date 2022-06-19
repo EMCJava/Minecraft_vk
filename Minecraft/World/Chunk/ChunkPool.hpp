@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_CHUNKPOOL_HPP
 #define MINECRAFT_VK_CHUNKPOOL_HPP
 
+#include <mutex>
+
 #include "ChunkCache.hpp"
 
 #include <Utility/Logger.hpp>
@@ -13,9 +15,11 @@
 class ChunkPool : public ThreadPool<ChunkCache>
 {
 private:
-    CoordinateType                                   m_RemoveJobAfterRange = 0;
-    BlockCoordinate                                  m_PrioritizeCoordinate;
-    std::unique_ptr<std::jthread>                    m_UpdateThread;
+    CoordinateType                m_RemoveJobAfterRange = 0;
+    BlockCoordinate               m_PrioritizeCoordinate;
+    std::unique_ptr<std::jthread> m_UpdateThread;
+
+    std::mutex                                       m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
 
     static void LoadChunk( ChunkCache* cache )
@@ -31,9 +35,16 @@ private:
             if ( m_RemoveJobAfterRange > 0 )
             {
 
-                m_PendingThreads.erase( std::remove_if( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                        [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) > range; } ),
-                                        m_PendingThreads.end( ) );
+                const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
+                                                    [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) < range; } );
+
+                {   // elements outside the range
+                    std::lock_guard cacheModifyLocker( m_ChunkCacheLock );
+                    for ( auto it = lastIt; it != m_PendingThreads.end( ); ++it )
+                        m_ChunkCache.erase( ( *it )->chunk.GetCoordinate( ) );
+                }
+
+                m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
             }
 
             auto finished = UpdateSorted( &ChunkPool::LoadChunk,
@@ -115,6 +126,11 @@ public:
             return find_it->second->initialized;
         }
         return false;
+    }
+
+    auto& GetChunkCacheLock( )
+    {
+        return m_ChunkCacheLock;
     }
 
     auto GetChunkIterBegin( )
