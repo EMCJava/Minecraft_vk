@@ -1,3 +1,6 @@
 [submodule "Include/Imgui"]
 	path = Include/Imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "Include/implot"]
+	path = Include/implot
+	url = https://github.com/epezent/implot
