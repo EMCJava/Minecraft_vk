@@ -99,14 +99,20 @@ protected:
 
     std::vector<Context*> CleanRunningThread( )
     {
-        std::vector<Context*> finished;
-        copy_if( m_RunningThreads.begin( ), m_RunningThreads.end( ), std::back_inserter( finished ),
-                 []( const auto& data ) { return !data.threadInstance->running->load( ); } );
+        const auto lastIt = std::partition( m_RunningThreads.begin( ), m_RunningThreads.end( ),
+                                            []( const auto& data ) { return data.threadInstance->running->load( ); } );
 
-        const auto remove = std::remove_if( m_RunningThreads.begin( ), m_RunningThreads.end( ),
-                                            []( const auto& data ) { return !data.threadInstance->running->load( ); } );
-        m_RunningThreads.erase( remove, m_RunningThreads.end( ) );
-        return finished;
+        // exists finished job(s)
+        if ( lastIt != m_RunningThreads.end( ) )
+        {
+            std::vector<Context*> finished( lastIt, m_RunningThreads.end( ) );
+
+            m_RunningThreads.erase( lastIt, m_RunningThreads.end( ) );
+
+            return finished;
+        }
+
+        return { };
     }
 
     std::vector<Context*> UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp )
