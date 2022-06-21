@@ -138,6 +138,11 @@ public:
         return m_RunningThreads.size( );
     }
 
+    size_t GetTotalChunk( )
+    {
+        return m_ChunkCache.size( );
+    }
+
     auto& GetChunkCacheLock( )
     {
         return m_ChunkCacheLock;

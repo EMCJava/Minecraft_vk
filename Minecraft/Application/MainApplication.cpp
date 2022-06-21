@@ -516,19 +516,23 @@ MainApplication::renderImgui( )
             static float            t         = 0;
             static float            previousT = 0;
             static float            history   = 10.0f;
-            static ImVector<ImVec2> chunkData;
-            static ImVector<float>  x, y;
+            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount;
             auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
             t += ImGui::GetIO( ).DeltaTime;
             ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
 
-            if ( chunkData.empty( ) || t > previousT + 0.25 )
+            if ( chunkLoadingThreadCount.empty( ) || t > previousT + 0.25 )
             {
                 previousT  = t;
                 float xmod = fmodf( t, history );
-                if ( !chunkData.empty( ) && xmod < chunkData.back( ).x ) chunkData.shrink( 0 );
-                chunkData.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
+                if ( !chunkLoadingThreadCount.empty( ) && xmod < chunkLoadingThreadCount.back( ).x )
+                {
+                    chunkLoadingThreadCount.shrink( 0 );
+                    chunkCount.shrink( 0 );
+                }
+                chunkLoadingThreadCount.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
+                chunkCount.push_back( ImVec2( xmod, chunkPool.GetTotalChunk( ) ) );
             }
 
             static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
@@ -543,17 +547,25 @@ MainApplication::renderImgui( )
                 ImPlot::SetupAxisLimits( ImAxis_X1, std::max( fps.Data[ fps.Offset ].x, t - history ), t, ImGuiCond_Always );
                 ImPlot::SetupAxisLimits( ImAxis_Y1, 0, maxFPS * 1.1 );
                 ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
-                ImPlot::PlotShaded( "Delta time", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
+                ImPlot::PlotShaded( "", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
 
-            if ( ImPlot::BeginPlot( "Chunk Loading##Scrolling", ImVec2( -1, 300 ) ) )
+            if ( ImPlot::BeginPlot( "Chunks##Scrolling", ImVec2( -1, 0 ) ) )
             {
-                ImPlot::SetupAxes( NULL, NULL, flags, flags );
+                ImPlot::SetupAxes( "Time", "Thread" );
+                ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault );
                 ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
                 ImPlot::SetupAxisLimits( ImAxis_Y1, -1, chunkPool.GetMaxThread( ) + 1 );
+                ImPlot::SetupAxisLimits( ImAxis_Y2, -1, 1000 );
+
+                ImPlot::SetAxes( ImAxis_X1, ImAxis_Y1 );
                 ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
-                ImPlot::PlotStems( "Chunk thread", &chunkData[ 0 ].x, &chunkData[ 0 ].y, chunkData.size( ), 0, 0, 0, 2 * sizeof( float ) );
+                ImPlot::PlotStems( "Chunk thread", &chunkLoadingThreadCount[ 0 ].x, &chunkLoadingThreadCount[ 0 ].y, chunkLoadingThreadCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+
+                ImPlot::SetAxes( ImAxis_X1, ImAxis_Y2 );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                ImPlot::PlotStems( "Total Chunk", &chunkCount[ 0 ].x, &chunkCount[ 0 ].y, chunkCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
         }
