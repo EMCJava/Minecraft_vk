@@ -34,8 +34,7 @@ MinecraftWorld::Tick( float deltaTime )
     m_TimeSinceChunkLoad += deltaTime;
     if ( m_TimeSinceChunkLoad > 0.2f )
     {
-        auto chunkCoordinate      = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetIntCoordinate( );
-        get<1>( chunkCoordinate ) = get<2>( chunkCoordinate );
+        auto chunkCoordinate      = ToCartesianCoordinate(MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetIntCoordinate( ));
         get<2>( chunkCoordinate ) = 0;
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
         m_TimeSinceChunkLoad = 0;

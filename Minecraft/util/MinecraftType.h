@@ -10,10 +10,10 @@
 #include <iostream>
 #include <tuple>
 
-using CoordinateType  = int32_t;
+using CoordinateType   = int32_t;
 using EntityCoordinate = std::tuple<float, float, float>;
-using BlockCoordinate = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
-using ChunkCoordinate = BlockCoordinate;
+using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
+using ChunkCoordinate  = BlockCoordinate;
 
 inline BlockCoordinate
 operator+( const BlockCoordinate& a, const BlockCoordinate& b )
@@ -39,6 +39,20 @@ MakeCoordinate( int x, int y, int z )
     return { x, y, z };
 }
 
+inline BlockCoordinate
+ToCartesianCoordinate( const BlockCoordinate& coor )
+{
+    BlockCoordinate result = coor;
+    std::swap( get<1>( result ), get<2>( result ) );
+    return result;
+}
+
+inline BlockCoordinate
+ToCartesianCoordinate( BlockCoordinate&& coor )
+{
+    std::swap( get<1>( coor ), get<2>( coor ) );
+    return coor;
+}
 
 namespace std
 {
