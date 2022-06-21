@@ -540,7 +540,7 @@ MainApplication::renderImgui( )
             if ( ImPlot::BeginPlot( "FPS##Scrolling", ImVec2( -1, 150 ) ) )
             {
                 ImPlot::SetupAxes( NULL, NULL, flags, flags );
-                ImPlot::SetupAxisLimits( ImAxis_X1, fps.Data[fps.Offset].x, t, ImGuiCond_Always );
+                ImPlot::SetupAxisLimits( ImAxis_X1, std::max( fps.Data[ fps.Offset ].x, t - history ), t, ImGuiCond_Always );
                 ImPlot::SetupAxisLimits( ImAxis_Y1, 0, maxFPS * 1.1 );
                 ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
                 ImPlot::PlotShaded( "Delta time", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
