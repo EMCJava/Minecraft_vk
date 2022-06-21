@@ -53,47 +53,6 @@ MainApplication::~MainApplication( )
 void
 MainApplication::run( )
 {
-    /*
-     *
-     * Setup vertex buffer
-     *
-     * */
-    const std::vector<DataType::ColoredVertex> vertices = {
-        {{ -0.5f, 0.0f, -0.5f }, { 1.0f, 0.0f, 0.0f }},
-        { { 0.5f, 0.0f, -0.5f }, { 0.0f, 0.0f, 1.0f }},
-        {  { 0.5f, 0.0f, 0.5f }, { 0.0f, 1.0f, 0.0f }},
-        { { -0.5f, 0.0f, 0.5f }, { 1.0f, 1.0f, 1.0f }}
-    };
-
-    const std::vector<uint16_t> indices = {
-        0, 1, 2, 2, 3, 0 };
-
-    const auto verticesDataSize = sizeof( vertices[ 0 ] ) * vertices.size( );
-    const auto indicesDataSize  = sizeof( indices[ 0 ] ) * indices.size( );
-
-    VulkanAPI::VKBufferMeta vertexBuffer, indexBuffer;
-
-    {
-        VulkanAPI::VKBufferMeta stagingBuffer;
-        vk::BufferCopy          bufferRegion;
-        using Usage = vk::BufferUsageFlagBits;
-
-        stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc, *m_graphics_api );
-        vertexBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst, *m_graphics_api,
-                             vk::MemoryPropertyFlagBits::eDeviceLocal );
-        indexBuffer.Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst, *m_graphics_api,
-                            vk::MemoryPropertyFlagBits::eDeviceLocal );
-
-
-        bufferRegion.setSize( verticesDataSize );
-        stagingBuffer.BindBuffer( vertices.data( ), verticesDataSize, *m_graphics_api );
-        vertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
-
-        bufferRegion.setSize( indicesDataSize );
-        stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, *m_graphics_api );
-        indexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, *m_graphics_api );
-    }
-
     const auto                           swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
     std::vector<VulkanAPI::VKBufferMeta> uniformBuffers( swapChainImagesCount );
     const auto                           updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers ]( ) {
@@ -123,32 +82,29 @@ MainApplication::run( )
         m_graphics_api->setPipelineCreateCallback( updateDescriptorSet );
     }
 
-    m_graphics_api->setRenderer( [ &vertexBuffer, &indexBuffer, &uniformBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
+    auto ubos = std::make_unique<TransformUniformBufferObject[]>( swapChainImagesCount );
+    for ( int i = 0; i < swapChainImagesCount; ++i )
+    {
+        ubos[ i ].model = glm::mat4( 1.0f );
+        ubos[ i ].proj  = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
+    }
+
+    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
         static auto startTime = std::chrono::high_resolution_clock::now( );
 
         if ( m_screen_width * m_screen_height == 0 )
             return;   // window minimized, not render
 
-        auto  currentTime = std::chrono::high_resolution_clock::now( );
-        float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
+        const auto  currentTime = std::chrono::high_resolution_clock::now( );
+        const float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
 
-        TransformUniformBufferObject ubo { };
-        // ubo.model = glm::rotate( glm::mat4( 1.0f ), time * glm::radians( 90.0f ), glm::vec3( 0.0f, 1.0f, 0.0f ) );
-        ubo.model = glm::mat4( 1.0f );
-        ubo.view  = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
-        ubo.proj  = glm::perspective( glm::radians( 45.0f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
+        ubos[ index ].view = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
+        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
 
         // for vulkan coordinate system
-        ubo.proj[ 1 ][ 1 ] *= -1;
-        uniformBuffers[ index ].BindBuffer( &ubo, sizeof( TransformUniformBufferObject ), *m_graphics_api );
+        ubos[ index ].proj[ 1 ][ 1 ] *= -1;
+        uniformBuffers[ index ].writeBuffer( &ubos[ index ], sizeof( TransformUniformBufferObject ), *m_graphics_api );
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
-
-        command_buffer.bindVertexBuffers( 0, vertexBuffer.buffer.get( ), vk::DeviceSize( 0 ) );
-        command_buffer.bindIndexBuffer( indexBuffer.buffer.get( ), 0, vk::IndexType::eUint16 );
-
-        // command_buffer.draw( 3, 1, 0, 0 );
-        command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
-
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
         {
@@ -160,7 +116,7 @@ MainApplication::run( )
                 if ( it->second->initialized )
                 {
                     command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
-                    // command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
+                    command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
 
                     command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
                 }
@@ -374,20 +330,8 @@ MainApplication::cleanUp( )
 void
 MainApplication::renderThread( )
 {
-
-    constexpr uint32_t output_per_frame = 2500 * 2;
-    uint32_t           frame_count      = 0;
-    auto               start_time       = std::chrono::high_resolution_clock::now( );
     while ( m_render_thread_should_run )
     {
-
-        ++frame_count;
-        if ( frame_count % output_per_frame == 0 )
-        {
-            auto time_used = std::chrono::high_resolution_clock::now( ) - start_time;
-            Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "fps:", ( 1000.f * output_per_frame ) / std::chrono::duration_cast<std::chrono::milliseconds>( time_used ).count( ) );
-            start_time = std::chrono::high_resolution_clock::now( );
-        }
 
         m_deltaMouseShouldReset.test_and_set( );
 
@@ -494,6 +438,37 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
     }
 }
 
+// utility structure for realtime plot
+struct ScrollingBuffer {
+    int              MaxSize;
+    int              Offset;
+    ImVector<ImVec2> Data;
+    ScrollingBuffer( int max_size = 2000 )
+    {
+        MaxSize = max_size;
+        Offset  = 0;
+        Data.reserve( MaxSize );
+    }
+    void AddPoint( float x, float y )
+    {
+        if ( Data.size( ) < MaxSize )
+            Data.push_back( ImVec2( x, y ) );
+        else
+        {
+            Data[ Offset ] = ImVec2( x, y );
+            Offset         = ( Offset + 1 ) % MaxSize;
+        }
+    }
+    void Erase( )
+    {
+        if ( Data.size( ) > 0 )
+        {
+            Data.shrink( 0 );
+            Offset = 0;
+        }
+    }
+};
+
 void
 MainApplication::renderImgui( )
 {
@@ -528,6 +503,13 @@ MainApplication::renderImgui( )
             LockMouse( );
         }
 
+        ImGui::SameLine( );
+        if ( ImGui::Button( "Sleep 1s" ) )
+        {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for( 1s );
+        }
+
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
 
         {
@@ -550,6 +532,21 @@ MainApplication::renderImgui( )
             }
 
             static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
+            static ScrollingBuffer fps;
+            static float           maxFPS;
+            maxFPS = std::max( maxFPS, m_imgui_io->Framerate );
+            fps.AddPoint( t, m_imgui_io->Framerate );
+
+            if ( ImPlot::BeginPlot( "FPS##Scrolling", ImVec2( -1, 150 ) ) )
+            {
+                ImPlot::SetupAxes( NULL, NULL, flags, flags );
+                ImPlot::SetupAxisLimits( ImAxis_X1, fps.Data[fps.Offset].x, t, ImGuiCond_Always );
+                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, maxFPS * 1.1 );
+                ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
+                ImPlot::PlotShaded( "Delta time", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
+                ImPlot::EndPlot( );
+            }
+
             if ( ImPlot::BeginPlot( "Chunk Loading##Scrolling", ImVec2( -1, 300 ) ) )
             {
                 ImPlot::SetupAxes( NULL, NULL, flags, flags );
