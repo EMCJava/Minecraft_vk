@@ -137,7 +137,7 @@ protected:
                 newThread->running->notify_one( );
             }
 
-            m_PendingThreads.erase( m_PendingThreads.begin( ), m_PendingThreads.begin( ) + threadVacancy );
+            m_PendingThreads.erase( m_PendingThreads.begin( ), std::next( m_PendingThreads.begin( ), threadVacancy ) );
         }
 
         return finished;
