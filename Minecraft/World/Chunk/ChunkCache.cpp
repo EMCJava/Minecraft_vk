@@ -46,11 +46,14 @@ ChunkCache::ResetLoad( )
                               vk::MemoryPropertyFlagBits::eDeviceLocal );
 
         bufferRegion.setSize( verticesDataSize );
-        stagingBuffer.BindBuffer( vertices.data( ), verticesDataSize, api );
+        stagingBuffer.writeBuffer( vertices.data( ), verticesDataSize, api );
         m_VertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, api );
 
         bufferRegion.setSize( indicesDataSize );
-        stagingBuffer.BindBuffer( indices.data( ), indicesDataSize, api );
+        stagingBuffer.writeBuffer( indices.data( ), indicesDataSize, api );
         m_IndexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, api );
     }
+
+    // using namespace std::chrono_literals;
+    // std::this_thread::sleep_for(1s);
 }

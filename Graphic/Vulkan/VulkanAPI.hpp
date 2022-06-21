@@ -16,9 +16,9 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
-#include <mutex>
 
 namespace DataType
 {
@@ -91,10 +91,15 @@ public:
             api.m_vkLogicalDevice->bindBufferMemory( buffer.get( ), deviceMemory.get( ), 0 );
         }
 
-        void BindBuffer( const void* bindingData, size_t dataSize, const VulkanAPI& api )
+        void writeBuffer( const void* writingData, size_t dataSize, const VulkanAPI& api )
         {
-            auto* bindingPoint = api.m_vkLogicalDevice->mapMemory( deviceMemory.get( ), 0, dataSize );
-            memcpy( bindingPoint, bindingData, dataSize );
+            writeBufferOffseted( writingData, dataSize, 0, api );
+        }
+
+        void writeBufferOffseted( const void* writingData, size_t dataSize, size_t offset, const VulkanAPI& api )
+        {
+            auto* bindingPoint = api.m_vkLogicalDevice->mapMemory( deviceMemory.get( ), offset, dataSize );
+            memcpy( bindingPoint, writingData, dataSize );
             api.m_vkLogicalDevice->unmapMemory( deviceMemory.get( ) );
         }
 
