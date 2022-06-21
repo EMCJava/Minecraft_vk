@@ -333,7 +333,7 @@ MainApplication::renderThread( )
     while ( m_render_thread_should_run )
     {
 
-        m_deltaMouseShouldReset.test_and_set( );
+        m_deltaMouseHoldUpdate.test_and_set( );
 
         /*
          *
@@ -348,7 +348,7 @@ MainApplication::renderThread( )
          *
          * */
         m_NegDeltaMouse = { };
-        m_deltaMouseShouldReset.clear( );
+        m_deltaMouseHoldUpdate.clear( );
 
         /*
          *
@@ -573,7 +573,7 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
 {
     auto* mainApplication = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
 
-    if ( !mainApplication->m_deltaMouseShouldReset.test( ) && mainApplication->m_is_mouse_locked )
+    if ( !mainApplication->m_deltaMouseHoldUpdate.test( ) && mainApplication->m_is_mouse_locked )
         mainApplication->m_NegDeltaMouse = { xpos - mainApplication->m_MousePos.first, mainApplication->m_MousePos.second - ypos };
     mainApplication->m_MousePos = { xpos, ypos };
 

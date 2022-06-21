@@ -35,7 +35,7 @@ class MainApplication : public Singleton<MainApplication>
 
     std::pair<double, double> m_MousePos;
 
-    std::atomic_flag          m_deltaMouseShouldReset;
+    std::atomic_flag          m_deltaMouseHoldUpdate;
     std::pair<double, double> m_NegDeltaMouse;
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
