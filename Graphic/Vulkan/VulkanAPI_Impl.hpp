@@ -35,7 +35,8 @@ VulkanAPI::presentFrame( uint32_t index )
      * */
     if ( m_vkSwap_chain_image_fence_syncs[ index ] )
     {
-        if ( m_vkSwap_chain_image_fence_syncs[ m_sync_index ] )
+        // no way this goes wrong, right?
+        // if ( m_vkSwap_chain_image_fence_syncs[ m_sync_index ] )
         {
 
             wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkSwap_chain_image_fence_syncs[ m_sync_index ], true, std::numeric_limits<uint64_t>::max( ) );
