@@ -6,6 +6,7 @@
 #define MINECRAFT_VK_PLAYER_HPP
 
 #include <Minecraft/Application/Camera/Camera.hpp>
+#include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 #include <Minecraft/util/Tickable.hpp>
 
@@ -30,6 +31,7 @@ public:
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
     BlockCoordinate  GetIntCoordinate( ) { return { std::get<0>( m_Coordinate ), std::get<1>( m_Coordinate ), std::get<2>( m_Coordinate ) }; };
+    BlockCoordinate  GetChunkCoordinate( ) { return { (int) std::get<0>( m_Coordinate ) >> SectionBinaryOffsetLength, (int) std::get<1>( m_Coordinate ) >> SectionBinaryOffsetLength, (int) std::get<2>( m_Coordinate ) >> SectionBinaryOffsetLength }; };
 
     void Tick( float deltaTime );
 };
