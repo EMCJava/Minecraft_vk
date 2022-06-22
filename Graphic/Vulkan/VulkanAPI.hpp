@@ -27,10 +27,18 @@ struct ColoredVertex : VertexDetail {
     glm::vec3 pos;
     glm::vec3 color;
 
-    ColoredVertex( glm::vec3 p, glm::vec3 c )
+    ColoredVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec3 c = glm::vec3( 0 ) )
         : pos( p )
         , color( c )
     { }
+
+    ColoredVertex& operator=( const ColoredVertex& other )
+    {
+        pos   = other.pos;
+        color = other.color;
+
+        return *this;
+    }
 
     static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
     {
