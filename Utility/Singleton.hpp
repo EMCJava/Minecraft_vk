@@ -15,7 +15,7 @@ protected:
     Singleton( )
     {
         assert( m_Instance == nullptr );
-        m_Instance = reinterpret_cast<T*>( this );
+        m_Instance = static_cast<T*>( this );
     }
 
 public:
