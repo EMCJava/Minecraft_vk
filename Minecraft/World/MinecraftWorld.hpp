@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_MINECRAFTWORLD_HPP
 #define MINECRAFT_VK_MINECRAFTWORLD_HPP
 
+#include <Minecraft/World/Generation/MinecraftNoise.hpp>
 #include <Minecraft/World/Chunk/ChunkPool.hpp>
 #include <Minecraft/util/Tickable.hpp>
 
@@ -12,7 +13,8 @@
 
 class MinecraftWorld : public Tickable
 {
-    std::unique_ptr<ChunkPool> m_ChunkPool;
+    std::unique_ptr<ChunkPool>      m_ChunkPool;
+    std::unique_ptr<MinecraftNoise> m_WorldHeightNoise;
 
     /*
      *
@@ -30,6 +32,7 @@ public:
 
     void Tick( float deltaTime );
 
+    const auto& GetHeightNoise( ) { return m_WorldHeightNoise; }
     ChunkPool& GetChunkPool( ) { return *m_ChunkPool; }
 };
 
