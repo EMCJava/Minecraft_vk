@@ -118,7 +118,7 @@ MainApplication::run( )
                     command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
                     command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
 
-                    command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
+                    command_buffer.drawIndexed( it->second->GetIndexBufferSize(), 1, 0, 0, 0 );
                 }
             }
         }
