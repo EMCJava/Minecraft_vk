@@ -36,15 +36,18 @@ private:
             {
 
                 const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                    [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) < range; } );
+                                                    [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) < range; } );
 
-                {   // elements outside the range
+                const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
+
+                // elements outside the range
+                if ( amountToRemove > 0 )
+                {
                     std::lock_guard cacheModifyLocker( m_ChunkCacheLock );
                     for ( auto it = lastIt; it != m_PendingThreads.end( ); ++it )
                         m_ChunkCache.erase( ( *it )->chunk.GetCoordinate( ) );
+                    m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
                 }
-
-                m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
             }
 
             auto finished = UpdateSorted( &ChunkPool::LoadChunk,
@@ -83,7 +86,7 @@ public:
         std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
     }
 
-    void SetCentre( BlockCoordinate centre )
+    void SetCentre( const BlockCoordinate& centre )
     {
         m_PrioritizeCoordinate = centre;
     }
@@ -99,7 +102,7 @@ public:
         m_UpdateThread = std::make_unique<std::jthread>( std::bind_front( &ChunkPool::UpdateThread, this ) );
     }
 
-    void AddCoordinate( BlockCoordinate coordinate )
+    void AddCoordinate( const BlockCoordinate& coordinate )
     {
         if ( m_ChunkCache.contains( coordinate ) ) return;
 
@@ -110,7 +113,7 @@ public:
         m_ChunkCache.insert( { coordinate, newChunk } );
     }
 
-    bool IsChunkLoading( BlockCoordinate coordinate )
+    bool IsChunkLoading( const BlockCoordinate& coordinate )
     {
         if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
         {
@@ -119,7 +122,7 @@ public:
         return false;
     }
 
-    bool IsChunkLoaded( BlockCoordinate coordinate )
+    bool IsChunkLoaded( const BlockCoordinate& coordinate )
     {
         if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
         {
