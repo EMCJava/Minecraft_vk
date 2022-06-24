@@ -25,8 +25,7 @@ MinecraftWorld::IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius )
     m_ChunkPool->SetCentre( centre );
     for ( int i = -radius; i <= radius; ++i )
         for ( int j = -radius; j <= radius; ++j )
-            if ( std::abs( i ) + std::abs( j ) < radius )
-                m_ChunkPool->AddCoordinate( centre + MakeCoordinate( i, j, 0 ) );
+            m_ChunkPool->AddCoordinate( centre + MakeCoordinate( i, j, 0 ) );
 }
 
 void
