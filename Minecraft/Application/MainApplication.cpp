@@ -107,6 +107,8 @@ MainApplication::run( )
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
+        m_renderingChunkCount = 0;
+
         {
             std::lock_guard cacheIterLocker( chunkPool.GetChunkCacheLock( ) );
             auto            iterBegin = chunkPool.GetChunkIterBegin( );
@@ -118,7 +120,8 @@ MainApplication::run( )
                     command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
                     command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
 
-                    command_buffer.drawIndexed( it->second->GetIndexBufferSize(), 1, 0, 0, 0 );
+                    command_buffer.drawIndexed( it->second->GetIndexBufferSize( ), 1, 0, 0, 0 );
+                    m_renderingChunkCount++;
                 }
             }
         }
@@ -516,7 +519,7 @@ MainApplication::renderImgui( )
             static float            t         = 0;
             static float            previousT = 0;
             static float            history   = 10.0f;
-            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount;
+            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount, chunkRenderCount;
             auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
             t += ImGui::GetIO( ).DeltaTime;
@@ -530,9 +533,11 @@ MainApplication::renderImgui( )
                 {
                     chunkLoadingThreadCount.shrink( 0 );
                     chunkCount.shrink( 0 );
+                    chunkRenderCount.shrink( 0 );
                 }
                 chunkLoadingThreadCount.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
                 chunkCount.push_back( ImVec2( xmod, chunkPool.GetTotalChunk( ) ) );
+                chunkRenderCount.push_back( ImVec2( xmod, m_renderingChunkCount ) );
             }
 
             static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
@@ -564,8 +569,10 @@ MainApplication::renderImgui( )
                 ImPlot::PlotStems( "Chunk thread", &chunkLoadingThreadCount[ 0 ].x, &chunkLoadingThreadCount[ 0 ].y, chunkLoadingThreadCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
 
                 ImPlot::SetAxes( ImAxis_X1, ImAxis_Y2 );
-                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Circle );
                 ImPlot::PlotStems( "Total Chunk", &chunkCount[ 0 ].x, &chunkCount[ 0 ].y, chunkCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
         }

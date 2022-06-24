@@ -50,6 +50,13 @@ class MainApplication : public Singleton<MainApplication>
      * */
     std::unique_ptr<Minecraft> m_MinecraftInstance;
 
+    /*
+     *
+     * Statistics
+     *
+     * */
+    uint32_t m_renderingChunkCount = 0;
+
     void InitWindow( );
     void InitImgui( );
     void RecreateWindow( bool isFullScreen );
