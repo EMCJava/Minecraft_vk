@@ -40,7 +40,7 @@ class MainApplication : public Singleton<MainApplication>
 
     std::unique_ptr<VulkanAPI> m_graphics_api;
 
-    struct ImGuiIO*          m_imgui_io;
+    struct ImGuiIO*          m_imgui_io { };
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
 
     /*
@@ -86,7 +86,7 @@ public:
         m_is_mouse_locked = true;
         glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
     }
-    
+
     void UnlockMouse( )
     {
         m_is_mouse_locked = false;
