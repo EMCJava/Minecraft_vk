@@ -289,6 +289,17 @@ public:
     /// <returns>
     /// Noise output bounded between -1...1
     /// </returns>
+    float GetNoiseInt( std::integral auto x, std::integral auto y ) const
+    {
+        return GetNoise( (float) x, (float) y );
+    }
+
+    /// <summary>
+    /// 2D noise at given position using current settings
+    /// </summary>
+    /// <returns>
+    /// Noise output bounded between -1...1
+    /// </returns>
     template <typename FNfloat>
     float GetNoise( FNfloat x, FNfloat y ) const
     {
