@@ -25,7 +25,7 @@ MinecraftWorld::IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius )
     m_ChunkPool->SetCentre( centre );
     for ( int i = -radius; i <= radius; ++i )
         for ( int j = -radius; j <= radius; ++j )
-            m_ChunkPool->AddCoordinate( centre + MakeCoordinate( i, j, 0 ) );
+            m_ChunkPool->AddCoordinate( centre + MakeMinecraftCoordinate( i, 0, j ) );
 }
 
 void
@@ -36,7 +36,7 @@ MinecraftWorld::Tick( float deltaTime )
     m_TimeSinceChunkLoad += deltaTime;
     if ( m_TimeSinceChunkLoad > 0.2f )
     {
-        auto chunkCoordinate      = ToCartesianCoordinate( MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( ) );
+        auto chunkCoordinate      = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
         get<2>( chunkCoordinate ) = 0;
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
         m_TimeSinceChunkLoad = 0;
