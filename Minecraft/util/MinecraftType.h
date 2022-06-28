@@ -10,7 +10,12 @@
 #include <iostream>
 #include <tuple>
 
-using CoordinateType   = int32_t;
+using CoordinateType = int32_t;
+
+static constexpr int MinecraftCoordinateXIndex = 0;
+static constexpr int MinecraftCoordinateYIndex = 2;
+static constexpr int MinecraftCoordinateZIndex = 1;
+
 using EntityCoordinate = std::tuple<float, float, float>;
 using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
 using ChunkCoordinate  = BlockCoordinate;
@@ -33,25 +38,111 @@ operator-( const BlockCoordinate& a )
     return { -get<0>( a ), -get<1>( a ), -get<2>( a ) };
 }
 
+inline auto&
+GetMinecraftX( const BlockCoordinate& a )
+{
+    return std::get<MinecraftCoordinateXIndex>( a );
+}
+
+inline auto&
+GetMinecraftY( const BlockCoordinate& a )
+{
+    return std::get<MinecraftCoordinateYIndex>( a );
+}
+
+inline auto&
+GetMinecraftZ( const BlockCoordinate& a )
+{
+    return std::get<MinecraftCoordinateZIndex>( a );
+}
+
 inline BlockCoordinate
-MakeCoordinate( int x, int y, int z )
+MakeMinecraftCoordinate( auto x, auto y, auto z )
+{
+    return { x, z, y };
+}
+
+inline BlockCoordinate
+MakeCoordinate( auto x, auto y, auto z )
 {
     return { x, y, z };
 }
 
 inline BlockCoordinate
-ToCartesianCoordinate( const BlockCoordinate& coor )
+ToCartesianCoordinate( BlockCoordinate&& coor )
 {
-    BlockCoordinate result = coor;
-    std::swap( get<1>( result ), get<2>( result ) );
-    return result;
+    if constexpr ( MinecraftCoordinateXIndex != 0 )
+    {
+        std::swap( get<MinecraftCoordinateXIndex>( coor ), get<0>( coor ) );
+        if constexpr ( MinecraftCoordinateYIndex == 0 )
+        {
+            if constexpr ( MinecraftCoordinateXIndex != 1 )
+            {
+                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<1>( coor ) );
+            }
+        }
+
+        if constexpr ( MinecraftCoordinateZIndex == 0 )
+        {
+            if constexpr ( MinecraftCoordinateXIndex != 2 )
+            {
+                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<2>( coor ) );
+            }
+        }
+    } else
+    {
+        if constexpr ( MinecraftCoordinateYIndex != 1 )
+        {
+            std::swap( get<MinecraftCoordinateYIndex>( coor ), get<MinecraftCoordinateZIndex>( coor ) );
+        }
+    }
+
+    return coor;
 }
 
 inline BlockCoordinate
-ToCartesianCoordinate( BlockCoordinate&& coor )
+ToMinecraftCoordinate( BlockCoordinate&& coor )
 {
-    std::swap( get<1>( coor ), get<2>( coor ) );
+    if constexpr ( MinecraftCoordinateXIndex != 0 )
+    {
+        if constexpr ( MinecraftCoordinateYIndex == 0 )
+        {
+            if constexpr ( MinecraftCoordinateXIndex != 1 )
+            {
+                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<1>( coor ) );
+            }
+        }
+
+        if constexpr ( MinecraftCoordinateZIndex == 0 )
+        {
+            if constexpr ( MinecraftCoordinateXIndex != 2 )
+            {
+                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<2>( coor ) );
+            }
+        }
+
+        std::swap( get<MinecraftCoordinateXIndex>( coor ), get<0>( coor ) );
+    } else
+    {
+        if constexpr ( MinecraftCoordinateYIndex != 1 )
+        {
+            std::swap( get<MinecraftCoordinateYIndex>( coor ), get<MinecraftCoordinateZIndex>( coor ) );
+        }
+    }
+
     return coor;
+}
+
+inline BlockCoordinate
+ToCartesianCoordinate( const BlockCoordinate& coor )
+{
+    return ToCartesianCoordinate( BlockCoordinate { coor } );
+}
+
+inline BlockCoordinate
+ToMinecraftCoordinate( const BlockCoordinate& coor )
+{
+    return ToMinecraftCoordinate( BlockCoordinate { coor } );
 }
 
 namespace std
