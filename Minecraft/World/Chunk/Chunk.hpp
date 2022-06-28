@@ -8,6 +8,7 @@
 #include <Minecraft/Block/Block.hpp>
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
+#include <Minecraft/World/Generation/MinecraftNoise.hpp>
 
 #include <cmath>
 
@@ -16,7 +17,19 @@ class Chunk
 
     ChunkCoordinate m_coordinate;
 
+    int    m_sectionCount = 0;
     Block* m_Blocks { };
+
+private:
+    inline void DeleteChunk( )
+    {
+        delete[] m_Blocks;
+        m_Blocks = nullptr;
+    }
+
+    std::unique_ptr<float[]> GenerateHeightMap( const MinecraftNoise& );
+
+    void RegenerateChunk( );
 
 public:
     Chunk( ) = default;

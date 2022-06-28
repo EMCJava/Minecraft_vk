@@ -16,7 +16,12 @@ ChunkCache::ResetLoad( )
 {
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Loading chunk:", chunk.GetCoordinate( ) );
 
-    const auto [ chunkX, chunkZ, chunkY ] = chunk.GetCoordinate( );
+    auto [ chunkX, chunkZ, chunkY ] = chunk.GetCoordinate( );
+
+    chunkX <<= SectionBinaryOffsetLength;
+    chunkZ <<= SectionBinaryOffsetLength;
+
+    chunk.RegenerateChunk( );
 
     static const std::vector<uint16_t>   blockIndices  = { 0, 1, 2, 2, 3, 0 };
     std::vector<DataType::ColoredVertex> BlockVertices = {
@@ -42,13 +47,13 @@ ChunkCache::ResetLoad( )
     {
         for ( int j = 0; j < SectionUnitLength; ++j )
         {
-            const auto height                     = noiseGenerator->GetNoise( ( chunkX << SectionBinaryOffsetLength ) + (float) i, ( chunkZ << SectionBinaryOffsetLength ) + (float) j ) * 10;
+            const auto height                     = noiseGenerator->GetNoiseInt( chunkX + i, chunkZ + j ) * 10;
             const auto blockCoordinateIndexVertex = ( i * SectionUnitLength + j ) * blockVerticesSize;
             for ( int k = 0; k < blockVerticesSize; ++k )
             {
                 assert( blockCoordinateIndexVertex + k < ( BlockVertices.size( ) << ( SectionBinaryOffsetLength * 2 ) ) );
                 chunkVertices[ blockCoordinateIndexVertex + k ] = BlockVertices[ k ];
-                chunkVertices[ blockCoordinateIndexVertex + k ].pos += glm::vec3( ( chunkX << SectionBinaryOffsetLength ) + i, height, ( chunkZ << SectionBinaryOffsetLength ) + j );
+                chunkVertices[ blockCoordinateIndexVertex + k ].pos += glm::vec3( chunkX + i, height, chunkZ + j );
             }
 
             const auto blockCoordinateIndexIndices = ( i * SectionUnitLength + j ) * blockIndicesSize;
