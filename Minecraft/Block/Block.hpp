@@ -6,7 +6,10 @@
 #define MINECRAFT_VK_BLOCK_HPP
 
 enum BlockID {
-    Air, Stone, Grass, BlockIDSize
+    Air,
+    Stone,
+    Grass,
+    BlockIDSize
 };
 
 class Block
@@ -14,7 +17,25 @@ class Block
     BlockID id;
 
 public:
-    Block(BlockID id = Air) : id(id){}
+    Block( BlockID id = Air )
+        : id( id )
+    { }
+
+    inline bool Transparent( )
+    {
+        switch ( id )
+        {
+        case Air:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    inline operator BlockID( )
+    {
+        return id;
+    }
 };
 
 
