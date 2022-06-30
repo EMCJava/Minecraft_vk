@@ -97,7 +97,7 @@ MainApplication::run( )
         const float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
 
         ubos[ index ].view = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
-        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
+        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
 
         // for vulkan coordinate system
         ubos[ index ].proj[ 1 ][ 1 ] *= -1;
