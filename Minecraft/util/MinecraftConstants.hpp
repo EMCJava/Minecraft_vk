@@ -40,4 +40,7 @@ static constexpr CoordinateType SectionVolumeBinaryOffset      = SectionSurfaceS
 static constexpr CoordinateType MaxSectionInChunk = 24;
 static constexpr CoordinateType ChunkMaxHeight    = SectionUnitLength * MaxSectionInChunk;
 
+static constexpr uint32_t ChunkThreadDelayPeriod = 100;
+
+
 #endif   // MINECRAFT_VK_MINECRAFTCONSTANTS_HPP

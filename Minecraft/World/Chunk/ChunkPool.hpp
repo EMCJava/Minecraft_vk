@@ -64,7 +64,8 @@ private:
                 }
             } else
             {
-                std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+                // std::this_thread::yield();
+                std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
             }
         }
 
@@ -72,7 +73,7 @@ private:
         {
             Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Waiting", m_RunningThreads.size( ), "thread to be finished" );
             CleanRunningThread( );
-            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
+            std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
         }
     }
 
