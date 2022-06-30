@@ -8,12 +8,34 @@
 #include "MinecraftType.h"
 #include <Utility/Math/Math.hpp>
 
-static constexpr CoordinateType SectionUnitLength         = 16;
-static constexpr CoordinateType SectionBinaryOffsetLength = IntLog<SectionUnitLength, 2>::value;
-static_assert( 1 << SectionBinaryOffsetLength == SectionUnitLength );
+enum : uint8_t {
+    DirFront,
+    DirBack,
+    DirRight,
+    DirLeft,
+    DirUp,
+    DirDown,
+    DirSize
+};
 
-static constexpr CoordinateType SectionSurfaceSize   = SectionUnitLength * SectionUnitLength;
-static constexpr CoordinateType TotalBlocksInSection = SectionSurfaceSize * SectionUnitLength;
+enum : uint8_t {
+    DirFrontBit = 1 << DirFront,
+    DirBackBit  = 1 << DirBack,
+    DirRightBit = 1 << DirRight,
+    DirLeftBit  = 1 << DirLeft,
+    DirUpBit    = 1 << DirUp,
+    DirDownBit  = 1 << DirDown,
+    DirBitSize  = 6
+};
+
+static constexpr CoordinateType SectionUnitLength             = 16;
+static constexpr CoordinateType SectionUnitLengthBinaryOffset = IntLog<SectionUnitLength, 2>::value;
+static_assert( 1 << SectionUnitLengthBinaryOffset == SectionUnitLength );
+
+static constexpr CoordinateType SectionSurfaceSize             = SectionUnitLength * SectionUnitLength;
+static constexpr CoordinateType SectionSurfaceSizeBinaryOffset = SectionUnitLengthBinaryOffset + SectionUnitLengthBinaryOffset;
+static constexpr CoordinateType SectionVolume                  = SectionSurfaceSize * SectionUnitLength;
+static constexpr CoordinateType SectionVolumeBinaryOffset      = SectionSurfaceSizeBinaryOffset + SectionUnitLengthBinaryOffset;
 
 static constexpr CoordinateType MaxSectionInChunk = 24;
 static constexpr CoordinateType ChunkMaxHeight    = SectionUnitLength * MaxSectionInChunk;

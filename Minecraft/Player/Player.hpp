@@ -31,7 +31,7 @@ public:
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
     BlockCoordinate  GetIntCoordinate( ) { return { std::get<0>( m_Coordinate ), std::get<1>( m_Coordinate ), std::get<2>( m_Coordinate ) }; };
-    BlockCoordinate  GetChunkCoordinate( ) { return { (int) std::get<0>( m_Coordinate ) >> SectionBinaryOffsetLength, (int) std::get<1>( m_Coordinate ) >> SectionBinaryOffsetLength, (int) std::get<2>( m_Coordinate ) >> SectionBinaryOffsetLength }; };
+    BlockCoordinate  GetChunkCoordinate( ) { return { (int) std::get<0>( m_Coordinate ) >> SectionUnitLengthBinaryOffset, (int) std::get<1>( m_Coordinate ) >> SectionUnitLengthBinaryOffset, (int) std::get<2>( m_Coordinate ) >> SectionUnitLengthBinaryOffset }; };
 
     void Tick( float deltaTime );
 };
