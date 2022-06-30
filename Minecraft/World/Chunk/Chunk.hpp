@@ -6,29 +6,38 @@
 #define MINECRAFT_VK_CHUNK_HPP
 
 #include <Minecraft/Block/Block.hpp>
+#include <Minecraft/World/Generation/MinecraftNoise.hpp>
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
-#include <Minecraft/World/Generation/MinecraftNoise.hpp>
 
 #include <cmath>
 
 class Chunk
 {
 
-    ChunkCoordinate m_coordinate;
+    ChunkCoordinate m_Coordinate;
 
-    int    m_sectionCount = 0;
-    Block* m_Blocks { };
+    int       m_SectionCount = 0, m_SectionHeight = 0;
+    Block*    m_Blocks { };
+    uint32_t* m_WorldHeightMap { };
+    uint8_t*  m_BlockFaces { };
+
+    int m_VisibleFacesCount = 0;
 
 private:
     inline void DeleteChunk( )
     {
+        delete[] m_WorldHeightMap;
+        delete[] m_BlockFaces;
         delete[] m_Blocks;
-        m_Blocks = nullptr;
+        m_Blocks         = nullptr;
+        m_BlockFaces     = nullptr;
+        m_WorldHeightMap = nullptr;
     }
 
     std::unique_ptr<float[]> GenerateHeightMap( const MinecraftNoise& );
 
+    void RegenerateVisibleFaces( );
     void RegenerateChunk( );
 
 public:
@@ -41,19 +50,19 @@ public:
     Chunk operator=( const Chunk& ) = delete;
     Chunk operator=( Chunk&& )      = delete;
 
-    inline const ChunkCoordinate& SetCoordinate( const ChunkCoordinate& coordinate ) { return m_coordinate = coordinate; }
-    inline const ChunkCoordinate& GetCoordinate( ) { return m_coordinate; }
+    inline const ChunkCoordinate& SetCoordinate( const ChunkCoordinate& coordinate ) { return m_Coordinate = coordinate; }
+    inline const ChunkCoordinate& GetCoordinate( ) { return m_Coordinate; }
 
     [[nodiscard]] inline CoordinateType ManhattanDistance( const Chunk& other ) const
     {
-        return ManhattanDistance( other.m_coordinate );
+        return ManhattanDistance( other.m_Coordinate );
     }
 
     [[nodiscard]] inline CoordinateType ManhattanDistance( const ChunkCoordinate& other ) const
     {
-        return std::abs( std::get<0>( m_coordinate ) - std::get<0>( other ) )
-            + std::abs( std::get<1>( m_coordinate ) - std::get<1>( other ) )
-            + std::abs( std::get<2>( m_coordinate ) - std::get<2>( other ) );
+        return std::abs( std::get<0>( m_Coordinate ) - std::get<0>( other ) )
+            + std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) )
+            + std::abs( std::get<2>( m_Coordinate ) - std::get<2>( other ) );
     }
 
     friend class ChunkCache;
