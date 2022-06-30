@@ -2,9 +2,7 @@
 // Created by loys on 16/1/2022.
 //
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <Include/GLM.hpp>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
