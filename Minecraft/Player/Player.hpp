@@ -16,7 +16,7 @@ class Player : Tickable
     EntityCoordinate m_Coordinate;
 
 public:
-    explicit Player( EntityCoordinate coordinate )
+    explicit Player( const EntityCoordinate& coordinate )
     {
         SetCoordinate( coordinate );
     }
@@ -27,7 +27,7 @@ public:
         return m_Camera.GetViewMatrix( );
     }
 
-    void SetCoordinate( EntityCoordinate coordinate ) { m_Coordinate = coordinate; };
+    void SetCoordinate( const EntityCoordinate& coordinate ) { m_Coordinate = coordinate; };
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
     BlockCoordinate  GetIntCoordinate( ) { return { std::get<0>( m_Coordinate ), std::get<1>( m_Coordinate ), std::get<2>( m_Coordinate ) }; };
