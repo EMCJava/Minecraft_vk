@@ -34,6 +34,7 @@ private:
         {
             if ( m_RemoveJobAfterRange > 0 )
             {
+                std::lock_guard<std::mutex> guard( m_PendingThreadsMutex );
 
                 const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
                                                     [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) < range; } );
