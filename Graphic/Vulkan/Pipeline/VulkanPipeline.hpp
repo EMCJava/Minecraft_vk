@@ -47,7 +47,9 @@ protected:
         vk::PipelineDynamicStateCreateInfo       dynamicStateCreateInfo;
         vk::PipelineLayoutCreateInfo             pipelineLayoutCreateInfo;
         vk::AttachmentDescription                colorAttachment;
+        vk::AttachmentDescription                depthAttachment;
         vk::AttachmentReference                  colorAttachmentRef;
+        vk::AttachmentReference                  depthAttachmentRef;
         vk::SubpassDescription                   subpass;
         vk::SubpassDependency                    subpassDependency;
         vk::RenderPassCreateInfo                 renderPassCreateInfo;
@@ -55,6 +57,7 @@ protected:
         vk::DescriptorPoolSize                   descriptorPoolSize;
         vk::DescriptorPoolCreateInfo             descriptorPoolCreateInfo;
         vk::UniqueDescriptorPool                 descriptorPool;
+        vk::PipelineDepthStencilStateCreateInfo  depthStencilCreateInfo;
 
         vk::GraphicsPipelineCreateInfo createInfo;
     };
@@ -83,13 +86,15 @@ protected:
 
     virtual void SetupDescriptorSet( vk::Device&, uint32_t descriptorCount );
 
-    virtual void SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format );
+    virtual void SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
+
+    virtual void SetupDepthStencilStage(  );
 
 public:
     explicit VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader );
 
     template <typename VertexClass = DataType::VertexDetail, typename = std::enable_if_t<std::is_base_of_v<DataType::VertexDetail, VertexClass>>>
-    void Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR format );
+    void Create( float width, float height, uint32_t descriptorCount, vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
 
     [[nodiscard]] vk::Pipeline   getPipeline( ) const { return m_vkPipeline.begin( )->get( ); }
     [[nodiscard]] vk::RenderPass getRenderPass( ) const { return m_vkRenderPass.get( ); }

@@ -26,7 +26,7 @@ VulkanPipeline::SetupRasterizationStage( )
                                         false,
                                         false,
                                         vk::PolygonMode::eFill,
-                                        vk::CullModeFlagBits::eNone,
+                                        vk::CullModeFlagBits::eBack,
                                         vk::FrontFace::eCounterClockwise,
 
                                         vk::Bool32( false ),
@@ -99,12 +99,12 @@ VulkanPipeline::SetupPipelineLayout( vk::Device& device )
 }
 
 void
-VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format )
+VulkanPipeline::SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
 {
 
     createInfo.colorAttachment = {
         { },
-        format.format,
+        imageFormat.format,
         vk::SampleCountFlagBits::e1,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
@@ -113,6 +113,16 @@ VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format
         vk::ImageLayout::eUndefined,
         vk::ImageLayout::ePresentSrcKHR };
 
+    createInfo.depthAttachment = { { },
+                                   depthFormat.format,
+                                   vk::SampleCountFlagBits::e1,
+                                   vk::AttachmentLoadOp::eClear,
+                                   vk::AttachmentStoreOp::eDontCare,
+                                   vk::AttachmentLoadOp::eDontCare,
+                                   vk::AttachmentStoreOp::eDontCare,
+                                   vk::ImageLayout::eUndefined,
+                                   vk::ImageLayout::eDepthStencilAttachmentOptimal };
+
     /**
      *
      * Creation of subpass
@@ -120,26 +130,33 @@ VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR format
      */
 
     createInfo.colorAttachmentRef = { 0, vk::ImageLayout::eColorAttachmentOptimal };
+    createInfo.depthAttachmentRef = { 1, vk::ImageLayout::eDepthStencilAttachmentOptimal };
     createInfo.subpass            = { { },
                                       vk::PipelineBindPoint::eGraphics,
                                       0,
                                       nullptr,
                                       1,
-                                      &createInfo.colorAttachmentRef };
+                                      &createInfo.colorAttachmentRef,
+                                      nullptr,
+                                      &createInfo.depthAttachmentRef };
 
     createInfo.subpassDependency = { VK_SUBPASS_EXTERNAL, 0,
-                                     vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                     vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                                     vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite };
+                                     vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                                     vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                                     vk::AccessFlags( 0 ), vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite };
 
     createInfo.renderPassCreateInfo = {
         { },
-        1,
-        &createInfo.colorAttachment,
+        0,
+        nullptr,
         1,
         &createInfo.subpass,
         1,
         &createInfo.subpassDependency };
+
+    // REALLY???
+    std::vector<vk::AttachmentDescription> attachments { createInfo.colorAttachment, createInfo.depthAttachment };
+    createInfo.renderPassCreateInfo.setAttachments( attachments );
 
     m_vkRenderPass = device.createRenderPassUnique( createInfo.renderPassCreateInfo );
 }
@@ -169,4 +186,17 @@ VulkanPipeline::SetupDescriptorSet( vk::Device& device, uint32_t descriptorCount
 
     createInfo.vertexUniformDescriptorSetsPtr.resize( descriptorCount );
     createInfo.vertexUniformDescriptorSetsPtr = device.allocateDescriptorSets( allocInfo );
+}
+
+void
+VulkanPipeline::SetupDepthStencilStage( )
+{
+    createInfo.depthStencilCreateInfo
+        .setDepthTestEnable( true )
+        .setDepthWriteEnable( true )
+        .setDepthCompareOp( vk::CompareOp::eLess )
+        .setDepthBoundsTestEnable( false )
+        .setMinDepthBounds( 0 )
+        .setMaxDepthBounds( 1 )
+        .setStencilTestEnable( false );
 }

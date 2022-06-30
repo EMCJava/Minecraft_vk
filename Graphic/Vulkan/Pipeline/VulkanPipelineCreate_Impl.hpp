@@ -41,7 +41,7 @@ VulkanPipeline::SetupInputStage( float width, float height )
 
 template <typename VertexClass, typename>
 void
-VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR format )
+VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
 {
     SetupPipelineShaderStage( );
 
@@ -93,7 +93,8 @@ VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk:
      * Render pass
      *
      * */
-    SetupRenderPass( device, format );
+    SetupRenderPass( physicalDevice, device, imageFormat, depthFormat );
+    SetupDepthStencilStage();
 
     createInfo.createInfo.setStageCount( createInfo.shaderStagesCreateInfo.size( ) );
     createInfo.createInfo.setStages( createInfo.shaderStagesCreateInfo );
@@ -108,7 +109,7 @@ VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk:
     createInfo.createInfo.setSubpass( 0 );
 
     createInfo.createInfo.setPTessellationState( nullptr );
-    createInfo.createInfo.setPDepthStencilState( nullptr );
+    createInfo.createInfo.setPDepthStencilState( &createInfo.depthStencilCreateInfo );
     createInfo.createInfo.setPDynamicState( nullptr );
 
     auto result = device.createGraphicsPipelinesUnique( nullptr, createInfo.createInfo );
