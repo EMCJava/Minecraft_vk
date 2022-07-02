@@ -6,6 +6,7 @@
 #define MINECRAFT_VK_VULKAN_VULKANAPI_HPP
 
 #include <Include/GraphicAPI.hpp>
+#include <Include/vk_mem_alloc.h>
 
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
@@ -24,8 +25,8 @@ namespace DataType
 {
 
 struct ColoredVertex : VertexDetail {
-    glm::vec3 pos;
-    glm::vec3 color;
+    glm::ivec3 pos;
+    glm::vec3  color;
 
     ColoredVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec3 c = glm::vec3( 0 ) )
         : pos( p )
@@ -46,7 +47,7 @@ struct ColoredVertex : VertexDetail {
 
         attributeDescriptions[ 0 ].setBinding( 0 );
         attributeDescriptions[ 0 ].setLocation( 0 );
-        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sfloat );
+        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sint );
         attributeDescriptions[ 0 ].setOffset( offsetof( ColoredVertex, pos ) );
 
         attributeDescriptions[ 1 ].setBinding( 0 );
@@ -68,7 +69,6 @@ struct ColoredVertex : VertexDetail {
         return bindingDescription;
     }
 };
-
 }   // namespace DataType
 
 class VulkanAPI
@@ -81,6 +81,11 @@ public:
         vk::PhysicalDeviceMemoryProperties memProperties;
         vk::UniqueDeviceMemory             deviceMemory;
 
+        inline auto& GetBuffer( ) const
+        {
+            return *buffer;
+        }
+
         static uint32_t FindMemoryType( const vk::PhysicalDeviceMemoryProperties& memProperties, uint32_t typeFilter, vk::MemoryPropertyFlags properties )
         {
             for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
@@ -91,7 +96,6 @@ public:
         void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                      const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
         {
-
             buffer          = api.m_vkLogicalDevice->createBufferUnique( { { }, size, usage, sharingMode } );
             memRequirements = api.m_vkLogicalDevice->getBufferMemoryRequirements( buffer.get( ) );
             memProperties   = api.m_vkPhysicalDevice.getMemoryProperties( );
@@ -127,6 +131,94 @@ public:
 
             commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
             commandBuffer.copyBuffer( *bufferData.buffer, *buffer, dataRegion );
+            commandBuffer.end( );
+
+            const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
+            auto        transferQueue         = api.m_vkLogicalDevice->getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
+
+            vk::SubmitInfo submitInfo;
+            submitInfo.setCommandBuffers( commandBuffer );
+            transferQueue.submit( submitInfo, nullptr );
+            transferQueue.waitIdle( );
+        }
+    };
+    struct VKMBufferMeta {
+
+        VmaAllocator           allocator;
+        vk::Buffer             buffer;
+        VmaAllocation          allocation;
+        vk::MemoryRequirements memRequirements;
+
+        VKMBufferMeta( VmaAllocator allocator )
+            : allocator( allocator )
+        { }
+
+        ~VKMBufferMeta( )
+        {
+            vmaDestroyBuffer( allocator, buffer, allocation );
+        }
+
+        inline auto& GetBuffer( ) const
+        {
+            return buffer;
+        }
+
+        static uint32_t FindMemoryType( const vk::PhysicalDeviceMemoryProperties& memProperties, uint32_t typeFilter, vk::MemoryPropertyFlags properties )
+        {
+            for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
+                if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
+            throw std::runtime_error( "failed to find suitable memory type!" );
+        }
+
+        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+                     const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
+        {
+            static std::mutex           create_buffer_lock;
+            std::lock_guard<std::mutex> guard( create_buffer_lock );
+
+            vk::BufferCreateInfo    bufferInfo { { }, size, usage, sharingMode };
+            VmaAllocationCreateInfo allocInfo = { };
+            allocInfo.usage                   = !( memoryProperties ^ (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent) ) ? VMA_MEMORY_USAGE_CPU_ONLY : VMA_MEMORY_USAGE_GPU_ONLY;
+            // allocInfo.requiredFlags           = static_cast<uint32_t>( memoryProperties );
+
+            vmaCreateBuffer( allocator, reinterpret_cast<const VkBufferCreateInfo*>( &bufferInfo ), &allocInfo, reinterpret_cast<VkBuffer*>( &buffer ), &allocation, nullptr );
+            // vmaBindBufferMemory( allocator, allocation, buffer );
+        }
+
+        void writeBuffer( const void* writingData, size_t dataSize )
+        {
+            static std::mutex           map_buffer_lock;
+            std::lock_guard<std::mutex> guard( map_buffer_lock );
+
+            void* mappedData = nullptr;
+            vmaMapMemory( allocator, allocation, &mappedData );
+            memcpy( mappedData, writingData, dataSize );
+            vmaUnmapMemory( allocator, allocation );
+        }
+
+        void writeBufferOffseted( const void* writingData, size_t dataSize, size_t offset )
+        {
+            void* mappedData = nullptr;
+            vmaMapMemory( allocator, allocation, &mappedData );
+            memcpy( (char*) mappedData + offset, writingData, dataSize );
+            vmaUnmapMemory( allocator, allocation );
+        }
+
+        void CopyFromBuffer( const VKMBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
+        {
+            static std::mutex           copy_buffer_lock;
+            std::lock_guard<std::mutex> guard( copy_buffer_lock );
+
+            vk::CommandBufferAllocateInfo allocInfo { };
+            allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
+            allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
+            allocInfo.setCommandBufferCount( 1 );
+
+            auto  commandBuffers = api.m_vkLogicalDevice->allocateCommandBuffersUnique( allocInfo );
+            auto& commandBuffer  = commandBuffers.begin( )->get( );
+
+            commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
+            commandBuffer.copyBuffer( bufferData.buffer, buffer, dataRegion );
             commandBuffer.end( );
 
             const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
@@ -194,6 +286,7 @@ private:
 
 public:
     explicit VulkanAPI( GLFWwindow* windows );
+    ~VulkanAPI( );
 
     void setupAPI( const std::string& applicationName );
 
@@ -237,6 +330,7 @@ public:
         m_requested_queue[ key ] = { 0, type };
     }
 
+    auto&                         getMemoryAllocator( ) { return m_vkmAllocator; }
     inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.get( ); }
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
     inline auto&                  getRenderPass( ) { return *m_vkPipeline->m_vkRenderPass; }
@@ -365,6 +459,13 @@ private:
     std::vector<vk::UniqueSemaphore> m_vkRender_syncs;
     std::vector<vk::UniqueFence>     m_vkRender_fence_syncs;
     std::vector<vk::Fence>           m_vkSwap_chain_image_fence_syncs;
+
+    /*
+     *
+     * Vulkan memory allocator
+     *
+     * */
+    VmaAllocator m_vkmAllocator;
 
     /**
      *
