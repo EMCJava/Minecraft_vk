@@ -24,6 +24,7 @@
 
 class MainApplication : public Singleton<MainApplication>
 {
+    std::unique_ptr<VulkanAPI> m_graphics_api;
 
     GLFWwindow* m_window { };
     int         m_backup_screen_width { }, m_backup_screen_height { };
@@ -37,8 +38,6 @@ class MainApplication : public Singleton<MainApplication>
 
     std::atomic_flag          m_deltaMouseHoldUpdate;
     std::pair<double, double> m_NegDeltaMouse;
-
-    std::unique_ptr<VulkanAPI> m_graphics_api;
 
     struct ImGuiIO*          m_imgui_io { };
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
