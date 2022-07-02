@@ -12,7 +12,7 @@
 
 class Player : Tickable
 {
-    Camera           m_Camera { glm::vec3( 0.0f, 2.0f, 0.0f ) };
+    Camera           m_Camera { glm::vec3( 0.0f, 100.0f, 0.0f ) };
     EntityCoordinate m_Coordinate;
 
 public:
