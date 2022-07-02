@@ -21,6 +21,7 @@ private:
     std::unique_ptr<VulkanAPI::VKMBufferMeta> m_VertexBuffer;
     std::unique_ptr<VulkanAPI::VKMBufferMeta> m_IndexBuffer;
     uint32_t                                  m_IndexBufferSize { };
+    std::atomic_flag m_BufferReady            ATOMIC_FLAG_INIT;
 
 public:
     Chunk chunk;
@@ -28,7 +29,9 @@ public:
     bool  initializing = false;
 
     void ResetLoad( );
+    void ResetModel( );
 
+    bool                            IsBufferReady( ) const { return m_BufferReady.test( ); }
     const VulkanAPI::VKMBufferMeta& GetVertexBuffer( ) const { return *m_VertexBuffer; }
     const VulkanAPI::VKMBufferMeta& GetIndexBuffer( ) const { return *m_IndexBuffer; }
     inline uint32_t                 GetIndexBufferSize( ) const { return m_IndexBufferSize; }

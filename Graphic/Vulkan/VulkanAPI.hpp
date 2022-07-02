@@ -142,12 +142,13 @@ public:
             transferQueue.waitIdle( );
         }
     };
+
     struct VKMBufferMeta {
 
-        VmaAllocator           allocator;
-        vk::Buffer             buffer;
-        VmaAllocation          allocation;
-        vk::MemoryRequirements memRequirements;
+        VmaAllocator           allocator { };
+        vk::Buffer             buffer { };
+        VmaAllocation          allocation { };
+        vk::MemoryRequirements memRequirements { };
 
         VKMBufferMeta( VmaAllocator allocator )
             : allocator( allocator )
@@ -170,7 +171,7 @@ public:
             throw std::runtime_error( "failed to find suitable memory type!" );
         }
 
-        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VmaMemoryUsage& memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY,
                      const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
         {
             static std::mutex           create_buffer_lock;
@@ -178,7 +179,7 @@ public:
 
             vk::BufferCreateInfo    bufferInfo { { }, size, usage, sharingMode };
             VmaAllocationCreateInfo allocInfo = { };
-            allocInfo.usage                   = !( memoryProperties ^ (vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent) ) ? VMA_MEMORY_USAGE_CPU_ONLY : VMA_MEMORY_USAGE_GPU_ONLY;
+            allocInfo.usage                   = memoryUsage;
             // allocInfo.requiredFlags           = static_cast<uint32_t>( memoryProperties );
 
             vmaCreateBuffer( allocator, reinterpret_cast<const VkBufferCreateInfo*>( &bufferInfo ), &allocInfo, reinterpret_cast<VkBuffer*>( &buffer ), &allocation, nullptr );

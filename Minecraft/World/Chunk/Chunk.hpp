@@ -10,6 +10,7 @@
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 
+#include <array>
 #include <cmath>
 
 class Chunk
@@ -23,6 +24,9 @@ class Chunk
     uint8_t*  m_BlockFaces { };
 
     int m_VisibleFacesCount = 0;
+
+    std::array<Chunk*, DirHorizontalSize> m_NearChunks { };
+    uint8_t                               m_EmptySlot = ( 1 << DirHorizontalSize ) - 1;
 
 private:
     inline void DeleteChunk( )
@@ -49,6 +53,9 @@ public:
 
     Chunk operator=( const Chunk& ) = delete;
     Chunk operator=( Chunk&& )      = delete;
+
+    // return true if target chunk become complete
+    bool SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes = false );
 
     inline const ChunkCoordinate& SetCoordinate( const ChunkCoordinate& coordinate ) { return m_Coordinate = coordinate; }
     inline const ChunkCoordinate& GetCoordinate( ) { return m_Coordinate; }

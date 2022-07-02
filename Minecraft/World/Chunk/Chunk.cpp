@@ -6,7 +6,6 @@
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
-#include <bitset>
 #include <cmath>
 
 Chunk::~Chunk( )
@@ -58,7 +57,7 @@ Chunk::RegenerateChunk( )
     //        for ( int i = 0; i < 16; ++i ) m_Blocks[ i ] = BlockID::Stone;
     //    }
 
-    RegenerateVisibleFaces( );
+    // RegenerateVisibleFaces( );
 }
 
 std::unique_ptr<float[]>
@@ -84,14 +83,27 @@ Chunk::GenerateHeightMap( const MinecraftNoise& generator )
 void
 Chunk::RegenerateVisibleFaces( )
 {
-    static constexpr auto dirUpFaceOffset    = SectionSurfaceSize;
-    static constexpr auto dirDownFaceOffset  = -SectionSurfaceSize;
-    static constexpr auto dirRightFaceOffset = SectionUnitLength;
-    static constexpr auto dirLeftFaceOffset  = -SectionUnitLength;
-    static constexpr auto dirFrontFaceOffset = 1;
-    static constexpr auto dirBackFaceOffset  = -1;
+    static constexpr auto dirUpFaceOffset         = SectionSurfaceSize;
+    static constexpr auto dirDownFaceOffset       = -SectionSurfaceSize;
+    static constexpr auto dirRightFaceOffset      = SectionUnitLength;
+    static constexpr auto dirRightChunkFaceOffset = SectionUnitLength - SectionSurfaceSize;
+    static constexpr auto dirLeftFaceOffset       = -SectionUnitLength;
+    static constexpr auto dirLeftChunkFaceOffset  = SectionSurfaceSize - SectionUnitLength;
+    static constexpr auto dirFrontFaceOffset      = 1;
+    static constexpr auto dirFrontChunkFaceOffset = 1 - SectionUnitLength;
+    static constexpr auto dirBackFaceOffset       = -1;
+    static constexpr auto dirBackChunkFaceOffset  = SectionUnitLength - 1;
 
     // Logger::getInstance( ).LogLine( ( ( ( MaxSectionInChunk << SectionVolumeBinaryOffset ) - 1 ) >> SectionSurfaceSizeBinaryOffset ), ( ( MaxSectionInChunk << SectionUnitLengthBinaryOffset ) - 1 ) );
+
+    const auto RightChunk       = m_NearChunks[ DirRight ];
+    const auto RightChunkHeight = ( RightChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
+    const auto LeftChunk        = m_NearChunks[ DirLeft ];
+    const auto LeftChunkHeight  = ( LeftChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
+    const auto FrontChunk       = m_NearChunks[ DirFront ];
+    const auto FrontChunkHeight = ( FrontChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
+    const auto BackChunk        = m_NearChunks[ DirBack ];
+    const auto BackChunkHeight  = ( BackChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
 
     for ( int i = 0; i < ( m_SectionCount << SectionVolumeBinaryOffset ); ++i )
     {
@@ -102,17 +114,85 @@ Chunk::RegenerateVisibleFaces( )
             m_BlockFaces[ i ] = DirUpBit;
         if ( ( i >> SectionSurfaceSizeBinaryOffset ) == 0 || m_Blocks[ i + dirDownFaceOffset ].Transparent( ) ) [[unlikely]]
             m_BlockFaces[ i ] |= DirDownBit;
-        if ( ( i % SectionSurfaceSize ) >= SectionSurfaceSize - SectionUnitLength || m_Blocks[ i + dirRightFaceOffset ].Transparent( ) ) [[unlikely]]
+
+        if ( ( i % SectionSurfaceSize ) >= SectionSurfaceSize - SectionUnitLength ) [[unlikely]]
+        {
+            if ( i > RightChunkHeight || RightChunk->m_Blocks[ i + dirRightChunkFaceOffset ].Transparent( ) )
+            {
+                m_BlockFaces[ i ] |= DirRightBit;
+            }
+
+        } else if ( m_Blocks[ i + dirRightFaceOffset ].Transparent( ) )
+        {
             m_BlockFaces[ i ] |= DirRightBit;
-        if ( ( i % SectionSurfaceSize ) < SectionUnitLength || m_Blocks[ i + dirLeftFaceOffset ].Transparent( ) ) [[unlikely]]
+        }
+
+        if ( ( i % SectionSurfaceSize ) < SectionUnitLength ) [[unlikely]]
+        {
+            if ( i > LeftChunkHeight || LeftChunk->m_Blocks[ i + dirLeftChunkFaceOffset ].Transparent( ) )
+            {
+                m_BlockFaces[ i ] |= DirLeftBit;
+            }
+
+        } else if ( m_Blocks[ i + dirLeftFaceOffset ].Transparent( ) )
+        {
             m_BlockFaces[ i ] |= DirLeftBit;
-        if ( ( i % SectionUnitLength ) == SectionUnitLength - 1 || m_Blocks[ i + dirFrontFaceOffset ].Transparent( ) ) [[unlikely]]
+        }
+
+        if ( ( i % SectionUnitLength ) == SectionUnitLength - 1 ) [[unlikely]]
+        {
+            if ( i > FrontChunkHeight || FrontChunk->m_Blocks[ i + dirFrontChunkFaceOffset ].Transparent( ) )
+            {
+                m_BlockFaces[ i ] |= DirFrontBit;
+            }
+
+        } else if ( m_Blocks[ i + dirFrontFaceOffset ].Transparent( ) )
+        {
             m_BlockFaces[ i ] |= DirFrontBit;
-        if ( ( i % SectionUnitLength ) == 0 || m_Blocks[ i + dirBackFaceOffset ].Transparent( ) ) [[unlikely]]
+        }
+
+        if ( ( i % SectionUnitLength ) == 0 ) [[unlikely]]
+        {
+            if ( i > BackChunkHeight || BackChunk->m_Blocks[ i + dirBackChunkFaceOffset ].Transparent( ) )
+            {
+                m_BlockFaces[ i ] |= DirBackBit;
+            }
+
+        } else if ( m_Blocks[ i + dirBackFaceOffset ].Transparent( ) )
+        {
             m_BlockFaces[ i ] |= DirBackBit;
+        }
     }
 
     m_VisibleFacesCount = 0;
     for ( int i = 0; i < m_SectionCount * SectionVolume; ++i )
         m_VisibleFacesCount += std::popcount( m_BlockFaces[ i ] );
+}
+
+bool
+Chunk::SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes )
+{
+    if ( m_EmptySlot == 0 )
+    {
+        if ( m_NearChunks[ fromDir ] == nullptr )
+        {
+            m_NearChunks[ fromDir ] = other;
+        } else if ( changes )
+        {
+            // TODO: Update vertex buffer
+        }
+    } else
+    {
+        m_NearChunks[ fromDir ] = other;
+        m_EmptySlot &= ~( 1 << fromDir );
+
+        if ( m_EmptySlot == 0 )
+        {
+            // Chunk surrounding completed
+            RegenerateVisibleFaces( );
+            return true;
+        }
+    }
+
+    return false;
 }

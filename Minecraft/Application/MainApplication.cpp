@@ -113,11 +113,10 @@ MainApplication::run( )
             auto            iterEnd   = chunkPool.GetChunkIterEnd( );
             for ( auto it = iterBegin; it != iterEnd; ++it )
             {
-                if ( it->second->initialized && it->second->GetIndexBufferSize( ) != 0 )
+                if ( it->second->initialized && it->second->IsBufferReady( ) && it->second->GetIndexBufferSize( ) != 0 )
                 {
                     command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).GetBuffer( ), vk::DeviceSize( 0 ) );
                     command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).GetBuffer( ), 0, vk::IndexType::eUint16 );
-
                     command_buffer.drawIndexed( it->second->GetIndexBufferSize( ), 1, 0, 0, 0 );
                     m_renderingChunkCount++;
                 }
@@ -358,8 +357,9 @@ MainApplication::renderThread( )
          * */
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
-        // m_graphics_api->cycleGraphicCommandBuffers( image_index );
-        m_graphics_api->presentFrame<true>( image_index );
+        m_graphics_api->cycleGraphicCommandBuffers( image_index );
+        m_graphics_api->presentFrame<false>( image_index );
+
         // m_graphics_api->waitPresent( );
     }
 

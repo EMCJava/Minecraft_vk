@@ -16,13 +16,20 @@ ChunkCache::ResetLoad( )
 {
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Loading chunk:", chunk.GetCoordinate( ) );
 
+    chunk.RegenerateChunk( );
+
+    if ( chunk.m_VisibleFacesCount == 0 ) return;
+    ResetModel( );
+}
+
+void
+ChunkCache::ResetModel( )
+{
     auto [ chunkX, chunkZ, chunkY ] = chunk.GetCoordinate( );
 
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;
 
-    chunk.RegenerateChunk( );
-    if ( chunk.m_VisibleFacesCount == 0 ) return;
 
     //      F----H
     //  E---|G   |
@@ -135,9 +142,9 @@ ChunkCache::ResetLoad( )
 
         stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc );
         m_VertexBuffer->Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst,
-                                vk::MemoryPropertyFlagBits::eDeviceLocal );
+                                VMA_MEMORY_USAGE_GPU_ONLY );
         m_IndexBuffer->Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst,
-                               vk::MemoryPropertyFlagBits::eDeviceLocal );
+                               VMA_MEMORY_USAGE_GPU_ONLY );
 
         bufferRegion.setSize( verticesDataSize );
         stagingBuffer.writeBuffer( chunkVertices.get( ), verticesDataSize );
@@ -147,4 +154,6 @@ ChunkCache::ResetLoad( )
         stagingBuffer.writeBuffer( chunkIndices.get( ), indicesDataSize );
         m_IndexBuffer->CopyFromBuffer( stagingBuffer, bufferRegion, api );
     }
+
+    m_BufferReady.test_and_set( );
 }

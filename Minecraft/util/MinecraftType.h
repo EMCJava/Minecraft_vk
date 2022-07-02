@@ -56,7 +56,7 @@ GetMinecraftZ( const BlockCoordinate& a )
     return std::get<MinecraftCoordinateZIndex>( a );
 }
 
-inline BlockCoordinate
+inline constexpr BlockCoordinate
 MakeMinecraftCoordinate( auto x, auto y, auto z )
 {
     return { x, z, y };
