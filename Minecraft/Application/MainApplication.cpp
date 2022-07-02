@@ -115,8 +115,8 @@ MainApplication::run( )
             {
                 if ( it->second->initialized && it->second->GetIndexBufferSize( ) != 0 )
                 {
-                    command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
-                    command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
+                    command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).GetBuffer( ), vk::DeviceSize( 0 ) );
+                    command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).GetBuffer( ), 0, vk::IndexType::eUint16 );
 
                     command_buffer.drawIndexed( it->second->GetIndexBufferSize( ), 1, 0, 0, 0 );
                     m_renderingChunkCount++;

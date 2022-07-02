@@ -18,9 +18,9 @@
 class ChunkCache
 {
 private:
-    VulkanAPI::VKBufferMeta m_VertexBuffer;
-    VulkanAPI::VKBufferMeta m_IndexBuffer;
-    uint32_t m_IndexBufferSize {};
+    std::unique_ptr<VulkanAPI::VKMBufferMeta> m_VertexBuffer;
+    std::unique_ptr<VulkanAPI::VKMBufferMeta> m_IndexBuffer;
+    uint32_t                                  m_IndexBufferSize { };
 
 public:
     Chunk chunk;
@@ -29,9 +29,9 @@ public:
 
     void ResetLoad( );
 
-    const VulkanAPI::VKBufferMeta& GetVertexBuffer( ) const { return m_VertexBuffer; }
-    const VulkanAPI::VKBufferMeta& GetIndexBuffer( ) const { return m_IndexBuffer; }
-    inline uint32_t GetIndexBufferSize() const { return m_IndexBufferSize; }
+    const VulkanAPI::VKMBufferMeta& GetVertexBuffer( ) const { return *m_VertexBuffer; }
+    const VulkanAPI::VKMBufferMeta& GetIndexBuffer( ) const { return *m_IndexBuffer; }
+    inline uint32_t                 GetIndexBufferSize( ) const { return m_IndexBufferSize; }
 };
 
 

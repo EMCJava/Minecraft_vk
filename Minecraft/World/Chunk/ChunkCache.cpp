@@ -36,10 +36,10 @@ ChunkCache::ResetLoad( )
     static const std::array<uint16_t, FaceIndicesCount> blockIndices = { 0, 1, 2, 2, 3, 0 };
 
     static const std::array<DataType::ColoredVertex, FaceVerticesCount> FrontBlockVertices = {
-        DataType::ColoredVertex {{ 1.f, 0.0f, 0.f }, { 1.0f, 0.f, 0.f  }}, // B
-        DataType::ColoredVertex { { 1.f, 1.f, 0.f }, { 1.0f, 0.f, 0.f  }}, // F
-        DataType::ColoredVertex { { 1.f, 1.f, 1.f }, { 1.0f, 0.f, 0.f  }}, // H
-        DataType::ColoredVertex {{ 1.f, 0.0f, 1.f }, { 1.0f, 0.f, 0.f  }}, // D
+        DataType::ColoredVertex {{ 1.f, 0.0f, 0.f }, { 1.0f, 0.f, 0.f }}, // B
+        DataType::ColoredVertex { { 1.f, 1.f, 0.f }, { 1.0f, 0.f, 0.f }}, // F
+        DataType::ColoredVertex { { 1.f, 1.f, 1.f }, { 1.0f, 0.f, 0.f }}, // H
+        DataType::ColoredVertex {{ 1.f, 0.0f, 1.f }, { 1.0f, 0.f, 0.f }}, // D
     };
 
     static const std::array<DataType::ColoredVertex, FaceVerticesCount> BackBlockVertices = {
@@ -127,22 +127,24 @@ ChunkCache::ResetLoad( )
     }
 
     {
-        VulkanAPI::VKBufferMeta stagingBuffer;
-        vk::BufferCopy          bufferRegion;
+        m_VertexBuffer = std::make_unique<VulkanAPI::VKMBufferMeta>( api.getMemoryAllocator( ) );
+        m_IndexBuffer  = std::make_unique<VulkanAPI::VKMBufferMeta>( api.getMemoryAllocator( ) );
+        VulkanAPI::VKMBufferMeta stagingBuffer( api.getMemoryAllocator( ) );
+        vk::BufferCopy           bufferRegion;
         using Usage = vk::BufferUsageFlagBits;
 
-        stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc, api );
-        m_VertexBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst, api,
+        stagingBuffer.Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferSrc );
+        m_VertexBuffer->Create( verticesDataSize, Usage::eVertexBuffer | Usage::eTransferDst,
+                                vk::MemoryPropertyFlagBits::eDeviceLocal );
+        m_IndexBuffer->Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst,
                                vk::MemoryPropertyFlagBits::eDeviceLocal );
-        m_IndexBuffer.Create( verticesDataSize, Usage::eIndexBuffer | Usage::eTransferDst, api,
-                              vk::MemoryPropertyFlagBits::eDeviceLocal );
 
         bufferRegion.setSize( verticesDataSize );
-        stagingBuffer.writeBuffer( chunkVertices.get( ), verticesDataSize, api );
-        m_VertexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, api );
+        stagingBuffer.writeBuffer( chunkVertices.get( ), verticesDataSize );
+        m_VertexBuffer->CopyFromBuffer( stagingBuffer, bufferRegion, api );
 
         bufferRegion.setSize( indicesDataSize );
-        stagingBuffer.writeBuffer( chunkIndices.get( ), indicesDataSize, api );
-        m_IndexBuffer.CopyFromBuffer( stagingBuffer, bufferRegion, api );
+        stagingBuffer.writeBuffer( chunkIndices.get( ), indicesDataSize );
+        m_IndexBuffer->CopyFromBuffer( stagingBuffer, bufferRegion, api );
     }
 }
