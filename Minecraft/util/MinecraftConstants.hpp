@@ -8,17 +8,18 @@
 #include "MinecraftType.h"
 #include <Utility/Math/Math.hpp>
 
-enum : uint8_t {
+enum Direction : uint8_t {
     DirFront,
     DirBack,
     DirRight,
     DirLeft,
-    DirUp,
+    DirHorizontalSize = DirLeft + 1,
+    DirUp             = DirHorizontalSize,
     DirDown,
     DirSize
 };
 
-enum : uint8_t {
+enum DirectionBit : uint8_t {
     DirFrontBit = 1 << DirFront,
     DirBackBit  = 1 << DirBack,
     DirRightBit = 1 << DirRight,
