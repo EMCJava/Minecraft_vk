@@ -51,13 +51,6 @@ Chunk::RegenerateChunk( )
 
         blocksPtr += SectionSurfaceSize;
     }
-
-    //    if ( ManhattanDistance( MakeCoordinate( 0, 0, 0 ) ) == 0 )
-    //    {
-    //        for ( int i = 0; i < 16; ++i ) m_Blocks[ i ] = BlockID::Stone;
-    //    }
-
-    // RegenerateVisibleFaces( );
 }
 
 std::unique_ptr<float[]>
