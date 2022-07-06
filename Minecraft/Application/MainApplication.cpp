@@ -136,7 +136,6 @@ MainApplication::run( )
         ImDrawData* draw_data = ImGui::GetDrawData( );
         ImGui_ImplVulkan_RenderDrawData( draw_data, command_buffer );
     } );
-    m_graphics_api->cycleGraphicCommandBuffers( );
 
     /*
      *

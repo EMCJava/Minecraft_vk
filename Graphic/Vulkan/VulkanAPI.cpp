@@ -723,7 +723,7 @@ VulkanAPI::adeptSwapChainChange( )
      *
      * */
     setupGraphicCommandBuffers( );
-    cycleGraphicCommandBuffers( );
+    // cycleGraphicCommandBuffers( );
 }
 
 void
