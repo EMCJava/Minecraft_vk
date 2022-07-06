@@ -61,8 +61,7 @@ class MainApplication : public Singleton<MainApplication>
     void RecreateWindow( bool isFullScreen );
     void cleanUp( );
 
-    std::atomic<bool> m_render_thread_should_run;
-    void              renderThread( );
+    void              renderThread( const std::stop_token& st );
     void              renderImgui( );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );

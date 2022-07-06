@@ -76,8 +76,6 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                                       } );
         if ( !finished.empty( ) )
         {
-            Timer timer;
-
             for ( auto& cache : finished )
             {
 
@@ -89,12 +87,15 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                     auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunk( cache->chunk.GetCoordinate( ) + NearChunkDirection[ i ] );
                     if ( chunkPtr != nullptr && chunkPtr->initialized )
                     {
+                        std::lock_guard<std::mutex> lock( m_RenderBufferLock );
                         // this is fast, I guess?
-                        if ( cache->chunk.SyncChunkFromDirection( &chunkPtr->chunk, static_cast<Direction>( i ) ) ) cache->ResetModel( );
-                        if ( chunkPtr->chunk.SyncChunkFromDirection( &cache->chunk, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->ResetModel( );
+                        if ( cache->chunk.SyncChunkFromDirection( &chunkPtr->chunk, static_cast<Direction>( i ) ) ) cache->ResetModel( m_ChunkRenderBuffers );
+                        if ( chunkPtr->chunk.SyncChunkFromDirection( &cache->chunk, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->ResetModel( m_ChunkRenderBuffers );
                     }
                 }
             }
+
+            m_ChunkRenderBuffers.UpdateAllIndirectDrawBuffers();
         } else
         {
             // std::this_thread::yield();

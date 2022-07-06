@@ -8,6 +8,7 @@
 #include <mutex>
 
 #include "ChunkCache.hpp"
+#include "ChunkRenderBuffers.hpp"
 
 #include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
@@ -21,6 +22,9 @@ private:
 
     std::mutex                                       m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
+
+    std::mutex       m_RenderBufferLock;
+    ChunkSolidBuffer m_ChunkRenderBuffers;
 
     static void LoadChunk( ChunkCache* cache )
     {
@@ -99,6 +103,16 @@ public:
     inline size_t GetTotalChunk( ) const
     {
         return m_ChunkCache.size( );
+    }
+
+    inline auto& GetRenderBufferLock( )
+    {
+        return m_RenderBufferLock;
+    }
+
+    inline auto& GetRenderBuffer( )
+    {
+        return m_ChunkRenderBuffers;
     }
 
     inline auto& GetChunkCacheLock( )

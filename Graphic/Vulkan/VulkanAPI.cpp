@@ -415,8 +415,11 @@ VulkanAPI::setupLogicalDevice( )
      * Create logical device
      *
      * */
-    // vk::PhysicalDeviceFeatures requiredFeatures { };
-    vk::DeviceCreateInfo createInfo;
+    vk::PhysicalDeviceFeatures requiredFeatures { };
+    requiredFeatures.multiDrawIndirect = true;
+
+    vk::DeviceCreateInfo       createInfo;
+    createInfo.setPEnabledFeatures( &requiredFeatures );
     createInfo.setQueueCreateInfoCount( queueCreateInfos.size( ) );
     createInfo.setQueueCreateInfos( queueCreateInfos );
     createInfo.setEnabledLayerCount( m_vkValidationLayer->RequiredLayerCount( ) );

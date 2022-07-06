@@ -13,6 +13,7 @@
 #include <Utility/Vulkan/VulkanExtension.hpp>
 
 #include "QueueFamilyManager.hpp"
+#include "Utility/Singleton.hpp"
 
 #include <atomic>
 #include <functional>
@@ -71,7 +72,7 @@ struct ColoredVertex : VertexDetail {
 };
 }   // namespace DataType
 
-class VulkanAPI
+class VulkanAPI : public Singleton<VulkanAPI>
 {
 public:
     struct VKBufferMeta {
@@ -156,7 +157,13 @@ public:
 
         ~VKMBufferMeta( )
         {
-            vmaDestroyBuffer( allocator, buffer, allocation );
+            DestroyBuffer( );
+        }
+
+        void DestroyBuffer( )
+        {
+            if ( buffer ) vmaDestroyBuffer( allocator, buffer, allocation );
+            buffer = nullptr;
         }
 
         inline auto& GetBuffer( ) const
@@ -164,18 +171,13 @@ public:
             return buffer;
         }
 
-        static uint32_t FindMemoryType( const vk::PhysicalDeviceMemoryProperties& memProperties, uint32_t typeFilter, vk::MemoryPropertyFlags properties )
-        {
-            for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
-                if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
-            throw std::runtime_error( "failed to find suitable memory type!" );
-        }
-
         void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VmaMemoryUsage& memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY,
                      const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
         {
             static std::mutex           create_buffer_lock;
             std::lock_guard<std::mutex> guard( create_buffer_lock );
+
+            DestroyBuffer();
 
             vk::BufferCreateInfo    bufferInfo { { }, size, usage, sharingMode };
             VmaAllocationCreateInfo allocInfo = { };
@@ -331,6 +333,8 @@ public:
         m_requested_queue[ key ] = { 0, type };
     }
 
+    auto&                         GetTransferFamilyIndices( ) { return m_vkTransfer_family_indices; }
+    auto&                         GetTransferCommandPool( ) { return m_vkTransferCommandPool; }
     auto&                         getMemoryAllocator( ) { return m_vkmAllocator; }
     inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.get( ); }
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }

@@ -43,5 +43,13 @@ static constexpr CoordinateType ChunkMaxHeight    = SectionUnitLength * MaxSecti
 
 static constexpr uint32_t ChunkThreadDelayPeriod = 100;
 
+using IndexBufferType = uint32_t;
+
+static constexpr uint32_t MaxMemoryAllocationPerVertexBuffer = 64 * 1024 * 1024;
+using SolidChunkVertexIndexSizeCapConverter                  = ScaleToSecond_S<4, 1>;
+using SCVISCC                                                = SolidChunkVertexIndexSizeCapConverter;
+static constexpr uint32_t MaxMemoryAllocationPerIndexBuffer  = SCVISCC::ConvertToSecond( MaxMemoryAllocationPerVertexBuffer );
+
+static constexpr uint32_t IndirectDrawBufferSizeStep = 20 * 1024;
 
 #endif   // MINECRAFT_VK_MINECRAFTCONSTANTS_HPP

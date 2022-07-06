@@ -6,6 +6,7 @@
 #define MINECRAFT_VK_CHUNKCACHE_HPP
 
 #include "Chunk.hpp"
+#include "ChunkRenderBuffers.hpp"
 
 #include <Minecraft/util/MinecraftType.h>
 
@@ -14,6 +15,8 @@
 #include <Graphic/Vulkan/VulkanAPI.hpp>
 
 #include <unordered_map>
+
+using ChunkSolidBuffer = ChunkRenderBuffers<DataType::ColoredVertex, IndexBufferType, SCVISCC>;
 
 class ChunkCache
 {
@@ -29,7 +32,7 @@ public:
     bool  initializing = false;
 
     void ResetLoad( );
-    void ResetModel( );
+    void ResetModel( ChunkSolidBuffer& renderBuffers );
 
     bool                            IsBufferReady( ) const { return m_BufferReady.test( ); }
     const VulkanAPI::VKMBufferMeta& GetVertexBuffer( ) const { return *m_VertexBuffer; }
