@@ -1,0 +1,1 @@
+add_library(ImGuiCurveEditorLib CurveEditor.hpp CurveEditor.cpp)

@@ -5,12 +5,7 @@
 #include <Include/GLM.hpp>
 #include <Include/imgui_include.hpp>
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
-
-#include <Include/implot/implot.h>
-#include <Include/implot/implot_internal.h>
+#include <Utility/ImguiAddons/CurveEditor.hpp>
 
 #include "MainApplication.hpp"
 
@@ -575,6 +570,15 @@ MainApplication::renderImgui( )
                 ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
+        }
+
+        {
+            static ImGuiAddons::CurveEditor a( {
+                {0.f, 0.f},
+                {1.f, 1.f}
+            } );
+
+            a.Render( );
         }
 
         ImGui::End( );
