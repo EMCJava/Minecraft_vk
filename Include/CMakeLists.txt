@@ -12,6 +12,8 @@ target_link_libraries(ImplotLib ImguiLib)
 add_library(ImplotDemoLib ${IMPLOT_DIR}/implot_demo.cpp)
 target_link_libraries(ImplotDemoLib ImplotLib)
 
+add_library(vkMemAllocImplLib vk_mem_alloc.h vk_mem_alloc_impl.cpp)
+
 if (WIN32 OR MSVC)
     target_link_libraries(GraphicAPILib glfw)
     target_link_libraries(ImguiLib glfw)

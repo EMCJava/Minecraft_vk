@@ -24,6 +24,7 @@
 
 class MainApplication : public Singleton<MainApplication>
 {
+    std::unique_ptr<VulkanAPI> m_graphics_api;
 
     GLFWwindow* m_window { };
     int         m_backup_screen_width { }, m_backup_screen_height { };
@@ -38,9 +39,7 @@ class MainApplication : public Singleton<MainApplication>
     std::atomic_flag          m_deltaMouseHoldUpdate;
     std::pair<double, double> m_NegDeltaMouse;
 
-    std::unique_ptr<VulkanAPI> m_graphics_api;
-
-    struct ImGuiIO*          m_imgui_io;
+    struct ImGuiIO*          m_imgui_io { };
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
 
     /*
@@ -50,13 +49,19 @@ class MainApplication : public Singleton<MainApplication>
      * */
     std::unique_ptr<Minecraft> m_MinecraftInstance;
 
+    /*
+     *
+     * Statistics
+     *
+     * */
+    uint32_t m_renderingChunkCount = 0;
+
     void InitWindow( );
     void InitImgui( );
     void RecreateWindow( bool isFullScreen );
     void cleanUp( );
 
-    std::atomic<bool> m_render_thread_should_run;
-    void              renderThread( );
+    void              renderThread( const std::stop_token& st );
     void              renderImgui( );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
@@ -79,7 +84,7 @@ public:
         m_is_mouse_locked = true;
         glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
     }
-    
+
     void UnlockMouse( )
     {
         m_is_mouse_locked = false;

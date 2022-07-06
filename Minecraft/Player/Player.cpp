@@ -17,5 +17,5 @@ Player::Tick( float deltaTime )
     m_Camera.ProcessKeyboard( MainApplication::GetInstance( ).GetMovementDelta( ), deltaTime );
     // m_Camera.ProcessKeyboardHorizontal( MainApplication::GetInstance( ).GetMovementDelta( ), deltaTime );
 
-    m_Coordinate = MakeCoordinate( m_Camera.Position.x, m_Camera.Position.y, m_Camera.Position.z );
+    m_Coordinate = MakeMinecraftCoordinate( m_Camera.Position.x, m_Camera.Position.y, m_Camera.Position.z );
 }

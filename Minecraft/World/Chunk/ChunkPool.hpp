@@ -8,6 +8,7 @@
 #include <mutex>
 
 #include "ChunkCache.hpp"
+#include "ChunkRenderBuffers.hpp"
 
 #include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
@@ -22,55 +23,16 @@ private:
     std::mutex                                       m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
 
+    std::mutex       m_RenderBufferLock;
+    ChunkSolidBuffer m_ChunkRenderBuffers;
+
     static void LoadChunk( ChunkCache* cache )
     {
         cache->initializing = true;
         cache->ResetLoad( );
     }
 
-    void UpdateThread( const std::stop_token& st )
-    {
-        while ( !st.stop_requested( ) )
-        {
-            if ( m_RemoveJobAfterRange > 0 )
-            {
-
-                const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                    [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->chunk.ManhattanDistance( centre ) < range; } );
-
-                {   // elements outside the range
-                    std::lock_guard cacheModifyLocker( m_ChunkCacheLock );
-                    for ( auto it = lastIt; it != m_PendingThreads.end( ); ++it )
-                        m_ChunkCache.erase( ( *it )->chunk.GetCoordinate( ) );
-                }
-
-                m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
-            }
-
-            auto finished = UpdateSorted( &ChunkPool::LoadChunk,
-                                          [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
-                                              return a->chunk.ManhattanDistance( centre ) < b->chunk.ManhattanDistance( centre );
-                                          } );
-            if ( !finished.empty( ) )
-            {
-                for ( auto& cache : finished )
-                {
-                    cache->initializing = false;
-                    cache->initialized  = true;
-                }
-            } else
-            {
-                std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
-            }
-        }
-
-        while ( !m_RunningThreads.empty( ) )
-        {
-            Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Waiting", m_RunningThreads.size( ), "thread to be finished" );
-            CleanRunningThread( );
-            std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
-        }
-    }
+    void UpdateThread( const std::stop_token& st );
 
 public:
     explicit ChunkPool( uint32_t maxThread )
@@ -83,12 +45,12 @@ public:
         std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
     }
 
-    void SetCentre( BlockCoordinate centre )
+    inline void SetCentre( const BlockCoordinate& centre )
     {
         m_PrioritizeCoordinate = centre;
     }
 
-    void SetValidRange( CoordinateType range )
+    inline void SetValidRange( CoordinateType range )
     {
         m_RemoveJobAfterRange = range;
     }
@@ -99,7 +61,7 @@ public:
         m_UpdateThread = std::make_unique<std::jthread>( std::bind_front( &ChunkPool::UpdateThread, this ) );
     }
 
-    void AddCoordinate( BlockCoordinate coordinate )
+    void AddCoordinate( const BlockCoordinate& coordinate )
     {
         if ( m_ChunkCache.contains( coordinate ) ) return;
 
@@ -110,7 +72,7 @@ public:
         m_ChunkCache.insert( { coordinate, newChunk } );
     }
 
-    bool IsChunkLoading( BlockCoordinate coordinate )
+    bool IsChunkLoading( const BlockCoordinate& coordinate ) const
     {
         if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
         {
@@ -119,7 +81,7 @@ public:
         return false;
     }
 
-    bool IsChunkLoaded( BlockCoordinate coordinate )
+    bool IsChunkLoaded( const BlockCoordinate& coordinate ) const
     {
         if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
         {
@@ -128,34 +90,54 @@ public:
         return false;
     }
 
-    size_t GetPendingCount( )
+    inline size_t GetPendingCount( ) const
     {
         return m_PendingThreads.size( );
     }
 
-    size_t GetLoadingCount( )
+    inline size_t GetLoadingCount( ) const
     {
         return m_RunningThreads.size( );
     }
 
-    size_t GetTotalChunk( )
+    inline size_t GetTotalChunk( ) const
     {
         return m_ChunkCache.size( );
     }
 
-    auto& GetChunkCacheLock( )
+    inline auto& GetRenderBufferLock( )
+    {
+        return m_RenderBufferLock;
+    }
+
+    inline auto& GetRenderBuffer( )
+    {
+        return m_ChunkRenderBuffers;
+    }
+
+    inline auto& GetChunkCacheLock( )
     {
         return m_ChunkCacheLock;
     }
 
-    auto GetChunkIterBegin( )
+    inline auto GetChunkIterBegin( ) const
     {
         return m_ChunkCache.begin( );
     }
 
-    auto GetChunkIterEnd( )
+    inline auto GetChunkIterEnd( ) const
     {
         return m_ChunkCache.end( );
+    }
+
+    ChunkCache* GetChunk( const ChunkCoordinate& coordinate ) const
+    {
+        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
+        {
+            return it->second;
+        }
+
+        return nullptr;
     }
 };
 

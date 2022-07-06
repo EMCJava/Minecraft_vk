@@ -6,12 +6,14 @@
 #define MINECRAFT_VK_VULKAN_VULKANAPI_HPP
 
 #include <Include/GraphicAPI.hpp>
+#include <Include/vk_mem_alloc.h>
 
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
 
 #include "QueueFamilyManager.hpp"
+#include "Utility/Singleton.hpp"
 
 #include <atomic>
 #include <functional>
@@ -24,13 +26,21 @@ namespace DataType
 {
 
 struct ColoredVertex : VertexDetail {
-    glm::vec3 pos;
-    glm::vec3 color;
+    glm::ivec3 pos;
+    glm::vec3  color;
 
-    ColoredVertex( glm::vec3 p, glm::vec3 c )
+    ColoredVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec3 c = glm::vec3( 0 ) )
         : pos( p )
         , color( c )
     { }
+
+    ColoredVertex& operator=( const ColoredVertex& other )
+    {
+        pos   = other.pos;
+        color = other.color;
+
+        return *this;
+    }
 
     static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
     {
@@ -38,7 +48,7 @@ struct ColoredVertex : VertexDetail {
 
         attributeDescriptions[ 0 ].setBinding( 0 );
         attributeDescriptions[ 0 ].setLocation( 0 );
-        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sfloat );
+        attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sint );
         attributeDescriptions[ 0 ].setOffset( offsetof( ColoredVertex, pos ) );
 
         attributeDescriptions[ 1 ].setBinding( 0 );
@@ -60,10 +70,9 @@ struct ColoredVertex : VertexDetail {
         return bindingDescription;
     }
 };
-
 }   // namespace DataType
 
-class VulkanAPI
+class VulkanAPI : public Singleton<VulkanAPI>
 {
 public:
     struct VKBufferMeta {
@@ -73,21 +82,26 @@ public:
         vk::PhysicalDeviceMemoryProperties memProperties;
         vk::UniqueDeviceMemory             deviceMemory;
 
+        inline auto& GetBuffer( ) const
+        {
+            return *buffer;
+        }
+
+        static uint32_t FindMemoryType( const vk::PhysicalDeviceMemoryProperties& memProperties, uint32_t typeFilter, vk::MemoryPropertyFlags properties )
+        {
+            for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
+                if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
+            throw std::runtime_error( "failed to find suitable memory type!" );
+        }
+
         void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
                      const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
         {
-
             buffer          = api.m_vkLogicalDevice->createBufferUnique( { { }, size, usage, sharingMode } );
             memRequirements = api.m_vkLogicalDevice->getBufferMemoryRequirements( buffer.get( ) );
             memProperties   = api.m_vkPhysicalDevice.getMemoryProperties( );
 
-            auto findMemoryType = [ this ]( uint32_t typeFilter, vk::MemoryPropertyFlags properties ) -> uint32_t {
-                for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
-                    if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
-                throw std::runtime_error( "failed to find suitable memory type!" );
-            };
-
-            deviceMemory = api.m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, findMemoryType( memRequirements.memoryTypeBits, memoryProperties ) } );
+            deviceMemory = api.m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, FindMemoryType( memProperties, memRequirements.memoryTypeBits, memoryProperties ) } );
             api.m_vkLogicalDevice->bindBufferMemory( buffer.get( ), deviceMemory.get( ), 0 );
         }
 
@@ -118,6 +132,96 @@ public:
 
             commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
             commandBuffer.copyBuffer( *bufferData.buffer, *buffer, dataRegion );
+            commandBuffer.end( );
+
+            const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
+            auto        transferQueue         = api.m_vkLogicalDevice->getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
+
+            vk::SubmitInfo submitInfo;
+            submitInfo.setCommandBuffers( commandBuffer );
+            transferQueue.submit( submitInfo, nullptr );
+            transferQueue.waitIdle( );
+        }
+    };
+
+    struct VKMBufferMeta {
+
+        VmaAllocator           allocator { };
+        vk::Buffer             buffer { };
+        VmaAllocation          allocation { };
+        vk::MemoryRequirements memRequirements { };
+
+        VKMBufferMeta( VmaAllocator allocator )
+            : allocator( allocator )
+        { }
+
+        ~VKMBufferMeta( )
+        {
+            DestroyBuffer( );
+        }
+
+        void DestroyBuffer( )
+        {
+            if ( buffer ) vmaDestroyBuffer( allocator, buffer, allocation );
+            buffer = nullptr;
+        }
+
+        inline auto& GetBuffer( ) const
+        {
+            return buffer;
+        }
+
+        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VmaMemoryUsage& memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY,
+                     const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
+        {
+            static std::mutex           create_buffer_lock;
+            std::lock_guard<std::mutex> guard( create_buffer_lock );
+
+            DestroyBuffer();
+
+            vk::BufferCreateInfo    bufferInfo { { }, size, usage, sharingMode };
+            VmaAllocationCreateInfo allocInfo = { };
+            allocInfo.usage                   = memoryUsage;
+            // allocInfo.requiredFlags           = static_cast<uint32_t>( memoryProperties );
+
+            vmaCreateBuffer( allocator, reinterpret_cast<const VkBufferCreateInfo*>( &bufferInfo ), &allocInfo, reinterpret_cast<VkBuffer*>( &buffer ), &allocation, nullptr );
+            // vmaBindBufferMemory( allocator, allocation, buffer );
+        }
+
+        void writeBuffer( const void* writingData, size_t dataSize )
+        {
+            static std::mutex           map_buffer_lock;
+            std::lock_guard<std::mutex> guard( map_buffer_lock );
+
+            void* mappedData = nullptr;
+            vmaMapMemory( allocator, allocation, &mappedData );
+            memcpy( mappedData, writingData, dataSize );
+            vmaUnmapMemory( allocator, allocation );
+        }
+
+        void writeBufferOffseted( const void* writingData, size_t dataSize, size_t offset )
+        {
+            void* mappedData = nullptr;
+            vmaMapMemory( allocator, allocation, &mappedData );
+            memcpy( (char*) mappedData + offset, writingData, dataSize );
+            vmaUnmapMemory( allocator, allocation );
+        }
+
+        void CopyFromBuffer( const VKMBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
+        {
+            static std::mutex           copy_buffer_lock;
+            std::lock_guard<std::mutex> guard( copy_buffer_lock );
+
+            vk::CommandBufferAllocateInfo allocInfo { };
+            allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
+            allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
+            allocInfo.setCommandBufferCount( 1 );
+
+            auto  commandBuffers = api.m_vkLogicalDevice->allocateCommandBuffersUnique( allocInfo );
+            auto& commandBuffer  = commandBuffers.begin( )->get( );
+
+            commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
+            commandBuffer.copyBuffer( bufferData.buffer, buffer, dataRegion );
             commandBuffer.end( );
 
             const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
@@ -171,6 +275,8 @@ private:
     void setupSwapChain( );
     void setupPipeline( );
 
+    vk::UniqueImage createImage( uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueDeviceMemory& imageMemory );
+
     /**
      *
      * Also setup command buffer
@@ -183,13 +289,14 @@ private:
 
 public:
     explicit VulkanAPI( GLFWwindow* windows );
+    ~VulkanAPI( );
 
     void setupAPI( const std::string& applicationName );
 
     [[nodiscard]] uint32_t acquireNextImage( );
     void                   setRenderer( std::function<void( const vk::CommandBuffer&, uint32_t index )>&& renderer ) { m_renderer = std::move( renderer ); };
     void                   setPipelineCreateCallback( std::function<void( )>&& callback ) { m_pipeline_create_callback = std::move( callback ); };
-    void                   setClearColor( const std::array<float, 4>& clearColor ) { m_clearColor.setColor( clearColor ); }
+    void                   setClearColor( const std::array<float, 4>& clearColor ) { m_clearValues[ 0 ].setColor( clearColor ); }
 
     /*
      *
@@ -226,6 +333,10 @@ public:
         m_requested_queue[ key ] = { 0, type };
     }
 
+    auto&                         GetTransferFamilyIndices( ) { return m_vkTransfer_family_indices; }
+    auto&                         GetTransferCommandPool( ) { return m_vkTransferCommandPool; }
+    auto&                         getMemoryAllocator( ) { return m_vkmAllocator; }
+    inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.get( ); }
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
     inline auto&                  getRenderPass( ) { return *m_vkPipeline->m_vkRenderPass; }
     inline auto&                  getDescriptorPool( ) { return *m_vkPipeline->createInfo.descriptorPool; }
@@ -321,6 +432,10 @@ private:
     vk::UniqueSwapchainKHR           m_vkSwap_chain;
     std::vector<vk::Image>           m_vkSwap_chain_images;
     std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
+    vk::Format                       m_vkSwap_chain_depth_format;
+    vk::UniqueImage                  m_vkSwap_chain_depth_image;
+    vk::UniqueDeviceMemory           m_vkSwap_chain_depth_memory;
+    vk::UniqueImageView              m_vkSwap_chain_depth_view;
 
     /**
      *
@@ -350,6 +465,13 @@ private:
     std::vector<vk::UniqueFence>     m_vkRender_fence_syncs;
     std::vector<vk::Fence>           m_vkSwap_chain_image_fence_syncs;
 
+    /*
+     *
+     * Vulkan memory allocator
+     *
+     * */
+    VmaAllocator m_vkmAllocator;
+
     /**
      *
      * Custom detail(s)
@@ -358,7 +480,7 @@ private:
     std::unordered_map<const void*, std::pair<uint32_t, vk::QueueFlagBits>> m_requested_queue;
     std::function<void( const vk::CommandBuffer&, uint32_t index )>         m_renderer;
     std::function<void( )>                                                  m_pipeline_create_callback;
-    vk::ClearValue                                                          m_clearColor { { std::array<float, 4> { 0.0515186f, 0.504163f, 0.656863f, 1.0f } } };
+    std::array<vk::ClearValue, 2>                                           m_clearValues { vk::ClearValue { vk::ClearColorValue { std::array<float, 4> { 0.0515186f, 0.504163f, 0.656863f, 1.0f } } }, vk::ClearValue { vk::ClearDepthStencilValue { 1.f, 0 } } };
 };
 
 #include "VulkanAPI_Impl.hpp"

@@ -139,6 +139,18 @@ VulkanAPI::setupAPI( const std::string& applicationName )
      *
      * */
     setupSyncs( );
+
+    /*
+     *
+     * Setup Vulkan memory allocator
+     *
+     * */
+    VmaAllocatorCreateInfo allocatorInfo = { };
+    allocatorInfo.physicalDevice         = m_vkPhysicalDevice;
+    allocatorInfo.device                 = m_vkLogicalDevice.get( );
+    allocatorInfo.instance               = m_vkInstance.get( );
+
+    vmaCreateAllocator( &allocatorInfo, &m_vkmAllocator );
 }
 
 void
@@ -238,9 +250,28 @@ VulkanAPI::isDeviceSupportAllExtensions( const vk::PhysicalDevice& device )
      * Get user config
      *
      * */
-    auto required_extension_properties = GlobalConfig::getConfigData( )["vulkan"][ "logical_device_extensions" ];
+    auto required_extension_properties = GlobalConfig::getConfigData( )[ "vulkan" ][ "logical_device_extensions" ];
     return std::ranges::all_of( required_extension_properties.begin( ), required_extension_properties.end( ),
                                 [ &extension_properties_name_set ]( const auto& property ) { return extension_properties_name_set.contains( property.template get<std::string>( ) ); } );
+}
+
+vk::Format
+findSupportedFormat( const vk::PhysicalDevice& physicalDevice, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features )
+{
+    for ( const auto& format : candidates )
+    {
+        vk::FormatProperties props = physicalDevice.getFormatProperties( format );
+
+        if ( tiling == vk::ImageTiling::eLinear && ( props.linearTilingFeatures & features ) == features )
+        {
+            return format;
+        } else if ( tiling == vk::ImageTiling::eOptimal && ( props.optimalTilingFeatures & features ) == features )
+        {
+            return format;
+        }
+    }
+
+    throw std::runtime_error( "failed to find supported format!" );
 }
 
 bool
@@ -249,6 +280,9 @@ VulkanAPI::setSwapChainSupportDetails( const vk::PhysicalDevice& device )
     m_vkSwap_chain_detail.capabilities = device.getSurfaceCapabilitiesKHR( m_vkSurface.get( ) );
     m_vkSwap_chain_detail.presentModes = device.getSurfacePresentModesKHR( m_vkSurface.get( ) );
     m_vkSwap_chain_detail.formats      = device.getSurfaceFormatsKHR( m_vkSurface.get( ) );
+
+    m_vkSwap_chain_depth_format = findSupportedFormat( device, { vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint },
+                                                       vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment );
 
     /**
      *
@@ -339,7 +373,7 @@ VulkanAPI::setupLogicalDevice( )
 
     // preserved indices
     assert( !( m_requested_queue.contains( reinterpret_cast<void* const>( 0 ) ) && m_requested_queue.contains( reinterpret_cast<void* const>( 1 ) ) ) );
-    
+
     for ( auto& queue : m_requested_queue )
     {
         queue.second.first = queueList.size( );
@@ -381,8 +415,11 @@ VulkanAPI::setupLogicalDevice( )
      * Create logical device
      *
      * */
-    // vk::PhysicalDeviceFeatures requiredFeatures { };
-    vk::DeviceCreateInfo createInfo;
+    vk::PhysicalDeviceFeatures requiredFeatures { };
+    requiredFeatures.multiDrawIndirect = true;
+
+    vk::DeviceCreateInfo       createInfo;
+    createInfo.setPEnabledFeatures( &requiredFeatures );
     createInfo.setQueueCreateInfoCount( queueCreateInfos.size( ) );
     createInfo.setQueueCreateInfos( queueCreateInfos );
     createInfo.setEnabledLayerCount( m_vkValidationLayer->RequiredLayerCount( ) );
@@ -468,6 +505,17 @@ VulkanAPI::setupSwapChain( )
 
                                 return std::move( m_vkLogicalDevice->createImageViewUnique( createInfo ) );
                             } );
+
+    m_vkSwap_chain_depth_image = createImage( display_extent.width, display_extent.height, m_vkSwap_chain_depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_vkSwap_chain_depth_memory );
+
+    vk::ImageViewCreateInfo depthViewCreateInfo;
+    depthViewCreateInfo.setImage( m_vkSwap_chain_depth_image.get( ) )
+        .setViewType( vk::ImageViewType::e2D )
+        .setFormat( m_vkSwap_chain_depth_format )
+        .setComponents( { vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity } )
+        .setSubresourceRange( { vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1 } );
+
+    m_vkSwap_chain_depth_view = m_vkLogicalDevice->createImageViewUnique( depthViewCreateInfo );
 }
 
 std::string
@@ -523,7 +571,7 @@ VulkanAPI::setupPipeline( )
      *
      * */
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
-    m_vkPipeline->Create<DataType::ColoredVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ] );
+    m_vkPipeline->Create<DataType::ColoredVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkPhysicalDevice, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ], m_vkSwap_chain_depth_format );
 
     /**
      *
@@ -533,10 +581,10 @@ VulkanAPI::setupPipeline( )
     m_vkFrameBuffers.clear( );
     m_vkFrameBuffers.reserve( m_vkSwap_chain_image_views.size( ) );
     std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ this ]( const auto& image_view ) {
-        vk::FramebufferCreateInfo framebufferInfo { };
+        std::vector<vk::ImageView> attachments { image_view.get( ), m_vkSwap_chain_depth_view.get( ) };
+        vk::FramebufferCreateInfo  framebufferInfo { };
         framebufferInfo.setRenderPass( m_vkPipeline->getRenderPass( ) );
-        framebufferInfo.setAttachmentCount( 1 );
-        framebufferInfo.setAttachments( image_view.get( ) );
+        framebufferInfo.setAttachments( attachments );
         framebufferInfo.setWidth( m_vkDisplayExtent.width );
         framebufferInfo.setHeight( m_vkDisplayExtent.height );
         framebufferInfo.setLayers( 1 );
@@ -636,8 +684,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
             {0, 0},
             display_extent
         } );
-        render_pass_begin_info.setClearValueCount( 1 );
-        render_pass_begin_info.setClearValues( m_clearColor );
+        render_pass_begin_info.setClearValues( m_clearValues );
 
         m_vkGraphicCommandBuffers[ it_index ].beginRenderPass( render_pass_begin_info, vk::SubpassContents::eInline );
         m_vkGraphicCommandBuffers[ it_index ].bindPipeline( vk::PipelineBindPoint::eGraphics, m_vkPipeline->getPipeline( ) );
@@ -695,4 +742,34 @@ VulkanAPI::setupGraphicCommandBuffers( )
     allocInfo.setCommandBufferCount( m_vkFrameBuffers.size( ) );
 
     m_vkGraphicCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
+}
+
+vk::UniqueImage
+VulkanAPI::createImage( uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueDeviceMemory& imageMemory )
+{
+    vk::ImageCreateInfo imageInfo;
+    imageInfo
+        .setImageType( vk::ImageType::e2D )
+        .setExtent( { width, height, 1 } )
+        .setMipLevels( 1 )
+        .setArrayLayers( 1 )
+        .setFormat( format )
+        .setTiling( tiling )
+        .setInitialLayout( vk::ImageLayout::eUndefined )
+        .setUsage( usage )
+        .setSamples( vk::SampleCountFlagBits::e1 )
+        .setSharingMode( vk::SharingMode::eExclusive );
+
+    auto result          = m_vkLogicalDevice->createImageUnique( imageInfo );
+    auto memRequirements = m_vkLogicalDevice->getImageMemoryRequirements( result.get( ) );
+
+    imageMemory = m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, VulkanAPI::VKBufferMeta::FindMemoryType( m_vkPhysicalDevice.getMemoryProperties( ), memRequirements.memoryTypeBits, properties ) } );
+    m_vkLogicalDevice->bindImageMemory( result.get( ), m_vkSwap_chain_depth_memory.get( ), 0 );
+
+    return result;
+}
+
+VulkanAPI::~VulkanAPI( )
+{
+    vmaDestroyAllocator( m_vkmAllocator );
 }

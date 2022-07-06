@@ -6,16 +6,17 @@
 #define MINECRAFT_VK_PLAYER_HPP
 
 #include <Minecraft/Application/Camera/Camera.hpp>
+#include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 #include <Minecraft/util/Tickable.hpp>
 
 class Player : Tickable
 {
-    Camera           m_Camera { glm::vec3( 0.0f, 2.0f, 0.0f ) };
+    Camera           m_Camera { glm::vec3( 0.0f, 100.0f, 0.0f ) };
     EntityCoordinate m_Coordinate;
 
 public:
-    explicit Player( EntityCoordinate coordinate )
+    explicit Player( const EntityCoordinate& coordinate )
     {
         SetCoordinate( coordinate );
     }
@@ -26,10 +27,11 @@ public:
         return m_Camera.GetViewMatrix( );
     }
 
-    void SetCoordinate( EntityCoordinate coordinate ) { m_Coordinate = coordinate; };
+    void SetCoordinate( const EntityCoordinate& coordinate ) { m_Coordinate = coordinate; };
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
     BlockCoordinate  GetIntCoordinate( ) { return { std::get<0>( m_Coordinate ), std::get<1>( m_Coordinate ), std::get<2>( m_Coordinate ) }; };
+    BlockCoordinate  GetChunkCoordinate( ) { return { (int) std::get<0>( m_Coordinate ) >> SectionUnitLengthBinaryOffset, (int) std::get<1>( m_Coordinate ) >> SectionUnitLengthBinaryOffset, (int) std::get<2>( m_Coordinate ) >> SectionUnitLengthBinaryOffset }; };
 
     void Tick( float deltaTime );
 };

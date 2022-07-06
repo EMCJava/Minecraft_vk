@@ -2,21 +2,16 @@
 // Created by loys on 16/1/2022.
 //
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <Include/GLM.hpp>
+#include <Include/imgui_include.hpp>
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
-
-#include <Include/implot/implot.h>
-#include <Include/implot/implot_internal.h>
+#include <Utility/ImguiAddons/CurveEditor.hpp>
 
 #include "MainApplication.hpp"
 
 #include "Include/GlobalConfig.hpp"
 #include "Include/GraphicAPI.hpp"
+#include "Utility/Timer.hpp"
 
 #include <chrono>
 #include <thread>
@@ -89,7 +84,9 @@ MainApplication::run( )
         ubos[ i ].proj  = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
     }
 
-    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
+    std::vector<VulkanAPI::VKMBufferMeta> indirectDrawBuffers( swapChainImagesCount, m_graphics_api->getMemoryAllocator( ) );
+
+    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, &indirectDrawBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
         static auto startTime = std::chrono::high_resolution_clock::now( );
 
         if ( m_screen_width * m_screen_height == 0 )
@@ -99,7 +96,7 @@ MainApplication::run( )
         const float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
 
         ubos[ index ].view = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
-        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
+        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
 
         // for vulkan coordinate system
         ubos[ index ].proj[ 1 ][ 1 ] *= -1;
@@ -107,21 +104,26 @@ MainApplication::run( )
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
-        {
-            std::lock_guard cacheIterLocker( chunkPool.GetChunkCacheLock( ) );
-            auto            iterBegin = chunkPool.GetChunkIterBegin( );
-            auto            iterEnd   = chunkPool.GetChunkIterEnd( );
-            for ( auto it = iterBegin; it != iterEnd; ++it )
-            {
-                if ( it->second->initialized )
-                {
-                    command_buffer.bindVertexBuffers( 0, it->second->GetVertexBuffer( ).buffer.get( ), vk::DeviceSize( 0 ) );
-                    command_buffer.bindIndexBuffer( it->second->GetIndexBuffer( ).buffer.get( ), 0, vk::IndexType::eUint16 );
+        m_renderingChunkCount = 0;
 
-                    command_buffer.drawIndexed( 6, 1, 0, 0, 0 );
-                }
+        {
+            std::lock_guard renderBufferLock( chunkPool.GetRenderBufferLock( ) );
+            auto&           renderBuffer = chunkPool.GetRenderBuffer( );
+
+            for ( auto& buffer : renderBuffer.m_Buffers )
+            {
+                if ( buffer.m_DataSlots.empty( ) || !buffer.indirectDrawBuffers.GetBuffer( ) ) continue;
+
+                std::lock_guard<std::mutex> indirectDrawBufferLock( buffer.indirectDrawBuffersMutex );
+                command_buffer.bindVertexBuffers( 0, buffer.vertexBuffer, vk::DeviceSize( 0 ) );
+
+                static_assert( std::is_same<IndexBufferType, uint32_t>::value );
+                command_buffer.bindIndexBuffer( buffer.indexBuffer, 0, vk::IndexType::eUint32 );
+
+                command_buffer.drawIndexedIndirect( buffer.indirectDrawBuffers.GetBuffer( ), 0, buffer.indirectCommands.size( ), sizeof( vk::DrawIndexedIndirectCommand ) );
             }
         }
+
 
         ImGui_ImplVulkan_NewFrame( );
         ImGui_ImplGlfw_NewFrame( );
@@ -141,15 +143,15 @@ MainApplication::run( )
      * Start game loop
      *
      * */
-    m_render_thread_should_run = true;
-    std::thread render_thread( &MainApplication::renderThread, this );
-    while ( !glfwWindowShouldClose( m_window ) )
+
     {
-        glfwPollEvents( );
+        std::jthread render_thread( std::bind_front( &MainApplication::renderThread, this ) );
+        while ( !glfwWindowShouldClose( m_window ) )
+        {
+            glfwPollEvents( );
+        }
     }
 
-    m_render_thread_should_run = false;
-    if ( render_thread.joinable( ) ) render_thread.join( );
     m_graphics_api->waitIdle( );
 }
 
@@ -328,9 +330,9 @@ MainApplication::cleanUp( )
 }
 
 void
-MainApplication::renderThread( )
+MainApplication::renderThread( const std::stop_token& st )
 {
-    while ( m_render_thread_should_run )
+    while ( !st.stop_requested( ) )
     {
 
         m_deltaMouseHoldUpdate.test_and_set( );
@@ -359,6 +361,7 @@ MainApplication::renderThread( )
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
         // m_graphics_api->cycleGraphicCommandBuffers( image_index );
         m_graphics_api->presentFrame<true>( image_index );
+
         // m_graphics_api->waitPresent( );
     }
 
@@ -516,7 +519,7 @@ MainApplication::renderImgui( )
             static float            t         = 0;
             static float            previousT = 0;
             static float            history   = 10.0f;
-            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount;
+            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount, chunkRenderCount;
             auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
             t += ImGui::GetIO( ).DeltaTime;
@@ -530,22 +533,20 @@ MainApplication::renderImgui( )
                 {
                     chunkLoadingThreadCount.shrink( 0 );
                     chunkCount.shrink( 0 );
+                    chunkRenderCount.shrink( 0 );
                 }
                 chunkLoadingThreadCount.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
                 chunkCount.push_back( ImVec2( xmod, chunkPool.GetTotalChunk( ) ) );
+                chunkRenderCount.push_back( ImVec2( xmod, m_renderingChunkCount ) );
             }
 
-            static ImPlotAxisFlags flags = ImPlotAxisFlags_None;   // ImPlotAxisFlags_NoTickLabels;
             static ScrollingBuffer fps;
-            static float           maxFPS;
-            maxFPS = std::max( maxFPS, m_imgui_io->Framerate );
             fps.AddPoint( t, m_imgui_io->Framerate );
 
             if ( ImPlot::BeginPlot( "FPS##Scrolling", ImVec2( -1, 150 ) ) )
             {
-                ImPlot::SetupAxes( NULL, NULL, flags, flags );
+                ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_None, ImPlotAxisFlags_AutoFit );
                 ImPlot::SetupAxisLimits( ImAxis_X1, std::max( fps.Data[ fps.Offset ].x, t - history ), t, ImGuiCond_Always );
-                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, maxFPS * 1.1 );
                 ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
                 ImPlot::PlotShaded( "", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
@@ -554,20 +555,30 @@ MainApplication::renderImgui( )
             if ( ImPlot::BeginPlot( "Chunks##Scrolling", ImVec2( -1, 0 ) ) )
             {
                 ImPlot::SetupAxes( "Time", "Thread" );
-                ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault );
+                ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit );
                 ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
-                ImPlot::SetupAxisLimits( ImAxis_Y1, -1, chunkPool.GetMaxThread( ) + 1 );
-                ImPlot::SetupAxisLimits( ImAxis_Y2, -1, 1000 );
+                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, chunkPool.GetMaxThread( ) + 1 );
 
                 ImPlot::SetAxes( ImAxis_X1, ImAxis_Y1 );
                 ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
                 ImPlot::PlotStems( "Chunk thread", &chunkLoadingThreadCount[ 0 ].x, &chunkLoadingThreadCount[ 0 ].y, chunkLoadingThreadCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
 
                 ImPlot::SetAxes( ImAxis_X1, ImAxis_Y2 );
-                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Circle );
                 ImPlot::PlotStems( "Total Chunk", &chunkCount[ 0 ].x, &chunkCount[ 0 ].y, chunkCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
+        }
+
+        {
+            static ImGuiAddons::CurveEditor a( {
+                {0.f, 0.f},
+                {1.f, 1.f}
+            } );
+
+            a.Render( );
         }
 
         ImGui::End( );
