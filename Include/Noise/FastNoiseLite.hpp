@@ -140,7 +140,11 @@ public:
     /// <remarks>
     /// Default: 1337
     /// </remarks>
-    FastNoiseLite& SetSeed( int seed ) { mSeed = seed; }
+    FastNoiseLite& SetSeed( int seed )
+    {
+        mSeed = seed;
+        return *this;
+    }
 
     /// <summary>
     /// Sets frequency for all noise types
@@ -148,7 +152,11 @@ public:
     /// <remarks>
     /// Default: 0.01
     /// </remarks>
-    FastNoiseLite& SetFrequency( float frequency ) { mFrequency = frequency; }
+    FastNoiseLite& SetFrequency( float frequency )
+    {
+        mFrequency = frequency;
+        return *this;
+    }
 
     /// <summary>
     /// Sets noise algorithm used for GetNoise(...)
@@ -160,6 +168,7 @@ public:
     {
         mNoiseType = noiseType;
         UpdateTransformType3D( );
+        return *this;
     }
 
     /// <summary>
@@ -174,6 +183,7 @@ public:
         mRotationType3D = rotationType3D;
         UpdateTransformType3D( );
         UpdateWarpTransformType3D( );
+        return *this;
     }
 
     /// <summary>
@@ -183,7 +193,11 @@ public:
     /// Default: None
     /// Note: FractalType_DomainWarp... only affects DomainWarp(...)
     /// </remarks>
-    FastNoiseLite& SetFractalType( FractalType fractalType ) { mFractalType = fractalType; }
+    FastNoiseLite& SetFractalType( FractalType fractalType )
+    {
+        mFractalType = fractalType;
+        return *this;
+    }
 
     /// <summary>
     /// Sets octave count for all fractal noise types
@@ -195,6 +209,7 @@ public:
     {
         mOctaves = octaves;
         CalculateFractalBounding( );
+        return *this;
     }
 
     /// <summary>
@@ -203,7 +218,11 @@ public:
     /// <remarks>
     /// Default: 2.0
     /// </remarks>
-    FastNoiseLite& SetFractalLacunarity( float lacunarity ) { mLacunarity = lacunarity; }
+    FastNoiseLite& SetFractalLacunarity( float lacunarity )
+    {
+        mLacunarity = lacunarity;
+        return *this;
+    }
 
     /// <summary>
     /// Sets octave gain for all fractal noise types
@@ -215,6 +234,7 @@ public:
     {
         mGain = gain;
         CalculateFractalBounding( );
+        return *this;
     }
 
     /// <summary>
@@ -224,7 +244,11 @@ public:
     /// Default: 0.0
     /// Note: Keep between 0...1 to maintain -1...1 output bounding
     /// </remarks>
-    FastNoiseLite& SetFractalWeightedStrength( float weightedStrength ) { mWeightedStrength = weightedStrength; }
+    FastNoiseLite& SetFractalWeightedStrength( float weightedStrength )
+    {
+        mWeightedStrength = weightedStrength;
+        return *this;
+    }
 
     /// <summary>
     /// Sets strength of the fractal ping pong effect
@@ -232,7 +256,11 @@ public:
     /// <remarks>
     /// Default: 2.0
     /// </remarks>
-    FastNoiseLite& SetFractalPingPongStrength( float pingPongStrength ) { mPingPongStrength = pingPongStrength; }
+    FastNoiseLite& SetFractalPingPongStrength( float pingPongStrength )
+    {
+        mPingPongStrength = pingPongStrength;
+        return *this;
+    }
 
 
     /// <summary>
@@ -241,7 +269,11 @@ public:
     /// <remarks>
     /// Default: Distance
     /// </remarks>
-    FastNoiseLite& SetCellularDistanceFunction( CellularDistanceFunction cellularDistanceFunction ) { mCellularDistanceFunction = cellularDistanceFunction; }
+    FastNoiseLite& SetCellularDistanceFunction( CellularDistanceFunction cellularDistanceFunction )
+    {
+        mCellularDistanceFunction = cellularDistanceFunction;
+        return *this;
+    }
 
     /// <summary>
     /// Sets return type from cellular noise calculations
@@ -249,7 +281,11 @@ public:
     /// <remarks>
     /// Default: EuclideanSq
     /// </remarks>
-    FastNoiseLite& SetCellularReturnType( CellularReturnType cellularReturnType ) { mCellularReturnType = cellularReturnType; }
+    FastNoiseLite& SetCellularReturnType( CellularReturnType cellularReturnType )
+    {
+        mCellularReturnType = cellularReturnType;
+        return *this;
+    }
 
     /// <summary>
     /// Sets the maximum distance a cellular point can move from it's grid position
@@ -258,7 +294,11 @@ public:
     /// Default: 1.0
     /// Note: Setting this higher than 1 will cause artifacts
     /// </remarks>
-    FastNoiseLite& SetCellularJitter( float cellularJitter ) { mCellularJitterModifier = cellularJitter; }
+    FastNoiseLite& SetCellularJitter( float cellularJitter )
+    {
+        mCellularJitterModifier = cellularJitter;
+        return *this;
+    }
 
 
     /// <summary>
@@ -271,6 +311,7 @@ public:
     {
         mDomainWarpType = domainWarpType;
         UpdateWarpTransformType3D( );
+        return *this;
     }
 
 
@@ -280,7 +321,11 @@ public:
     /// <remarks>
     /// Default: 1.0
     /// </remarks>
-    FastNoiseLite& SetDomainWarpAmp( float domainWarpAmp ) { mDomainWarpAmp = domainWarpAmp; }
+    FastNoiseLite& SetDomainWarpAmp( float domainWarpAmp )
+    {
+        mDomainWarpAmp = domainWarpAmp;
+        return *this;
+    }
 
 
     /// <summary>
