@@ -1,4 +1,4 @@
 add_subdirectory(Chunk)
 add_subdirectory(Generation)
 add_library(MinecraftWorldLib MinecraftWorld.hpp MinecraftWorld.cpp)
-target_link_libraries(MinecraftWorldLib MinecraftServerLib)
+target_link_libraries(MinecraftWorldLib ChunkPoolLib)
