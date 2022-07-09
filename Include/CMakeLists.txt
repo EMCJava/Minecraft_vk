@@ -14,6 +14,8 @@ target_link_libraries(ImplotDemoLib ImplotLib)
 
 add_library(vkMemAllocImplLib vk_mem_alloc.h vk_mem_alloc_impl.cpp)
 
+add_library(stbImageLib stb_image.h stb_image_Impl.cpp)
+
 if (WIN32 OR MSVC)
     target_link_libraries(GraphicAPILib glfw)
     target_link_libraries(ImguiLib glfw)

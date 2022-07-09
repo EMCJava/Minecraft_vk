@@ -4,4 +4,10 @@ add_library(QueueFamilyManagerLib QueueFamilyManager.hpp QueueFamilyManager.cpp)
 target_link_libraries(QueueFamilyManagerLib GraphicAPILib)
 
 add_library(VulkanAPILib VulkanAPI.hpp VulkanAPI.cpp)
-target_link_libraries(VulkanAPILib GraphicAPILib QueueFamilyManagerLib)
+target_link_libraries(VulkanAPILib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib GraphicAPILib QueueFamilyManagerLib)
+
+add_library(BufferMetaLib BufferMeta.hpp BufferMeta.cpp)
+add_library(ImageMetaLib ImageMeta.hpp ImageMeta.cpp)
+
+target_link_libraries(BufferMetaLib VulkanAPILib)
+target_link_libraries(ImageMetaLib BufferMetaLib stbImageLib)
