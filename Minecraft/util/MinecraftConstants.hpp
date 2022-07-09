@@ -41,15 +41,23 @@ static constexpr CoordinateType SectionVolumeBinaryOffset      = SectionSurfaceS
 static constexpr CoordinateType MaxSectionInChunk = 24;
 static constexpr CoordinateType ChunkMaxHeight    = SectionUnitLength * MaxSectionInChunk;
 
+static constexpr CoordinateType ChunkVolume    = MaxSectionInChunk * SectionVolume;
+
 static constexpr uint32_t ChunkThreadDelayPeriod = 100;
+
+static constexpr auto FaceVerticesCount = 4;
+static constexpr auto FaceIndicesCount  = 6;
 
 using IndexBufferType = uint32_t;
 
 static constexpr uint32_t MaxMemoryAllocationPerVertexBuffer = 64 * 1024 * 1024;
-using SolidChunkVertexIndexSizeCapConverter                  = ScaleToSecond_S<4, 1>;
+using SolidChunkVertexIndexSizeCapConverter                  = ScaleToSecond_S<10, 3>;
 using SCVISCC                                                = SolidChunkVertexIndexSizeCapConverter;
 static constexpr uint32_t MaxMemoryAllocationPerIndexBuffer  = SCVISCC::ConvertToSecond( MaxMemoryAllocationPerVertexBuffer );
 
 static constexpr uint32_t IndirectDrawBufferSizeStep = 20 * 1024;
+
+using BlockFaceTextureSize = ScaleToSecond_S<1, 16>;
+
 
 #endif   // MINECRAFT_VK_MINECRAFTCONSTANTS_HPP
