@@ -9,8 +9,10 @@
 
 #include "MainApplication.hpp"
 
+#include "Graphic/Vulkan/ImageMeta.hpp"
 #include "Include/GlobalConfig.hpp"
 #include "Include/GraphicAPI.hpp"
+#include "Minecraft/Block/BlockTexture.hpp"
 #include "Utility/Timer.hpp"
 
 #include <chrono>
@@ -36,6 +38,7 @@ MainApplication::MainApplication( )
 
     m_MinecraftInstance = std::make_unique<Minecraft>( );
     m_MinecraftInstance->InitServer( );
+    m_MinecraftInstance->InitTexture( "../Resources/Texture" );
 
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
@@ -50,7 +53,7 @@ MainApplication::run( )
 {
     const auto                           swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
     std::vector<VulkanAPI::VKBufferMeta> uniformBuffers( swapChainImagesCount );
-    const auto                           updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers ]( ) {
+    const auto                           updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers, &blockTextures = std::as_const( m_MinecraftInstance->GetBlockTextures( ) ) ]( ) {
         for ( size_t i = 0; i < swapChainImagesCount; i++ )
         {
             vk::DescriptorBufferInfo bufferInfo;
@@ -58,14 +61,16 @@ MainApplication::run( )
                 .setOffset( 0 )
                 .setRange( sizeof( TransformUniformBufferObject ) );
 
+            vk::DescriptorImageInfo imageInfo { };
+            imageInfo.setImageLayout( vk::ImageLayout::eShaderReadOnlyOptimal ).setImageView( blockTextures.GetTexture( ).GetImageView( ) ).setSampler( blockTextures.GetTexture( ).GetSampler( ) );
+
+            std::vector<vk::WriteDescriptorSet> writeDescriptorSets = { m_graphics_api->getWriteDescriptorSetSetup( i ), m_graphics_api->getWriteDescriptorSetSetup( i ) };
+
+            writeDescriptorSets[ 0 ].setDstBinding( 0 ).setDstArrayElement( 0 ).setDescriptorType( vk::DescriptorType::eUniformBuffer ).setDescriptorCount( 1 ).setBufferInfo( bufferInfo );
+            writeDescriptorSets[ 1 ].setDstBinding( 1 ).setDstArrayElement( 0 ).setDescriptorType( vk::DescriptorType::eCombinedImageSampler ).setDescriptorCount( 1 ).setImageInfo( imageInfo );
+
             m_graphics_api->getLogicalDevice( )
-                .updateDescriptorSets( m_graphics_api->getWriteDescriptorSetSetup( i )
-                                                                     .setDstBinding( 0 )
-                                                                     .setDstArrayElement( 0 )
-                                                                     .setDescriptorType( vk::DescriptorType::eUniformBuffer )
-                                                                     .setDescriptorCount( 1 )
-                                                                     .setBufferInfo( bufferInfo ),
-                                                                 nullptr );
+                .updateDescriptorSets( writeDescriptorSets, nullptr );
         }
     };
 
@@ -84,9 +89,7 @@ MainApplication::run( )
         ubos[ i ].proj  = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
     }
 
-    std::vector<VulkanAPI::VKMBufferMeta> indirectDrawBuffers( swapChainImagesCount, m_graphics_api->getMemoryAllocator( ) );
-
-    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, &indirectDrawBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
+    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
         static auto startTime = std::chrono::high_resolution_clock::now( );
 
         if ( m_screen_width * m_screen_height == 0 )
@@ -122,14 +125,15 @@ MainApplication::run( )
 
                 command_buffer.drawIndexedIndirect( buffer.indirectDrawBuffers.GetBuffer( ), 0, buffer.indirectCommands.size( ), sizeof( vk::DrawIndexedIndirectCommand ) );
             }
-        }
 
+            // Logger::getInstance( ).LogLine( renderBuffer.m_Buffers.size( ) );
+        }
 
         ImGui_ImplVulkan_NewFrame( );
         ImGui_ImplGlfw_NewFrame( );
         ImGui::NewFrame( );
 
-        renderImgui( );
+        renderImgui( index );
 
         // Rendering
         ImGui::Render( );
@@ -358,8 +362,19 @@ MainApplication::renderThread( const std::stop_token& st )
          * */
 
         const uint32_t image_index = m_graphics_api->acquireNextImage( );
-        // m_graphics_api->cycleGraphicCommandBuffers( image_index );
-        m_graphics_api->presentFrame<true>( image_index );
+        m_graphics_api->cycleGraphicCommandBuffers( image_index );
+        m_graphics_api->presentFrame<false>( image_index );
+
+        if ( m_ShouldReset )
+        {
+            m_graphics_api->FlushFence( );
+            // m_graphics_api->waitPresent( );
+            MinecraftServer::GetInstance( ).GetWorld( ).StopChunkGeneration( );
+            MinecraftServer::GetInstance( ).GetWorld( ).CleanChunk( );
+            MinecraftServer::GetInstance( ).GetWorld( ).StartChunkGeneration( );
+            m_ShouldReset = false;
+        }
+
 
         // m_graphics_api->waitPresent( );
     }
@@ -472,7 +487,7 @@ struct ScrollingBuffer {
 };
 
 void
-MainApplication::renderImgui( )
+MainApplication::renderImgui( uint32_t renderIndex )
 {
     static bool   show_demo_window    = false;
     static bool   show_another_window = false;
@@ -500,6 +515,18 @@ MainApplication::renderImgui( )
             m_graphics_api->setClearColor( { clear_color.x, clear_color.y, clear_color.z, 1.0f } );
         }
 
+        if ( ImGui::Button( "Reset" ) )
+        {
+            auto offsets = std::make_unique<float[]>( ChunkMaxHeight );
+            for ( int i = 0; i < ChunkMaxHeight; ++i )
+                offsets[ i ] = m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
+
+            MinecraftServer::GetInstance( ).GetWorld( ).SetTerrainNoiseOffset( std::move( offsets ) );
+
+            m_ShouldReset = true;
+        }
+
+        ImGui::SameLine( );
         if ( ImGui::Button( "Fps mode" ) )
         {
             LockMouse( );
@@ -571,14 +598,7 @@ MainApplication::renderImgui( )
             }
         }
 
-        {
-            static ImGuiAddons::CurveEditor a( {
-                {0.f, 0.f},
-                {1.f, 1.f}
-            } );
-
-            a.Render( );
-        }
+        m_TerrainNoiseOffset.Render( );
 
         ImGui::End( );
     }
@@ -596,7 +616,10 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
     auto* mainApplication = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
 
     if ( !mainApplication->m_deltaMouseHoldUpdate.test( ) && mainApplication->m_is_mouse_locked )
-        mainApplication->m_NegDeltaMouse = { xpos - mainApplication->m_MousePos.first, mainApplication->m_MousePos.second - ypos };
+    {
+        mainApplication->m_NegDeltaMouse.first += xpos - mainApplication->m_MousePos.first;
+        mainApplication->m_NegDeltaMouse.second += mainApplication->m_MousePos.second - ypos;
+    }
     mainApplication->m_MousePos = { xpos, ypos };
 
     /*

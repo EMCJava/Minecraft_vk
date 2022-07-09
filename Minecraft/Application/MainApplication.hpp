@@ -11,6 +11,7 @@
 #include <Graphic/Vulkan/VulkanAPI.hpp>
 #include <Include/GlobalConfig.hpp>
 #include <Minecraft/Minecraft.hpp>
+#include <Utility/ImguiAddons/CurveEditor.hpp>
 #include <Utility/Logger.hpp>
 #include <Utility/Singleton.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
@@ -47,7 +48,12 @@ class MainApplication : public Singleton<MainApplication>
      * Minecraft
      *
      * */
+    ImGuiAddons::CurveEditor m_TerrainNoiseOffset {
+        {{ 0.f, 0.f }, { 1.f, 0.f }}
+    };
+
     std::unique_ptr<Minecraft> m_MinecraftInstance;
+    bool                       m_ShouldReset = false;
 
     /*
      *
@@ -61,8 +67,8 @@ class MainApplication : public Singleton<MainApplication>
     void RecreateWindow( bool isFullScreen );
     void cleanUp( );
 
-    void              renderThread( const std::stop_token& st );
-    void              renderImgui( );
+    void renderThread( const std::stop_token& st );
+    void renderImgui( uint32_t renderIndex );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );
