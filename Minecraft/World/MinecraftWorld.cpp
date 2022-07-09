@@ -10,8 +10,17 @@
 
 MinecraftWorld::MinecraftWorld( )
 {
-    m_WorldHeightNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    m_WorldTerrainNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    m_WorldTerrainNoise->SetFractalOctaves( 8 );
     Logger ::getInstance( ).LogLine( "Using \"random\" seed" );
+
+    m_BedRockNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    m_BedRockNoise->SetFrequency( 16 );
+    m_BedRockNoise->SetFractalOctaves( 1 );
+
+    m_TerrainNoiseOffsetPerLevel = std::make_unique<float[]>( ChunkMaxHeight );
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+        m_TerrainNoiseOffsetPerLevel[ i ] = 0;
 
     m_ChunkPool         = std::make_unique<ChunkPool>( GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
     m_ChunkLoadingRange = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( );
@@ -41,4 +50,22 @@ MinecraftWorld::Tick( float deltaTime )
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
         m_TimeSinceChunkLoad = 0;
     }
+}
+
+void
+MinecraftWorld::StartChunkGeneration( )
+{
+    m_ChunkPool->StartThread( );
+}
+
+void
+MinecraftWorld::StopChunkGeneration( )
+{
+    m_ChunkPool->StopThread( );
+}
+
+void
+MinecraftWorld::CleanChunk( )
+{
+    m_ChunkPool->Clean( );
 }
