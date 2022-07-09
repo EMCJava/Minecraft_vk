@@ -12,19 +12,18 @@
 
 #include <Utility/Thread/ThreadPool.hpp>
 
+#include <Graphic/Vulkan/BufferMeta.hpp>
 #include <Graphic/Vulkan/VulkanAPI.hpp>
 
 #include <unordered_map>
 
-using ChunkSolidBuffer = ChunkRenderBuffers<DataType::ColoredVertex, IndexBufferType, SCVISCC>;
+using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType, SCVISCC>;
 
 class ChunkCache
 {
 private:
-    std::unique_ptr<VulkanAPI::VKMBufferMeta> m_VertexBuffer;
-    std::unique_ptr<VulkanAPI::VKMBufferMeta> m_IndexBuffer;
-    uint32_t                                  m_IndexBufferSize { };
-    std::atomic_flag m_BufferReady            ATOMIC_FLAG_INIT;
+    uint32_t                       m_IndexBufferSize { };
+    std::atomic_flag m_BufferReady ATOMIC_FLAG_INIT;
 
 public:
     Chunk chunk;
@@ -34,10 +33,8 @@ public:
     void ResetLoad( );
     void ResetModel( ChunkSolidBuffer& renderBuffers );
 
-    bool                            IsBufferReady( ) const { return m_BufferReady.test( ); }
-    const VulkanAPI::VKMBufferMeta& GetVertexBuffer( ) const { return *m_VertexBuffer; }
-    const VulkanAPI::VKMBufferMeta& GetIndexBuffer( ) const { return *m_IndexBuffer; }
-    inline uint32_t                 GetIndexBufferSize( ) const { return m_IndexBufferSize; }
+    bool            IsBufferReady( ) const { return m_BufferReady.test( ); }
+    inline uint32_t GetIndexBufferSize( ) const { return m_IndexBufferSize; }
 };
 
 

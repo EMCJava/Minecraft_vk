@@ -29,71 +29,19 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;
 
-
-    //      F----H
-    //  E---|G   |
-    //  |  B-|--D
-    //  A----C
-
-    static constexpr auto FaceVerticesCount = 4;
-    static constexpr auto FaceIndicesCount  = 6;
-
-
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndices = { 0, 1, 2, 2, 3, 0 };
 
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> FrontBlockVertices = {
-        DataType::ColoredVertex {{ 1.f, 0.0f, 0.f }, { 1.0f, 0.f, 0.f }}, // B
-        DataType::ColoredVertex { { 1.f, 1.f, 0.f }, { 1.0f, 0.f, 0.f }}, // F
-        DataType::ColoredVertex { { 1.f, 1.f, 1.f }, { 1.0f, 0.f, 0.f }}, // H
-        DataType::ColoredVertex {{ 1.f, 0.0f, 1.f }, { 1.0f, 0.f, 0.f }}, // D
-    };
-
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> BackBlockVertices = {
-        DataType::ColoredVertex {{ 0.f, 0.0f, 0.f }, { 1.0f, 0.f, 0.f }}, // A
-        DataType::ColoredVertex {{ 0.f, 0.0f, 1.f }, { 1.0f, 0.f, 0.f }}, // C
-        DataType::ColoredVertex { { 0.f, 1.f, 1.f }, { 1.0f, 0.f, 0.f }}, // G
-        DataType::ColoredVertex { { 0.f, 1.f, 0.f }, { 1.0f, 0.f, 0.f }}, // E
-    };
-
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> RightBlockVertices = {
-        DataType::ColoredVertex {{ 0.f, 0.0f, 1.f }, { 0.f, 0.f, 1.f }}, // C
-        DataType::ColoredVertex {{ 1.f, 0.0f, 1.f }, { 0.f, 0.f, 1.f }}, // D
-        DataType::ColoredVertex { { 1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f }}, // H
-        DataType::ColoredVertex { { 0.f, 1.f, 1.f }, { 0.f, 0.f, 1.f }}, // G
-    };
-
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> LeftBlockVertices = {
-        DataType::ColoredVertex {{ 0.f, 0.0f, 0.f }, { 0.f, 0.f, 1.f }}, // A
-        DataType::ColoredVertex { { 0.f, 1.f, 0.f }, { 0.f, 0.f, 1.f }}, // E
-        DataType::ColoredVertex { { 1.f, 1.f, 0.f }, { 0.f, 0.f, 1.f }}, // F
-        DataType::ColoredVertex {{ 1.f, 0.0f, 0.f }, { 0.f, 0.f, 1.f }}, // B
-    };
-
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> UpBlockVertices = {
-        DataType::ColoredVertex {{ 0.f, 1.f, 0.f }, { 0.f, 1.f, 0.f }}, // E
-        DataType::ColoredVertex {{ 0.f, 1.f, 1.f }, { 0.f, 1.f, 0.f }}, // G
-        DataType::ColoredVertex {{ 1.f, 1.f, 1.f }, { 0.f, 1.f, 0.f }}, // H
-        DataType::ColoredVertex {{ 1.f, 1.f, 0.f }, { 0.f, 1.f, 0.f }}, // F
-    };
-
-    static const std::array<DataType::ColoredVertex, FaceVerticesCount> DownBlockVertices = {
-        DataType::ColoredVertex {{ 0.f, 0.0f, 0.f }, { 0.f, 1.f, 0.f }}, // A
-        DataType::ColoredVertex {{ 1.f, 0.0f, 0.f }, { 0.f, 1.f, 0.f }}, // B
-        DataType::ColoredVertex {{ 1.f, 0.0f, 1.f }, { 0.f, 1.f, 0.f }}, // D
-        DataType::ColoredVertex {{ 0.f, 0.0f, 1.f }, { 0.f, 1.f, 0.f }}, // C
-    };
-
-    const auto     verticesDataSize     = ScaleToSecond<1, sizeof( DataType::ColoredVertex ) * FaceVerticesCount>( chunk.m_VisibleFacesCount );
+    const auto     verticesDataSize     = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( chunk.m_VisibleFacesCount );
     const auto     indicesDataSize      = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( chunk.m_VisibleFacesCount ) );
     auto&          api                  = MainApplication::GetInstance( ).GetVulkanAPI( );
-    const auto&    noiseGenerator       = MinecraftServer::GetInstance( ).GetWorld( ).GetHeightNoise( );
+    const auto&    noiseGenerator       = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( );
     const auto     suitableBufferRegion = renderBuffers.CreateBuffer( verticesDataSize, indicesDataSize );
-    const uint32_t indexOffset          = ScaleToSecond<sizeof( DataType::ColoredVertex ), 1, uint32_t>( suitableBufferRegion.region.vertex.first );
+    const uint32_t indexOffset          = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( suitableBufferRegion.region.vertex.first );
 
-    std::unique_ptr<DataType::ColoredVertex[]> chunkVertices = std::make_unique<DataType::ColoredVertex[]>( ScaleToSecond<1, FaceVerticesCount>( chunk.m_VisibleFacesCount ) );
-    std::unique_ptr<IndexBufferType[]>         chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
+    std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( chunk.m_VisibleFacesCount ) );
+    std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::ColoredVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset ) mutable {
+    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset ) mutable {
         for ( int k = 0; k < FaceVerticesCount; ++k, ++chunkVerticesPtr )
         {
             *chunkVerticesPtr = vertexArray[ k ];
@@ -108,7 +56,9 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
         ++faceAdded;
     };
 
-    for ( int y = 0, blockIndex = 0; y < chunk.m_SectionHeight; ++y )
+    const auto& blockTextures = Minecraft::GetInstance( ).GetBlockTextures( );
+
+    for ( int y = 0, blockIndex = 0; y < ChunkMaxHeight; ++y )
     {
         for ( int z = 0; z < SectionUnitLength; ++z )
         {
@@ -116,24 +66,24 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
             {
                 if ( const auto visibleFace = chunk.m_BlockFaces[ blockIndex ] )
                 {
-                    const auto offset = glm::vec3( chunkX + x, y, chunkZ + z );
+                    auto       textures = blockTextures.GetTextureLocation( chunk.m_Blocks[ blockIndex ] );
+                    const auto offset   = glm::vec3( chunkX + x, y, chunkZ + z );
                     if ( visibleFace & DirFrontBit )
-                        AddFace( FrontBlockVertices, offset );
+                        AddFace( textures[ DirFront ], offset );
                     if ( visibleFace & DirBackBit )
-                        AddFace( BackBlockVertices, offset );
+                        AddFace( textures[ DirBack ], offset );
                     if ( visibleFace & DirRightBit )
-                        AddFace( RightBlockVertices, offset );
+                        AddFace( textures[ DirRight ], offset );
                     if ( visibleFace & DirLeftBit )
-                        AddFace( LeftBlockVertices, offset );
+                        AddFace( textures[ DirLeft ], offset );
                     if ( visibleFace & DirUpBit )
-                        AddFace( UpBlockVertices, offset );
+                        AddFace( textures[ DirUp ], offset );
                     if ( visibleFace & DirDownBit )
-                        AddFace( DownBlockVertices, offset );
+                        AddFace( textures[ DirDown ], offset );
                 }
             }
         }
     }
-
 
     renderBuffers.CopyBuffer( suitableBufferRegion, chunkVertices.get( ), chunkIndices.get( ) );
 }
