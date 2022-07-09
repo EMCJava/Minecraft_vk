@@ -340,6 +340,17 @@ public:
     }
 
     /// <summary>
+    /// 3D noise at given position using current settings
+    /// </summary>
+    /// <returns>
+    /// Noise output bounded between -1...1
+    /// </returns>
+    float GetNoiseInt( std::integral auto x, std::integral auto y, std::integral auto z ) const
+    {
+        return GetNoise( (float) x, (float) y, (float) z );
+    }
+
+    /// <summary>
     /// 2D noise at given position using current settings
     /// </summary>
     /// <returns>
