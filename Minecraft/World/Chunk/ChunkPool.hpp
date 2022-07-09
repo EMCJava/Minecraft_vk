@@ -41,8 +41,8 @@ public:
 
     ~ChunkPool( )
     {
-        m_UpdateThread.reset( );
-        std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
+        StopThread( );
+        Clean( );
     }
 
     inline void SetCentre( const BlockCoordinate& centre )
@@ -55,10 +55,24 @@ public:
         m_RemoveJobAfterRange = range;
     }
 
+    void StopThread( )
+    {
+        m_UpdateThread.reset( );
+    }
+
     void StartThread( )
     {
         if ( m_UpdateThread ) return;
         m_UpdateThread = std::make_unique<std::jthread>( std::bind_front( &ChunkPool::UpdateThread, this ) );
+    }
+
+    void Clean( )
+    {
+        m_ChunkRenderBuffers.Clean( );
+        m_PendingThreads.clear();
+        
+        std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
+        m_ChunkCache.clear( );
     }
 
     void AddCoordinate( const BlockCoordinate& coordinate )
