@@ -33,7 +33,7 @@ protected:
         std::vector<vk::VertexInputAttributeDescription> shaderAttributeDescriptions;
         std::vector<vk::VertexInputBindingDescription>   shaderBindingDescriptions;
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesCreateInfo;
-        std::vector<vk::DescriptorSet>                   vertexUniformDescriptorSetsPtr;
+        std::vector<vk::DescriptorSet>                   descriptorSetsPtr;
 
         // should be destruct inorder
         vk::PipelineVertexInputStateCreateInfo   vertexInputInfo;
@@ -54,7 +54,7 @@ protected:
         vk::SubpassDependency                    subpassDependency;
         vk::RenderPassCreateInfo                 renderPassCreateInfo;
         vk::UniqueDescriptorSetLayout            vertexUniformDescriptorSetLayout;
-        vk::DescriptorPoolSize                   descriptorPoolSize;
+        std::vector<vk::DescriptorPoolSize>      descriptorPoolSizes;
         vk::DescriptorPoolCreateInfo             descriptorPoolCreateInfo;
         vk::UniqueDescriptorPool                 descriptorPool;
         vk::PipelineDepthStencilStateCreateInfo  depthStencilCreateInfo;
@@ -88,10 +88,11 @@ protected:
 
     virtual void SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
 
-    virtual void SetupDepthStencilStage(  );
+    virtual void SetupDepthStencilStage( );
 
 public:
     explicit VulkanPipeline( std::unique_ptr<VulkanShader>&& vkShader );
+    virtual ~VulkanPipeline( ) = default; // why ???
 
     template <typename VertexClass = DataType::VertexDetail, typename = std::enable_if_t<std::is_base_of_v<DataType::VertexDetail, VertexClass>>>
     void Create( float width, float height, uint32_t descriptorCount, vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );

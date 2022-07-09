@@ -88,8 +88,18 @@ VulkanPipeline::SetupPipelineLayout( vk::Device& device )
         .setStageFlags( vk::ShaderStageFlagBits::eVertex )
         .setPImmutableSamplers( nullptr );
 
+    // texture
+    vk::DescriptorSetLayoutBinding textureLayoutBinding;
+    textureLayoutBinding.setBinding( 1 )
+        .setDescriptorType( vk::DescriptorType::eCombinedImageSampler )
+        .setDescriptorCount( 1 )
+        .setStageFlags( vk::ShaderStageFlagBits::eFragment )
+        .setPImmutableSamplers( nullptr );
+
+    auto layouts = { uboLayoutBinding, textureLayoutBinding };
+
     vk::DescriptorSetLayoutCreateInfo layoutInfo;
-    layoutInfo.setBindings( uboLayoutBinding );
+    layoutInfo.setBindings( layouts );
 
     createInfo.vertexUniformDescriptorSetLayout = device.createDescriptorSetLayoutUnique( layoutInfo );
 
@@ -164,10 +174,15 @@ VulkanPipeline::SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device&
 void
 VulkanPipeline::SetupDescriptorPool( vk::Device& device, uint32_t descriptorCount )
 {
-    createInfo.descriptorPoolSize.setType( vk::DescriptorType::eUniformBuffer );
-    createInfo.descriptorPoolSize.setDescriptorCount( descriptorCount );
+    auto& ubo = createInfo.descriptorPoolSizes.emplace_back();
+    ubo.setType( vk::DescriptorType::eUniformBuffer );
+    ubo.setDescriptorCount( descriptorCount );
 
-    createInfo.descriptorPoolCreateInfo.setPoolSizes( createInfo.descriptorPoolSize );
+    auto& tbo = createInfo.descriptorPoolSizes.emplace_back();
+    tbo.setType( vk::DescriptorType::eCombinedImageSampler );
+    tbo.setDescriptorCount( descriptorCount );
+
+    createInfo.descriptorPoolCreateInfo.setPoolSizes( createInfo.descriptorPoolSizes );
     createInfo.descriptorPoolCreateInfo.setMaxSets( descriptorCount );
 
     createInfo.descriptorPool = device.createDescriptorPoolUnique( createInfo.descriptorPoolCreateInfo );
@@ -184,8 +199,8 @@ VulkanPipeline::SetupDescriptorSet( vk::Device& device, uint32_t descriptorCount
         .setDescriptorSetCount( descriptorCount )
         .setSetLayouts( layouts );
 
-    createInfo.vertexUniformDescriptorSetsPtr.resize( descriptorCount );
-    createInfo.vertexUniformDescriptorSetsPtr = device.allocateDescriptorSets( allocInfo );
+    createInfo.descriptorSetsPtr.resize( descriptorCount );
+    createInfo.descriptorSetsPtr = device.allocateDescriptorSets( allocInfo );
 }
 
 void
