@@ -31,26 +31,42 @@ template <std::integral auto FirstSize, std::integral auto SecondSize, typename 
 inline constexpr auto
 ScaleToSecond( Parm&& size )
 {
-    using FirstLogVal  = IntLog<FirstSize, 2>;
-    using SecondLogVal = IntLog<SecondSize, 2>;
-    if constexpr ( FirstLogVal::perfect_log && SecondLogVal::perfect_log )
+
+    if constexpr ( FirstSize > SecondSize )
     {
-        if constexpr ( FirstLogVal::value > SecondLogVal::value )
+        if constexpr ( FirstSize % SecondSize == 0 )   // divisible
         {
-            return size >> ( FirstLogVal::value - SecondLogVal::value );
-        } else
-        {
-            return size << ( SecondLogVal::value - FirstLogVal::value );
-        }
-    } else
-    {
-        if constexpr ( SecondSize % FirstSize == 0 )
-        {
-            return size * SecondSize / FirstSize;
+            using FirstLogVal = IntLog<FirstSize / SecondSize, 2>;
+            if constexpr ( FirstLogVal::perfect_log && std::is_integral<Parm>::value )   // shiftable
+            {
+                return size >> FirstLogVal::value;
+            } else
+            {
+                return size * SecondSize / FirstSize;
+            }
         } else
         {
             return size * static_cast<FallbackTy>( SecondSize ) / static_cast<FallbackTy>( FirstSize );
         }
+    } else if constexpr ( SecondSize > FirstSize )
+    {
+        if constexpr ( SecondSize % FirstSize == 0 )   // divisible
+        {
+            using FirstLogVal = IntLog<SecondSize / FirstSize, 2>;
+            if constexpr ( FirstLogVal::perfect_log && std::is_integral<Parm>::value )   // shiftable
+            {
+                return size << FirstLogVal::value;
+            } else
+            {
+                return size * SecondSize / FirstSize;
+            }
+        } else
+        {
+            return size * static_cast<FallbackTy>( SecondSize ) / static_cast<FallbackTy>( FirstSize );
+        }
+    } else
+    {
+        return size;
     }
 }
 
