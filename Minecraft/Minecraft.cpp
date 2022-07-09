@@ -25,3 +25,9 @@ Minecraft::InitServer( )
         m_Server->AddDemoPlayer( { 0, 0, 0 } );
     }
 }
+
+void
+Minecraft::InitTexture( const std::string& folder )
+{
+    m_BlockTextures = std::make_unique<BlockTexture>( folder );
+}

@@ -5,21 +5,27 @@
 #ifndef MINECRAFT_VK_MINECRAFT_HPP
 #define MINECRAFT_VK_MINECRAFT_HPP
 
+#include <Minecraft/Block/BlockTexture.hpp>
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 #include <Minecraft/util/Tickable.hpp>
 
 class Minecraft : public Tickable
+    , public Singleton<Minecraft>
 {
 
     std::unique_ptr<MinecraftServer> m_Server;
+    std::unique_ptr<BlockTexture>    m_BlockTextures;
 
 public:
-    Minecraft() = default;
+    Minecraft( ) = default;
 
     void Tick( float deltaTime );
 
-    void InitServer();
+    void InitServer( );
 
+    void InitTexture( const std::string& folder );
+
+    const auto& GetBlockTextures( ) { return *m_BlockTextures; }
 };
 
 
