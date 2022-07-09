@@ -14,9 +14,8 @@ template <typename VertexTy, typename IndexTy, typename SizeConverter>
 typename ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::SuitableAllocation
 ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize )
 {
-    auto ratio  = (float) sizeof( VertexTy ) / sizeof( IndexTy );
-    auto result = SizeConverter::ConvertToSecond( vertexDataSize );
-    assert( SizeConverter::ConvertToSecond( vertexDataSize ) == indexDataSize );
+    auto ratio = (float) sizeof( VertexTy ) / sizeof( IndexTy );
+    assert( SizeConverter::ConvertToSecond( vertexDataSize ) >= indexDataSize );
 
     if ( m_Buffers.empty( ) )
     {
