@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_MINECRAFT_WORLD_CHUNK_CHUNKRENDERBUFFERS_HPP
 #define MINECRAFT_VK_MINECRAFT_WORLD_CHUNK_CHUNKRENDERBUFFERS_HPP
 
+#include <Graphic/Vulkan/BufferMeta.hpp>
 #include <Graphic/Vulkan/VulkanAPI.hpp>
 #include <Include/vk_mem_alloc.h>
 #include <Minecraft/util/MinecraftConstants.hpp>
@@ -29,11 +30,15 @@ private:
     struct BufferChunk {
         VmaAllocator allocator { };
 
-        explicit BufferChunk( VmaAllocator allocator )
-            : allocator( allocator )
-            , indirectDrawBuffers( allocator )
-            , stagingBuffer( allocator )
+        explicit BufferChunk( )
+            : allocator( VulkanAPI::GetInstance( ).getMemoryAllocator( ) )
         { }
+
+        ~BufferChunk( )
+        {
+            vmaDestroyBuffer( allocator, vertexBuffer, vertexAllocation );
+            vmaDestroyBuffer( allocator, indexBuffer, indexAllocation );
+        }
 
         vk::Buffer    vertexBuffer { };
         VmaAllocation vertexAllocation { };
@@ -43,11 +48,11 @@ private:
 
         std::vector<vk::DrawIndexedIndirectCommand> indirectCommands;
 
-        bool                     shouldUpdateIndirectDrawBuffers = false;
-        std::mutex               indirectDrawBuffersMutex { };
-        uint32_t                 indirectDrawBufferSize = 0;
-        VulkanAPI::VKMBufferMeta stagingBuffer;
-        VulkanAPI::VKMBufferMeta indirectDrawBuffers;
+        bool       shouldUpdateIndirectDrawBuffers = false;
+        std::mutex indirectDrawBuffersMutex { };
+        uint32_t   indirectDrawBufferSize = 0;
+        BufferMeta stagingBuffer;
+        BufferMeta indirectDrawBuffers;
 
         void UpdateIndirectDrawBuffers( );
 
@@ -85,6 +90,11 @@ public:
         {
             chunk.UpdateIndirectDrawBuffers( );
         }
+    }
+
+    void Clean( )
+    {
+        m_Buffers.clear( );
     }
 
     friend class MainApplication;

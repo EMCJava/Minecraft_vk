@@ -92,11 +92,12 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::GrowCapacity( )
 {
     using Usage = vk::BufferUsageFlagBits;
 
-    auto& newBuffer = m_Buffers.emplace_back( allocator );
+    auto& newBuffer = m_Buffers.emplace_back( );
 
     vk::BufferCreateInfo    bufferInfo { { }, MaxMemoryAllocationPerVertexBuffer, Usage::eVertexBuffer | Usage::eTransferDst, vk::SharingMode::eExclusive };
     VmaAllocationCreateInfo allocInfo = { };
     allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocInfo.flags                   = VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
     vmaCreateBuffer( allocator, reinterpret_cast<const VkBufferCreateInfo*>( &bufferInfo ), &allocInfo, reinterpret_cast<VkBuffer*>( &newBuffer.vertexBuffer ), &newBuffer.vertexAllocation, nullptr );
 
@@ -111,11 +112,7 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::GrowCapacity( )
 template <typename VertexTy, typename IndexTy, typename SizeConverter>
 ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::~ChunkRenderBuffers( )
 {
-    for ( auto& chunk : m_Buffers )
-    {
-        vmaDestroyBuffer( allocator, chunk.vertexBuffer, chunk.vertexAllocation );
-        vmaDestroyBuffer( allocator, chunk.indexBuffer, chunk.indexAllocation );
-    }
+    Clean( );
 }
 
 template <typename VertexTy, typename IndexTy, typename SizeConverter>
@@ -124,7 +121,7 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CopyBuffer( ChunkRenderBuf
 {
     using Usage = vk::BufferUsageFlagBits;
 
-    VulkanAPI::VKMBufferMeta stagingBuffer( allocator );
+    BufferMeta stagingBuffer;
 
     const vk::DeviceSize stagingSize = std::ceil( allocation.region.vertex.second + SCVISCC::ConvertToSecond( allocation.region.vertex.second ) );
     stagingBuffer.Create( stagingSize, Usage::eVertexBuffer | Usage::eTransferSrc );
@@ -143,10 +140,10 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CopyBuffer( ChunkRenderBuf
 
     vk::BufferCopy bufferRegion;
     bufferRegion.setSize( allocation.region.vertex.second ).setDstOffset( allocation.region.vertex.first );
-    commandBuffer.copyBuffer( stagingBuffer.buffer, allocation.targetChunk->vertexBuffer, bufferRegion );
+    commandBuffer.copyBuffer( stagingBuffer.GetBuffer( ), allocation.targetChunk->vertexBuffer, bufferRegion );
 
     bufferRegion.setSize( std::ceil( SCVISCC::ConvertToSecond( allocation.region.vertex.second ) ) ).setDstOffset( SCVISCC::ConvertToSecond( allocation.region.vertex.first ) ).setSrcOffset( allocation.region.vertex.second );
-    commandBuffer.copyBuffer( stagingBuffer.buffer, allocation.targetChunk->indexBuffer, bufferRegion );
+    commandBuffer.copyBuffer( stagingBuffer.GetBuffer( ), allocation.targetChunk->indexBuffer, bufferRegion );
 
     commandBuffer.end( );
 
