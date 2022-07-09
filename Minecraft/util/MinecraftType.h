@@ -38,20 +38,23 @@ operator-( const BlockCoordinate& a )
     return { -get<0>( a ), -get<1>( a ), -get<2>( a ) };
 }
 
+template <typename Ty>
 inline auto&
-GetMinecraftX( const BlockCoordinate& a )
+GetMinecraftX( Ty&& a )
 {
     return std::get<MinecraftCoordinateXIndex>( a );
 }
 
+template <typename Ty>
 inline auto&
-GetMinecraftY( const BlockCoordinate& a )
+GetMinecraftY( Ty&& a )
 {
     return std::get<MinecraftCoordinateYIndex>( a );
 }
 
+template <typename Ty>
 inline auto&
-GetMinecraftZ( const BlockCoordinate& a )
+GetMinecraftZ( Ty&& a )
 {
     return std::get<MinecraftCoordinateZIndex>( a );
 }
