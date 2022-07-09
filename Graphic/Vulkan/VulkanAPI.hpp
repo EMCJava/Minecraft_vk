@@ -25,19 +25,20 @@
 namespace DataType
 {
 
-struct ColoredVertex : VertexDetail {
+struct TexturedVertex : VertexDetail {
     glm::ivec3 pos;
-    glm::vec3  color;
+    glm::vec2  textureCoor;
 
-    ColoredVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec3 c = glm::vec3( 0 ) )
+
+    TexturedVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec2 c = glm::vec2( 0 ) )
         : pos( p )
-        , color( c )
+        , textureCoor( c )
     { }
 
-    ColoredVertex& operator=( const ColoredVertex& other )
+    TexturedVertex& operator=( const TexturedVertex& other )
     {
-        pos   = other.pos;
-        color = other.color;
+        pos         = other.pos;
+        textureCoor = other.textureCoor;
 
         return *this;
     }
@@ -49,12 +50,12 @@ struct ColoredVertex : VertexDetail {
         attributeDescriptions[ 0 ].setBinding( 0 );
         attributeDescriptions[ 0 ].setLocation( 0 );
         attributeDescriptions[ 0 ].setFormat( vk::Format::eR32G32B32Sint );
-        attributeDescriptions[ 0 ].setOffset( offsetof( ColoredVertex, pos ) );
+        attributeDescriptions[ 0 ].setOffset( offsetof( TexturedVertex, pos ) );
 
         attributeDescriptions[ 1 ].setBinding( 0 );
         attributeDescriptions[ 1 ].setLocation( 1 );
-        attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32B32Sfloat );
-        attributeDescriptions[ 1 ].setOffset( offsetof( ColoredVertex, color ) );
+        attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32Sfloat );
+        attributeDescriptions[ 1 ].setOffset( offsetof( TexturedVertex, textureCoor ) );
 
         return attributeDescriptions;
     }
@@ -64,7 +65,7 @@ struct ColoredVertex : VertexDetail {
         std::vector<vk::VertexInputBindingDescription> bindingDescription( 1 );
 
         bindingDescription[ 0 ].setBinding( 0 );
-        bindingDescription[ 0 ].setStride( sizeof( ColoredVertex ) );
+        bindingDescription[ 0 ].setStride( sizeof( TexturedVertex ) );
         bindingDescription[ 0 ].setInputRate( vk::VertexInputRate::eVertex );
 
         return bindingDescription;
@@ -132,96 +133,6 @@ public:
 
             commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
             commandBuffer.copyBuffer( *bufferData.buffer, *buffer, dataRegion );
-            commandBuffer.end( );
-
-            const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
-            auto        transferQueue         = api.m_vkLogicalDevice->getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
-
-            vk::SubmitInfo submitInfo;
-            submitInfo.setCommandBuffers( commandBuffer );
-            transferQueue.submit( submitInfo, nullptr );
-            transferQueue.waitIdle( );
-        }
-    };
-
-    struct VKMBufferMeta {
-
-        VmaAllocator           allocator { };
-        vk::Buffer             buffer { };
-        VmaAllocation          allocation { };
-        vk::MemoryRequirements memRequirements { };
-
-        VKMBufferMeta( VmaAllocator allocator )
-            : allocator( allocator )
-        { }
-
-        ~VKMBufferMeta( )
-        {
-            DestroyBuffer( );
-        }
-
-        void DestroyBuffer( )
-        {
-            if ( buffer ) vmaDestroyBuffer( allocator, buffer, allocation );
-            buffer = nullptr;
-        }
-
-        inline auto& GetBuffer( ) const
-        {
-            return buffer;
-        }
-
-        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VmaMemoryUsage& memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY,
-                     const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
-        {
-            static std::mutex           create_buffer_lock;
-            std::lock_guard<std::mutex> guard( create_buffer_lock );
-
-            DestroyBuffer();
-
-            vk::BufferCreateInfo    bufferInfo { { }, size, usage, sharingMode };
-            VmaAllocationCreateInfo allocInfo = { };
-            allocInfo.usage                   = memoryUsage;
-            // allocInfo.requiredFlags           = static_cast<uint32_t>( memoryProperties );
-
-            vmaCreateBuffer( allocator, reinterpret_cast<const VkBufferCreateInfo*>( &bufferInfo ), &allocInfo, reinterpret_cast<VkBuffer*>( &buffer ), &allocation, nullptr );
-            // vmaBindBufferMemory( allocator, allocation, buffer );
-        }
-
-        void writeBuffer( const void* writingData, size_t dataSize )
-        {
-            static std::mutex           map_buffer_lock;
-            std::lock_guard<std::mutex> guard( map_buffer_lock );
-
-            void* mappedData = nullptr;
-            vmaMapMemory( allocator, allocation, &mappedData );
-            memcpy( mappedData, writingData, dataSize );
-            vmaUnmapMemory( allocator, allocation );
-        }
-
-        void writeBufferOffseted( const void* writingData, size_t dataSize, size_t offset )
-        {
-            void* mappedData = nullptr;
-            vmaMapMemory( allocator, allocation, &mappedData );
-            memcpy( (char*) mappedData + offset, writingData, dataSize );
-            vmaUnmapMemory( allocator, allocation );
-        }
-
-        void CopyFromBuffer( const VKMBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
-        {
-            static std::mutex           copy_buffer_lock;
-            std::lock_guard<std::mutex> guard( copy_buffer_lock );
-
-            vk::CommandBufferAllocateInfo allocInfo { };
-            allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
-            allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
-            allocInfo.setCommandBufferCount( 1 );
-
-            auto  commandBuffers = api.m_vkLogicalDevice->allocateCommandBuffersUnique( allocInfo );
-            auto& commandBuffer  = commandBuffers.begin( )->get( );
-
-            commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
-            commandBuffer.copyBuffer( bufferData.buffer, buffer, dataRegion );
             commandBuffer.end( );
 
             const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
@@ -310,6 +221,24 @@ public:
     template <bool doRender = false>
     void presentFrame( uint32_t index = -1 );
 
+    void FlushFence( )
+    {
+        /**
+         *
+         * Sync in renderer
+         *
+         * */
+        for ( int i = 0;i < m_vkRender_fence_syncs.size(); ++i )
+        {
+            std::cout << "Waiting " << i << std::endl;
+            auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[i].get( ), true, std::numeric_limits<uint64_t>::max( ) );
+            m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[i].get( ) );
+            m_vkRender_fence_syncs[i] = m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } );
+            m_vkSwap_chain_image_fence_syncs[i] = nullptr;
+            assert( wait_fence_result == vk::Result::eSuccess );
+        }
+    }
+
     /*
      *
      * sync function
@@ -318,9 +247,10 @@ public:
     inline void waitPresent( ) { m_vkPresentQueue.waitIdle( ); }
     inline void waitIdle( ) const { m_vkLogicalDevice->waitIdle( ); }
 
-    inline vk::Instance&       getVulkanInstance( ) { return *m_vkInstance; };
-    inline vk::Device&         getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
-    inline vk::PhysicalDevice& getPhysicalDevice( ) { return m_vkPhysicalDevice; }
+    inline vk::Instance&                 getVulkanInstance( ) { return *m_vkInstance; };
+    inline vk::Device&                   getLogicalDevice( ) { return m_vkLogicalDevice.get( ); }
+    inline vk::PhysicalDevice&           getPhysicalDevice( ) { return m_vkPhysicalDevice; }
+    inline vk::PhysicalDeviceProperties& getPhysicalDeviceProperties( ) { return m_vkPhysicalDeviceProperties; }
 
     inline const std::pair<uint32_t, uint32_t>& getDesiredQueueIndices( const void* key ) const
     {
@@ -340,13 +270,13 @@ public:
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
     inline auto&                  getRenderPass( ) { return *m_vkPipeline->m_vkRenderPass; }
     inline auto&                  getDescriptorPool( ) { return *m_vkPipeline->createInfo.descriptorPool; }
-    inline auto&                  getDescriptorSets( ) { return m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr; }
+    inline auto&                  getDescriptorSets( ) { return m_vkPipeline->createInfo.descriptorSetsPtr; }
     inline vk::WriteDescriptorSet getWriteDescriptorSetSetup( size_t index )
     {
-        assert( m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr.size( ) > index );
+        assert( m_vkPipeline->createInfo.descriptorSetsPtr.size( ) > index );
 
         vk::WriteDescriptorSet descriptorWrite;
-        descriptorWrite.setDstSet( m_vkPipeline->createInfo.vertexUniformDescriptorSetsPtr[ index ] );
+        descriptorWrite.setDstSet( m_vkPipeline->createInfo.descriptorSetsPtr[ index ] );
         return descriptorWrite;
     }
 
@@ -404,10 +334,11 @@ private:
      * Physical properties
      *
      * */
-    vk::Extent2D         m_vkDisplayExtent;
-    vk::UniqueSurfaceKHR m_vkSurface;
-    vk::UniqueDevice     m_vkLogicalDevice;
-    vk::PhysicalDevice   m_vkPhysicalDevice;
+    vk::Extent2D                 m_vkDisplayExtent;
+    vk::UniqueSurfaceKHR         m_vkSurface;
+    vk::UniqueDevice             m_vkLogicalDevice;
+    vk::PhysicalDevice           m_vkPhysicalDevice;
+    vk::PhysicalDeviceProperties m_vkPhysicalDeviceProperties;
 
     /**
      *

@@ -5,6 +5,7 @@
 #include "VulkanAPI.hpp"
 
 #include <Utility/Logger.hpp>
+#include <Utility/Vulkan/VulkanExtension.hpp>
 
 #include <filesystem>
 #include <unordered_set>
@@ -226,9 +227,9 @@ VulkanAPI::selectPhysicalDevice( )
     if ( !device_priorities.empty( ) && device_priorities.rbegin( )->first > 0 )
     {
         m_vkPhysicalDevice           = device_priorities.rbegin( )->second;
-        const auto device_properties = m_vkPhysicalDevice.getProperties( );
+        m_vkPhysicalDeviceProperties = m_vkPhysicalDevice.getProperties( );
 
-        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using device: [", vk::to_string( device_properties.deviceType ), "]", device_properties.deviceName );
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using device: [", vk::to_string( m_vkPhysicalDeviceProperties.deviceType ), "]", m_vkPhysicalDeviceProperties.deviceName );
     } else
     {
         throw std::runtime_error( "failed to find a suitable GPU!" );
@@ -354,6 +355,7 @@ bool
 VulkanAPI::isDeviceUsable( const vk::PhysicalDevice& device )
 {
     if ( !device.getFeatures( ).geometryShader ) return false;
+    if ( !device.getFeatures( ).multiDrawIndirect ) return false;
     if ( !isDeviceSupportAllExtensions( device ) ) return false;
     if ( !setSwapChainSupportDetails( device ) ) return false;
 
@@ -418,7 +420,7 @@ VulkanAPI::setupLogicalDevice( )
     vk::PhysicalDeviceFeatures requiredFeatures { };
     requiredFeatures.multiDrawIndirect = true;
 
-    vk::DeviceCreateInfo       createInfo;
+    vk::DeviceCreateInfo createInfo;
     createInfo.setPEnabledFeatures( &requiredFeatures );
     createInfo.setQueueCreateInfoCount( queueCreateInfos.size( ) );
     createInfo.setQueueCreateInfos( queueCreateInfos );
@@ -571,7 +573,7 @@ VulkanAPI::setupPipeline( )
      *
      * */
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
-    m_vkPipeline->Create<DataType::ColoredVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkPhysicalDevice, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ], m_vkSwap_chain_depth_format );
+    m_vkPipeline->Create<DataType::TexturedVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkPhysicalDevice, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ], m_vkSwap_chain_depth_format );
 
     /**
      *
@@ -675,7 +677,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
     {
         // implicit call
         // m_vkGraphicCommandBuffers[ it_index ].reset( );
-        m_vkGraphicCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eSimultaneousUse } );
+        m_vkGraphicCommandBuffers[ it_index ].begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
 
         vk::RenderPassBeginInfo render_pass_begin_info;
         render_pass_begin_info.setRenderPass( m_vkPipeline->getRenderPass( ) );
