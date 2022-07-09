@@ -21,7 +21,7 @@ CurveEditor::Render( )
     if ( ImPlot::BeginPlot( "##Bezier", ImVec2( -1, 0 ), ImPlotFlags_NoTitle | ImPlotFlags_Crosshairs ) )
     {
         ImPlot::SetupAxes( nullptr, nullptr, ax_flags, ax_flags );
-        ImPlot::SetupAxesLimits( 0, 1, 0, 1, ImPlotCond_Always );
+        ImPlot::SetupAxesLimits( 0, 1, -1, 1, ImPlotCond_Always );
 
         if ( ImPlot::IsPlotHovered( ) && ImGui::IsMouseDoubleClicked( 0 ) )
         {
@@ -65,7 +65,7 @@ CurveEditor::Render( )
                 }
 
                 m_Points[ i ].x = std::clamp( m_Points[ i ].x, 0., 1. );
-                m_Points[ i ].y = std::clamp( m_Points[ i ].y, 0., 1. );
+                m_Points[ i ].y = std::clamp( m_Points[ i ].y, -1., 1. );
             }
 
             if ( i > 0 && m_Points[ i ].x < m_Points[ i - 1 ].x )
@@ -87,6 +87,27 @@ CurveEditor::Render( )
     }
 
     return changed;
+}
+
+double
+CurveEditor::Sample( float X )
+{
+    if ( m_Points.empty( ) ) return 0;
+
+    if ( X < m_Points.front( ).x ) [[unlikely]]
+    {
+        return m_Points.front( ).y;
+    }
+    if ( X >= m_Points.back( ).x ) [[unlikely]]
+    {
+        return m_Points.back( ).y;
+    }
+
+    int curr = 1;
+    for ( ; curr < m_Points.size( ); ++curr )
+        if ( m_Points[ curr ].x >= X ) break;
+
+    return std::lerp( m_Points[ curr - 1 ].y, m_Points[ curr ].y, ( X - m_Points[ curr - 1 ].x ) / ( m_Points[ curr ].x - m_Points[ curr - 1 ].x ) );
 }
 
 }   // namespace ImGuiAddons

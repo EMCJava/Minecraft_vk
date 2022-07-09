@@ -16,7 +16,7 @@ class CurveEditor
     using Point = ImPlotPoint;
 
     std::vector<Point> m_Points;
-    int draggingBeginIndex = -1, draggingCurrentIndex {};
+    int                draggingBeginIndex = -1, draggingCurrentIndex { };
 
 public:
     CurveEditor( )
@@ -34,6 +34,8 @@ public:
      *
      * */
     bool Render( );
+
+    double Sample( float X );
 };
 
 }   // namespace ImGuiAddons
