@@ -5,12 +5,35 @@
 #ifndef MINECRAFT_VK_BLOCK_HPP
 #define MINECRAFT_VK_BLOCK_HPP
 
-enum BlockID {
+#include <string>
+
+#define SWITCH_TOSTRING( X ) \
+case X: return #X;
+
+enum BlockID : uint8_t {
     Air,
     Stone,
     Grass,
+    Dart,
+    BedRock,
     BlockIDSize
 };
+
+inline std::string
+toString( const BlockID& id )
+{
+    switch ( id )
+    {
+        SWITCH_TOSTRING( Air )
+        SWITCH_TOSTRING( Stone )
+        SWITCH_TOSTRING( Grass )
+        SWITCH_TOSTRING( Dart )
+        SWITCH_TOSTRING( BedRock )
+    case BlockIDSize: break;
+    }
+
+    return "undefined";
+}
 
 class Block
 {
