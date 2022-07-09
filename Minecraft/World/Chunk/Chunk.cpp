@@ -18,59 +18,37 @@ Chunk::RegenerateChunk( )
 {
     DeleteChunk( );
 
-    auto worldPercentageHeightMap = GenerateHeightMap( *MinecraftServer::GetInstance( ).GetWorld( ).GetHeightNoise( ) );
-    m_WorldHeightMap              = new uint32_t[ SectionSurfaceSize ];
+    m_Blocks     = new Block[ ChunkVolume ];
+    m_BlockFaces = new uint8_t[ ChunkVolume ];
 
-    int      heightMapIndex = 0;
-    uint32_t highestPoint   = 0;
-    for ( int i = 0; i < SectionUnitLength; ++i )
-        for ( int j = 0; j < SectionUnitLength; ++j )
-        {
-            m_WorldHeightMap[ heightMapIndex ] = int( std::lerp( ChunkMaxHeight * 0.1f, ChunkMaxHeight * 0.2f, worldPercentageHeightMap[ heightMapIndex ] ) );
-            highestPoint                       = std::max( highestPoint, m_WorldHeightMap[ heightMapIndex ] );
+    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
 
-            ++heightMapIndex;
-        }
-
-    m_SectionCount  = std::ceil( (float) highestPoint / SectionUnitLength );
-    m_SectionHeight = m_SectionCount * SectionUnitLength;
-    m_Blocks        = new Block[ m_SectionCount * SectionVolume ];
-    m_BlockFaces    = new uint8_t[ m_SectionCount * SectionVolume ];
-
-    auto blocksPtr = m_Blocks;
-    for ( int i = 0; i < m_SectionHeight; ++i )
+    // Grass
+    int  horizontalMapIndex = 0;
+    auto blocksPtr          = m_Blocks;
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
     {
-        heightMapIndex = 0;
+        horizontalMapIndex = 0;
         for ( int k = 0; k < SectionUnitLength; ++k )
             for ( int j = 0; j < SectionUnitLength; ++j )
             {
-                blocksPtr[ heightMapIndex ] = m_WorldHeightMap[ heightMapIndex ] < i ? BlockID::Air : BlockID::Stone;
-                // blocksPtr[ heightMapIndex ] = BlockID::Air;
-                ++heightMapIndex;
+                if ( i > m_WorldHeightMap[ horizontalMapIndex ] - 3 )
+                {
+                    if ( i == m_WorldHeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
+                    } else if ( i <= m_WorldHeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
+                    }
+                }
+
+                ++horizontalMapIndex;
             }
 
         blocksPtr += SectionSurfaceSize;
     }
-}
-
-std::unique_ptr<float[]>
-Chunk::GenerateHeightMap( const MinecraftNoise& generator )
-{
-    auto heightMap    = std::make_unique<float[]>( SectionSurfaceSize );
-    auto heightMapPtr = heightMap.get( );
-
-    auto chunkX = GetMinecraftX( m_Coordinate ) << SectionUnitLengthBinaryOffset;
-    auto chunkZ = GetMinecraftZ( m_Coordinate ) << SectionUnitLengthBinaryOffset;
-
-    for ( int i = 0; i < SectionUnitLength; ++i )
-    {
-        for ( int j = 0; j < SectionUnitLength; ++j )
-        {
-            *( heightMapPtr++ ) = generator.GetNoiseInt( chunkX + j, chunkZ + i );
-        }
-    }
-
-    return std::move( heightMap );
 }
 
 void
@@ -89,28 +67,24 @@ Chunk::RegenerateVisibleFaces( )
 
     // Logger::getInstance( ).LogLine( ( ( ( MaxSectionInChunk << SectionVolumeBinaryOffset ) - 1 ) >> SectionSurfaceSizeBinaryOffset ), ( ( MaxSectionInChunk << SectionUnitLengthBinaryOffset ) - 1 ) );
 
-    const auto RightChunk       = m_NearChunks[ DirRight ];
-    const auto RightChunkHeight = ( RightChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
-    const auto LeftChunk        = m_NearChunks[ DirLeft ];
-    const auto LeftChunkHeight  = ( LeftChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
-    const auto FrontChunk       = m_NearChunks[ DirFront ];
-    const auto FrontChunkHeight = ( FrontChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
-    const auto BackChunk        = m_NearChunks[ DirBack ];
-    const auto BackChunkHeight  = ( BackChunk->m_SectionCount << SectionVolumeBinaryOffset ) - 1;
+    const auto RightChunk = m_NearChunks[ DirRight ];
+    const auto LeftChunk  = m_NearChunks[ DirLeft ];
+    const auto FrontChunk = m_NearChunks[ DirFront ];
+    const auto BackChunk  = m_NearChunks[ DirBack ];
 
-    for ( int i = 0; i < ( m_SectionCount << SectionVolumeBinaryOffset ); ++i )
+    for ( int i = 0; i < ChunkVolume; ++i )
     {
         m_BlockFaces[ i ] = 0;
         if ( m_Blocks[ i ].Transparent( ) ) continue;
 
-        if ( ( i >> SectionSurfaceSizeBinaryOffset ) == ( m_SectionCount << SectionUnitLengthBinaryOffset ) - 1 || m_Blocks[ i + dirUpFaceOffset ].Transparent( ) ) [[unlikely]]
+        if ( ( i >> SectionSurfaceSizeBinaryOffset ) == ChunkMaxHeight - 1 || m_Blocks[ i + dirUpFaceOffset ].Transparent( ) ) [[unlikely]]
             m_BlockFaces[ i ] = DirUpBit;
         if ( ( i >> SectionSurfaceSizeBinaryOffset ) == 0 || m_Blocks[ i + dirDownFaceOffset ].Transparent( ) ) [[unlikely]]
             m_BlockFaces[ i ] |= DirDownBit;
 
         if ( ( i % SectionSurfaceSize ) >= SectionSurfaceSize - SectionUnitLength ) [[unlikely]]
         {
-            if ( i > RightChunkHeight || RightChunk->m_Blocks[ i + dirRightChunkFaceOffset ].Transparent( ) )
+            if ( RightChunk->m_Blocks[ i + dirRightChunkFaceOffset ].Transparent( ) )
             {
                 m_BlockFaces[ i ] |= DirRightBit;
             }
@@ -122,7 +96,7 @@ Chunk::RegenerateVisibleFaces( )
 
         if ( ( i % SectionSurfaceSize ) < SectionUnitLength ) [[unlikely]]
         {
-            if ( i > LeftChunkHeight || LeftChunk->m_Blocks[ i + dirLeftChunkFaceOffset ].Transparent( ) )
+            if ( LeftChunk->m_Blocks[ i + dirLeftChunkFaceOffset ].Transparent( ) )
             {
                 m_BlockFaces[ i ] |= DirLeftBit;
             }
@@ -134,7 +108,7 @@ Chunk::RegenerateVisibleFaces( )
 
         if ( ( i % SectionUnitLength ) == SectionUnitLength - 1 ) [[unlikely]]
         {
-            if ( i > FrontChunkHeight || FrontChunk->m_Blocks[ i + dirFrontChunkFaceOffset ].Transparent( ) )
+            if ( FrontChunk->m_Blocks[ i + dirFrontChunkFaceOffset ].Transparent( ) )
             {
                 m_BlockFaces[ i ] |= DirFrontBit;
             }
@@ -146,7 +120,7 @@ Chunk::RegenerateVisibleFaces( )
 
         if ( ( i % SectionUnitLength ) == 0 ) [[unlikely]]
         {
-            if ( i > BackChunkHeight || BackChunk->m_Blocks[ i + dirBackChunkFaceOffset ].Transparent( ) )
+            if ( BackChunk->m_Blocks[ i + dirBackChunkFaceOffset ].Transparent( ) )
             {
                 m_BlockFaces[ i ] |= DirBackBit;
             }
@@ -158,7 +132,7 @@ Chunk::RegenerateVisibleFaces( )
     }
 
     m_VisibleFacesCount = 0;
-    for ( int i = 0; i < m_SectionCount * SectionVolume; ++i )
+    for ( int i = 0; i < ChunkVolume; ++i )
         m_VisibleFacesCount += std::popcount( m_BlockFaces[ i ] );
 }
 
@@ -188,4 +162,60 @@ Chunk::SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes )
     }
 
     return false;
+}
+
+void
+Chunk::FillTerrain( const MinecraftNoise& generator )
+{
+    auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
+    auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
+
+    const auto noiseOffset = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoiseOffset( );
+
+    delete[] m_WorldHeightMap;
+    m_WorldHeightMap = new int32_t[ SectionSurfaceSize ];
+    for ( int i = 0; i < SectionSurfaceSize; ++i )
+        m_WorldHeightMap[ i ] = -1;
+
+    auto     blocksPtr          = m_Blocks;
+    uint32_t horizontalMapIndex = 0;
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+    {
+        horizontalMapIndex = 0;
+        for ( int k = 0; k < SectionUnitLength; ++k )
+            for ( int j = 0; j < SectionUnitLength; ++j )
+            {
+                auto noiseValue = generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
+                noiseValue += noiseOffset[ i ];
+
+                blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
+                if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_WorldHeightMap[ horizontalMapIndex ] = i;
+
+                ++horizontalMapIndex;
+            }
+
+        blocksPtr += SectionSurfaceSize;
+    }
+}
+
+void
+Chunk::FillBedRock( const MinecraftNoise& generator )
+{
+    auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
+    auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
+
+    auto blackRockHeightMap = std::make_unique<uint32_t[]>( SectionSurfaceSize );
+
+    int horizontalMapIndex = 0;
+    for ( int k = 0; k < SectionUnitLength; ++k )
+        for ( int j = 0; j < SectionUnitLength; ++j )
+        {
+            const auto& noiseValue                   = generator.GetNoiseInt( xCoordinate + j, zCoordinate + k ) + 1;
+            blackRockHeightMap[ horizontalMapIndex ] = noiseValue * 2 + 1;
+
+            for ( int i = 0; i < blackRockHeightMap[ horizontalMapIndex ]; ++i )
+                m_Blocks[ horizontalMapIndex + SectionSurfaceSize * i ] = BlockID ::BedRock;
+
+            ++horizontalMapIndex;
+        }
 }

@@ -17,10 +17,10 @@ class Chunk
 {
 
     ChunkCoordinate m_Coordinate;
+    ChunkCoordinate m_WorldCoordinate;
 
-    int       m_SectionCount = 0, m_SectionHeight = 0;
     Block*    m_Blocks { };
-    uint32_t* m_WorldHeightMap { };
+    int32_t* m_WorldHeightMap { };
     uint8_t*  m_BlockFaces { };
 
     int m_VisibleFacesCount = 0;
@@ -39,8 +39,6 @@ private:
         m_WorldHeightMap = nullptr;
     }
 
-    std::unique_ptr<float[]> GenerateHeightMap( const MinecraftNoise& );
-
     void RegenerateVisibleFaces( );
     void RegenerateChunk( );
 
@@ -54,10 +52,19 @@ public:
     Chunk operator=( const Chunk& ) = delete;
     Chunk operator=( Chunk&& )      = delete;
 
+    void FillTerrain( const MinecraftNoise& generator );
+    void FillBedRock( const MinecraftNoise& generator );
+
     // return true if target chunk become complete
     bool SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes = false );
 
-    inline const ChunkCoordinate& SetCoordinate( const ChunkCoordinate& coordinate ) { return m_Coordinate = coordinate; }
+    inline void SetCoordinate( const ChunkCoordinate& coordinate )
+    {
+        m_WorldCoordinate = m_Coordinate = coordinate;
+        GetMinecraftX( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
+        GetMinecraftZ( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
+    }
+
     inline const ChunkCoordinate& GetCoordinate( ) { return m_Coordinate; }
 
     [[nodiscard]] inline CoordinateType ManhattanDistance( const Chunk& other ) const
