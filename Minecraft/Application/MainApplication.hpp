@@ -48,6 +48,7 @@ class MainApplication : public Singleton<MainApplication>
      * Minecraft
      *
      * */
+    void SetGenerationOffsetByCurve();
     ImGuiAddons::CurveEditor m_TerrainNoiseOffset {
         {{ 0.f, 0.f }, { 1.f, 0.f }}
     };

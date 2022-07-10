@@ -39,6 +39,18 @@ MainApplication::MainApplication( )
     m_MinecraftInstance = std::make_unique<Minecraft>( );
     m_MinecraftInstance->InitServer( );
     m_MinecraftInstance->InitTexture( "../Resources/Texture" );
+    {
+        const auto&                                  generationCurve = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "generation_curve" ];
+        std::vector<ImGuiAddons::CurveEditor::Point> points;
+
+        for ( auto& configPoints : generationCurve )
+        {
+            points.emplace_back( configPoints[ 0 ].get<float>( ), configPoints[ 1 ].get<float>( ) );
+        }
+
+        m_TerrainNoiseOffset.SetCurve( std::move( points ) );
+        SetGenerationOffsetByCurve( );
+    }
 
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
@@ -517,12 +529,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
         if ( ImGui::Button( "Reset" ) )
         {
-            auto offsets = std::make_unique<float[]>( ChunkMaxHeight );
-            for ( int i = 0; i < ChunkMaxHeight; ++i )
-                offsets[ i ] = m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
-
-            MinecraftServer::GetInstance( ).GetWorld( ).SetTerrainNoiseOffset( std::move( offsets ) );
-
+            SetGenerationOffsetByCurve( );
             m_ShouldReset = true;
         }
 
@@ -541,6 +548,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
 
+        if ( ImGui::CollapsingHeader( "Performance" ) )
         {
             static float            t         = 0;
             static float            previousT = 0;
@@ -596,9 +604,111 @@ MainApplication::renderImgui( uint32_t renderIndex )
                 ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
                 ImPlot::EndPlot( );
             }
+
+            // ImGui::TreePop();
         }
 
-        m_TerrainNoiseOffset.Render( );
+        if ( ImGui::CollapsingHeader( "Generation" ) )
+        {
+            if ( m_TerrainNoiseOffset.Render( ) ) std::cout << m_TerrainNoiseOffset << std::endl;
+
+            auto&      terrainNoise   = MinecraftServer::GetInstance( ).GetWorld( ).GetModifiableTerrainNoise( );
+            static int noiseTypeIndex = 0;
+
+            {
+                const char* noiseType[] = {
+                    "NoiseType_OpenSimplex2",
+                    "NoiseType_OpenSimplex2S",
+                    "NoiseType_Cellular",
+                    "NoiseType_Perlin",
+                    "NoiseType_ValueCubic",
+                    "NoiseType_Value" };
+
+                if ( ImGui::Combo( "NoiseType", &noiseTypeIndex, noiseType, IM_ARRAYSIZE( noiseType ) ) )
+                    terrainNoise.SetNoiseType( static_cast<Noise::FastNoiseLite::NoiseType>( noiseTypeIndex ) );
+            }
+
+            if ( noiseTypeIndex == Noise::FastNoiseLite::NoiseType_Cellular && ImGui::TreeNode( "Cellular" ) )
+            {
+                static int  cellularDistanceFunctionIndex = 1;
+                const char* cellularDistanceFunction[]    = {
+                       "CellularDistanceFunction_Euclidean",
+                       "CellularDistanceFunction_EuclideanSq",
+                       "CellularDistanceFunction_Manhattan",
+                       "CellularDistanceFunction_Hybrid" };
+
+                if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
+                    terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
+
+                static int  cellularReturnTypeIndex = 1;
+                const char* cellularReturnType[]    = {
+                       "CellularReturnType_CellValue",
+                       "CellularReturnType_Distance",
+                       "CellularReturnType_Distance2",
+                       "CellularReturnType_Distance2Add",
+                       "CellularReturnType_Distance2Sub",
+                       "CellularReturnType_Distance2Mul",
+                       "CellularReturnType_Distance2Div" };
+
+                if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
+                    terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
+
+                static float cellularJitter = 1;
+                if ( ImGui::SliderFloat( "CellularJitter", &cellularJitter, 0, 2 ) )
+                    terrainNoise.SetCellularJitter( cellularJitter );
+
+                ImGui::TreePop( );
+            }
+
+            {
+                static int  rotationTypeIndex = 0;
+                const char* rotationType[]    = {
+                       "RotationType3D_None",
+                       "RotationType3D_ImproveXYPlanes",
+                       "RotationType3D_ImproveXZPlanes" };
+
+                if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
+                    terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
+            }
+
+            {
+                static int  fractalTypeIndex = 0;
+                const char* fractalType[]    = {
+                       "FractalType_None",
+                       "FractalType_FBm",
+                       "FractalType_Ridged",
+                       "FractalType_PingPong",
+                       "FractalType_DomainWarpProgressive",
+                       "FractalType_DomainWarpIndependent" };
+
+                if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
+                    terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
+
+                static int octaves = 0;
+                if ( ImGui::SliderInt( "Octaves", &octaves, 1, 16 ) )
+                    terrainNoise.SetFractalOctaves( octaves );
+
+                static float lacunarity = 2;
+                if ( ImGui::SliderFloat( "Lacunarity", &lacunarity, 0, 5 ) )
+                    terrainNoise.SetFractalLacunarity( lacunarity );
+
+                static float gain = 0.5;
+                if ( ImGui::SliderFloat( "Gain", &gain, -2, 2 ) )
+                    terrainNoise.SetFractalGain( gain );
+
+                static float weightedStrength = 0.0;
+                if ( ImGui::SliderFloat( "WeightedStrength", &weightedStrength, -2, 2 ) )
+                    terrainNoise.SetFractalWeightedStrength( weightedStrength );
+
+                if ( fractalTypeIndex == Noise::FastNoiseLite::FractalType_PingPong )
+                {
+                    static float pingPongStrength = 0.0;
+                    if ( ImGui::SliderFloat( "PingPongStrength", &pingPongStrength, 0, 2 ) )
+                        terrainNoise.SetFractalPingPongStrength( pingPongStrength );
+                }
+            }
+            // ImGui::TreePop();
+        }
 
         ImGui::End( );
     }
@@ -639,4 +749,14 @@ MainApplication::GetMovementDelta( )
     if ( glfwGetKey( m_window, GLFW_KEY_W ) == GLFW_PRESS ) offset.second += 1;
 
     return offset;
+}
+
+void
+MainApplication::SetGenerationOffsetByCurve( )
+{
+    auto offsets = std::make_unique<float[]>( ChunkMaxHeight );
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+        offsets[ i ] = m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
+
+    MinecraftServer::GetInstance( ).GetWorld( ).SetTerrainNoiseOffset( std::move( offsets ) );
 }
