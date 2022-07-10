@@ -230,7 +230,6 @@ public:
          * */
         for ( int i = 0;i < m_vkRender_fence_syncs.size(); ++i )
         {
-            std::cout << "Waiting " << i << std::endl;
             auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[i].get( ), true, std::numeric_limits<uint64_t>::max( ) );
             m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[i].get( ) );
             m_vkRender_fence_syncs[i] = m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } );
