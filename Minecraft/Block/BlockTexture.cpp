@@ -66,7 +66,7 @@ inline const BlockTexture::TextureLocation defaultBlockVertices {
 
 BlockTexture::BlockTexture( const std::string& folder )
 {
-    std::filesystem::path textureJson = folder + std::filesystem::path::preferred_separator + "texture.json";
+    std::filesystem::path textureJson = std::filesystem::path( folder + "/texture.json" ).make_preferred( ).string( );
     std::ifstream         file( textureJson );
     if ( !file ) throw std::runtime_error( "missing file " + textureJson.string( ) );
 
@@ -92,7 +92,7 @@ BlockTexture::BlockTexture( const std::string& folder )
         for ( int j = 0; j < DirSize; ++j )
         {
             const auto& textureName = textureList[ j ].get<std::string>( );
-            const auto& texturePath = folder + std::filesystem::path::preferred_separator + textureName;
+            const auto& texturePath = std::filesystem::path( folder + '/' + textureName ).make_preferred( ).string( );
             if ( uniqueTexture.contains( texturePath ) ) continue;
             uniqueTexture[ texturePath ] = uniqueTexture.size( );
         }
@@ -140,7 +140,7 @@ BlockTexture::BlockTexture( const std::string& folder )
 
         for ( int j = 0; j < DirSize; ++j )
         {
-            const auto& texturePath = folder + std::filesystem::path::preferred_separator + textureList[ j ].get<std::string>( );
+            const auto& texturePath = std::filesystem::path( folder + '/' + textureList[ j ].get<std::string>( ) ).make_preferred( ).string( );
 
             index      = uniqueTexture.at( texturePath );
             uint32_t x = ( index % textureAtlasesWidth ), y = ( index / textureAtlasesWidth );
