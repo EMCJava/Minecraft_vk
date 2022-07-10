@@ -11,6 +11,11 @@
 MinecraftWorld::MinecraftWorld( )
 {
     m_WorldTerrainNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    m_WorldTerrainNoise->SetNoiseType( Noise::FastNoiseLite::NoiseType_Perlin );
+    m_WorldTerrainNoise->SetFractalType( Noise::FastNoiseLite::FractalType_FBm );
+    m_WorldTerrainNoise->SetFractalLacunarity( 2.5f );
+    m_WorldTerrainNoise->SetFractalGain( 0.32f );
+
     m_WorldTerrainNoise->SetFractalOctaves( 8 );
     Logger ::getInstance( ).LogLine( "Using \"random\" seed" );
 

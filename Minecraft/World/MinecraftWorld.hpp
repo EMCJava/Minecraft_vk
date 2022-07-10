@@ -41,10 +41,12 @@ public:
 
     void SetTerrainNoiseOffset( std::unique_ptr<float[]>&& data ) { m_TerrainNoiseOffsetPerLevel = std::move( data ); }
 
-    const auto& GetBedRockNoise( ) { return m_BedRockNoise; }
-    const auto& GetTerrainNoise( ) { return m_WorldTerrainNoise; }
-    const auto* GetTerrainNoiseOffset( ) { return m_TerrainNoiseOffsetPerLevel.get( ); }
-    ChunkPool&  GetChunkPool( ) { return *m_ChunkPool; }
+    auto& GetModifiableTerrainNoise( ) { return *m_WorldTerrainNoise; }
+
+    [[nodiscard]] const auto& GetBedRockNoise( ) const { return m_BedRockNoise; }
+    [[nodiscard]] const auto& GetTerrainNoise( ) const { return m_WorldTerrainNoise; }
+    [[nodiscard]] const auto* GetTerrainNoiseOffset( ) const { return m_TerrainNoiseOffsetPerLevel.get( ); }
+    ChunkPool&                GetChunkPool( ) { return *m_ChunkPool; }
 };
 
 
