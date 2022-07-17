@@ -37,7 +37,8 @@ ScaleToSecond( Parm&& size )
         if constexpr ( FirstSize % SecondSize == 0 )   // divisible
         {
             using FirstLogVal = IntLog<FirstSize / SecondSize, 2>;
-            if constexpr ( FirstLogVal::perfect_log && std::is_integral<Parm>::value )   // shiftable
+
+            if constexpr ( FirstLogVal::perfect_log && std::is_integral<typename std::decay<Parm>::type>::value )   // shiftable
             {
                 return size >> FirstLogVal::value;
             } else
