@@ -13,6 +13,13 @@
 
 class MinecraftWorld : public Tickable
 {
+    struct ChunkAccessCache {
+        ChunkCache*     chunkCache { };
+        ChunkCoordinate coordinates { };
+    };
+    std::array<ChunkAccessCache, ChunkAccessCacheSize> m_ChunkAccessCache;
+    uint32_t                                           ChunkAccessCacheIndex = 0;
+
     std::unique_ptr<ChunkPool> m_ChunkPool;
 
     std::unique_ptr<float[]>        m_TerrainNoiseOffsetPerLevel;
@@ -33,15 +40,37 @@ public:
 
     void IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius );
 
+    /*
+     *
+     * Chunk generation
+     *
+     * */
     void StopChunkGeneration( );
     void StartChunkGeneration( );
     void CleanChunk( );
 
-    void Tick( float deltaTime );
-
     void SetTerrainNoiseOffset( std::unique_ptr<float[]>&& data ) { m_TerrainNoiseOffsetPerLevel = std::move( data ); }
 
     auto& GetModifiableTerrainNoise( ) { return *m_WorldTerrainNoise; }
+
+    /*
+     *
+     * Tickable
+     *
+     * */
+    void Tick( float deltaTime );
+
+    /*
+     *
+     * Access tools
+     *
+     * */
+    Chunk*      GetCompleteChunk( const ChunkCoordinate& chunkCoordinate );
+    ChunkCache* GetChunkCache( const ChunkCoordinate& chunkCoordinate );
+    Chunk*      GetChunk( const ChunkCoordinate& chunkCoordinate );
+    Block*      GetBlock( const BlockCoordinate& blockCoordinate );
+
+    void ResetChunkCache();
 
     [[nodiscard]] const auto& GetBedRockNoise( ) const { return m_BedRockNoise; }
     [[nodiscard]] const auto& GetTerrainNoise( ) const { return m_WorldTerrainNoise; }

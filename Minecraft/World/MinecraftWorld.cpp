@@ -74,3 +74,67 @@ MinecraftWorld::CleanChunk( )
 {
     m_ChunkPool->Clean( );
 }
+
+Chunk*
+MinecraftWorld::GetChunk( const ChunkCoordinate& chunkCoordinate )
+{
+    if ( const auto& chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr )
+    {
+        return &chunkCache->chunk;
+    }
+
+    return nullptr;
+}
+
+Block*
+MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
+{
+    if ( GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
+
+    if ( auto* chunk = GetCompleteChunk( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+                                                                  0,
+                                                                  ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+         chunk != nullptr )
+    {
+        return chunk->GetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
+                                                         GetMinecraftY( blockCoordinate ),
+                                                         GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ) );
+    }
+
+    return nullptr;
+}
+
+Chunk*
+MinecraftWorld::GetCompleteChunk( const ChunkCoordinate& chunkCoordinate )
+{
+    if ( const auto& chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized )
+    {
+        return &chunkCache->chunk;
+    }
+
+    return nullptr;
+}
+
+ChunkCache*
+MinecraftWorld::GetChunkCache( const ChunkCoordinate& chunkCoordinate )
+{
+    for ( uint32_t i = ChunkAccessCacheIndex; i < ChunkAccessCacheSize; ++i )
+        if ( m_ChunkAccessCache[ i ].coordinates == chunkCoordinate ) return m_ChunkAccessCache[ i ].chunkCache;
+    for ( uint32_t i = 0; i < ChunkAccessCacheIndex; ++i )
+        if ( m_ChunkAccessCache[ i ].coordinates == chunkCoordinate ) return m_ChunkAccessCache[ i ].chunkCache;
+
+    ChunkAccessCacheIndex                                         = ( ChunkAccessCacheIndex + 1 ) % ChunkAccessCacheSize;
+    m_ChunkAccessCache[ ChunkAccessCacheIndex ].coordinates       = chunkCoordinate;
+    return m_ChunkAccessCache[ ChunkAccessCacheIndex ].chunkCache = m_ChunkPool->GetChunkCache( chunkCoordinate );
+}
+
+void
+MinecraftWorld::ResetChunkCache( )
+{
+    m_ChunkPool->AddCoordinate( { 0, 0, 0 } );
+    for ( uint32_t i = 0; i < ChunkAccessCacheSize; ++i )
+    {
+        m_ChunkAccessCache[ i ].coordinates = { 0, 0, 0 };
+        m_ChunkAccessCache[ i ].chunkCache  = m_ChunkPool->GetChunkCache( { 0, 0, 0 } );
+    }
+}
