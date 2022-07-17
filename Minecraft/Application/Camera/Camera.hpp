@@ -33,7 +33,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( 45.0f )
+        , Zoom( glm::radians( 104.0f / 2 ) )
     {
         Position = position;
         WorldUp  = up;
@@ -46,7 +46,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( 45.0f )
+        , Zoom( glm::radians( 104.0f / 2 ) )
     {
         Position = glm::vec3( posX, posY, posZ );
         WorldUp  = glm::vec3( upX, upY, upZ );
@@ -59,6 +59,11 @@ public:
     [[nodiscard]] inline const glm::mat4& GetViewMatrix( ) const
     {
         return viewMatrixCache;
+    }
+
+    [[nodiscard]] inline const auto& GetFOV( ) const
+    {
+        return Zoom;
     }
 
     // updates the view matrix calculated using Euler Angles and the LookAt Matrix
