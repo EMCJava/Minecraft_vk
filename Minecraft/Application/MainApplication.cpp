@@ -19,12 +19,6 @@
 #include <thread>
 #include <unordered_set>
 
-struct TransformUniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-};
-
 MainApplication::MainApplication( )
 {
     InitWindow( );
@@ -52,6 +46,8 @@ MainApplication::MainApplication( )
         SetGenerationOffsetByCurve( );
     }
 
+    MinecraftServer::GetInstance( ).GetWorld( ).ResetChunkCache( );
+
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
 
@@ -71,7 +67,7 @@ MainApplication::run( )
             vk::DescriptorBufferInfo bufferInfo;
             bufferInfo.setBuffer( *uniformBuffers[ i ].buffer )
                 .setOffset( 0 )
-                .setRange( sizeof( TransformUniformBufferObject ) );
+                .setRange( sizeof( BlockTransformUBO ) );
 
             vk::DescriptorImageInfo imageInfo { };
             imageInfo.setImageLayout( vk::ImageLayout::eShaderReadOnlyOptimal ).setImageView( blockTextures.GetTexture( ).GetImageView( ) ).setSampler( blockTextures.GetTexture( ).GetSampler( ) );
@@ -88,42 +84,45 @@ MainApplication::run( )
 
     {
         for ( auto& buffer : uniformBuffers )
-            buffer.Create( sizeof( TransformUniformBufferObject ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
+            buffer.Create( sizeof( BlockTransformUBO ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
+
+        renderUBOs         = std::make_unique<UBOData[]>( swapChainImagesCount );
+        const auto& player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
+        for ( int i = 0; i < swapChainImagesCount; ++i )
+        {
+            renderUBOs[ i ].ubo.proj = glm::perspective( player.GetFOV( ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
+            renderUBOs[ i ].ubo.proj[ 1 ][ 1 ] *= -1;
+        }
 
         updateDescriptorSet( );
         m_graphics_api->setPipelineCreateCallback( updateDescriptorSet );
     }
 
-    auto ubos = std::make_unique<TransformUniformBufferObject[]>( swapChainImagesCount );
-    for ( int i = 0; i < swapChainImagesCount; ++i )
-    {
-        ubos[ i ].model = glm::mat4( 1.0f );
-        ubos[ i ].proj  = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 500.0f );
-    }
-
-    m_graphics_api->setRenderer( [ &uniformBuffers, &ubos, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
-        static auto startTime = std::chrono::high_resolution_clock::now( );
-
+    m_graphics_api->setRenderer( [ &uniformBuffers, this ]( const vk::CommandBuffer& command_buffer, uint32_t index ) {
         if ( m_screen_width * m_screen_height == 0 )
             return;   // window minimized, not render
 
-        const auto  currentTime = std::chrono::high_resolution_clock::now( );
-        const float time        = std::chrono::duration<float, std::chrono::seconds::period>( currentTime - startTime ).count( );
+        const auto& player           = MinecraftServer::GetInstance( ).GetPlayer( 0 );
+        renderUBOs[ index ].ubo.view = player.GetViewMatrix( );
+        renderUBOs[ index ].ubo.time = glfwGetTime( ) * 3;
 
-        ubos[ index ].view = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetViewMatrix( );
-        ubos[ index ].proj = glm::perspective( glm::radians( 104 / 2.f ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
+        const auto& playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
+        const auto& blockLookingAt      = playerRaycastResult.solidHit;
+        if ( playerRaycastResult.hitSolid )
+            renderUBOs[ index ].ubo.highlightCoordinate = { GetMinecraftX( blockLookingAt ), GetMinecraftY( blockLookingAt ), GetMinecraftZ( blockLookingAt ) };
+        else
+            renderUBOs[ index ].ubo.highlightCoordinate = { -1, -1, -1 };
 
-        // for vulkan coordinate system
-        ubos[ index ].proj[ 1 ][ 1 ] *= -1;
-        uniformBuffers[ index ].writeBuffer( &ubos[ index ], sizeof( TransformUniformBufferObject ), *m_graphics_api );
+        uniformBuffers[ index ].writeBuffer( &renderUBOs[ index ].ubo, sizeof( BlockTransformUBO ), *m_graphics_api );
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
         m_renderingChunkCount = 0;
 
         {
-            std::lock_guard renderBufferLock( chunkPool.GetRenderBufferLock( ) );
-            auto&           renderBuffer = chunkPool.GetRenderBuffer( );
+            // this is ok, I guess
+            // std::lock_guard renderBufferLock( chunkPool.GetRenderBufferLock( ) );
+            auto& renderBuffer = chunkPool.GetRenderBuffer( );
 
             for ( auto& buffer : renderBuffer.m_Buffers )
             {
@@ -406,9 +405,20 @@ MainApplication::onFrameBufferResized( GLFWwindow* window, int width, int height
     assert( window == app->m_window );
 
     // if width or height is zero, window is minimized
-    app->m_graphics_api->setShouldCreateSwapChain( width * height );
+    bool minimized = ( width == 0 ) || ( height == 0 );
+    app->m_graphics_api->setShouldCreateSwapChain( !minimized );
     app->m_graphics_api->invalidateSwapChain( );
     std::tie( app->m_screen_width, app->m_screen_height ) = { width, height };
+
+    if ( !minimized )
+    {
+        const auto& player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
+        for ( int i = app->m_graphics_api->getSwapChainImagesCount( ) - 1; i >= 0; --i )
+        {
+            app->renderUBOs[ i ].ubo.proj = glm::perspective( player.GetFOV( ), width / (float) height, 0.1f, 5000.0f );
+            app->renderUBOs[ i ].ubo.proj[ 1 ][ 1 ] *= -1;
+        }
+    }
 }
 
 void
@@ -499,11 +509,25 @@ struct ScrollingBuffer {
 };
 
 void
+MainApplication::renderImguiCursor( uint32_t renderIndex ) const
+{
+    ImGui::SetNextWindowPos( ImVec2( m_screen_width / 2, m_screen_height / 2 ), ImGuiCond_Always, { 0.5f, 0.5f } );
+    ImGui::Begin( "Cursor", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground );
+    auto windowSize = ImGui::GetWindowSize( );
+    auto textSize   = ImGui::CalcTextSize( "X" );
+    ImGui::SetCursorPos( ( windowSize - textSize ) * 0.5f );
+    ImGui::Text( "X" );
+    ImGui::End( );
+}
+
+void
 MainApplication::renderImgui( uint32_t renderIndex )
 {
     static bool   show_demo_window    = false;
     static bool   show_another_window = false;
     static ImVec4 clear_color         = ImVec4( 0.0515186f, 0.504163f, 0.656863f, 1.0f );
+
+    renderImguiCursor( renderIndex );
 
     if ( m_is_mouse_locked ) return;
 

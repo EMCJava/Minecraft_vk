@@ -45,10 +45,29 @@ class MainApplication : public Singleton<MainApplication>
 
     /*
      *
+     * Render
+     *
+     * */
+
+    struct BlockTransformUBO {
+        glm::mat4 view { };
+        glm::mat4 proj { };
+        alignas( 16 ) glm::vec3 highlightCoordinate { };
+        float time = 0;
+    };
+
+    struct UBOData {
+        BlockTransformUBO ubo;
+    };
+
+    std::unique_ptr<UBOData[]> renderUBOs;
+
+    /*
+     *
      * Minecraft
      *
      * */
-    void SetGenerationOffsetByCurve();
+    void                     SetGenerationOffsetByCurve( );
     ImGuiAddons::CurveEditor m_TerrainNoiseOffset {
         {{ 0.f, 0.f }, { 1.f, 0.f }}
     };
@@ -70,6 +89,7 @@ class MainApplication : public Singleton<MainApplication>
 
     void renderThread( const std::stop_token& st );
     void renderImgui( uint32_t renderIndex );
+    void renderImguiCursor( uint32_t renderIndex ) const;
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );
