@@ -1,4 +1,5 @@
 add_subdirectory(Chunk)
+add_subdirectory(Physics)
 add_subdirectory(Generation)
 add_library(MinecraftWorldLib MinecraftWorld.hpp MinecraftWorld.cpp)
-target_link_libraries(MinecraftWorldLib ChunkPoolLib)
+target_link_libraries(MinecraftWorldLib ChunkPoolLib ChunkLib)
