@@ -31,7 +31,7 @@ public:
 
     void Tick( float deltaTime );
 
-    void AddDemoPlayer( EntityCoordinate coordinate );
+    void AddDemoPlayer( const EntityCoordinate& coordinate );
     void InitWorld( );
 
     Player&         GetPlayer( int playerID );

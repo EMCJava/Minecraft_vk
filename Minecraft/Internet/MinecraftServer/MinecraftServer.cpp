@@ -30,7 +30,7 @@ MinecraftServer::InitWorld( )
 }
 
 void
-MinecraftServer::AddDemoPlayer( EntityCoordinate coordinate )
+MinecraftServer::AddDemoPlayer( const EntityCoordinate& coordinate )
 {
     m_PlayerList.emplace_back( coordinate );
 }
