@@ -69,8 +69,8 @@ public:
     void Clean( )
     {
         m_ChunkRenderBuffers.Clean( );
-        m_PendingThreads.clear();
-        
+        m_PendingThreads.clear( );
+
         std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
         m_ChunkCache.clear( );
     }
@@ -144,7 +144,17 @@ public:
         return m_ChunkCache.end( );
     }
 
-    ChunkCache* GetChunk( const ChunkCoordinate& coordinate ) const
+    [[nodiscard]] Chunk* GetChunk( const ChunkCoordinate& coordinate ) const
+    {
+        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
+        {
+            return &it->second->chunk;
+        }
+
+        return nullptr;
+    }
+
+    [[nodiscard]] ChunkCache* GetChunkCache( const ChunkCoordinate& coordinate ) const
     {
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
         {
