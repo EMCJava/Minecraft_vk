@@ -20,20 +20,23 @@ using EntityCoordinate = std::tuple<float, float, float>;
 using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
 using ChunkCoordinate  = BlockCoordinate;
 
-inline BlockCoordinate
-operator+( const BlockCoordinate& a, const BlockCoordinate& b )
+template <typename Ty>
+inline std::tuple<Ty, Ty, Ty>
+operator+( const std::tuple<Ty, Ty, Ty>& a, const std::tuple<Ty, Ty, Ty>& b )
 {
     return { get<0>( a ) + get<0>( b ), get<1>( a ) + get<1>( b ), get<2>( a ) + get<2>( b ) };
 }
 
-inline BlockCoordinate
-operator-( const BlockCoordinate& a, const BlockCoordinate& b )
+template <typename Ty>
+inline std::tuple<Ty, Ty, Ty>
+operator-( const std::tuple<Ty, Ty, Ty>& a, const std::tuple<Ty, Ty, Ty>& b )
 {
     return { get<0>( a ) - get<0>( b ), get<1>( a ) - get<1>( b ), get<2>( a ) - get<2>( b ) };
 }
 
-inline BlockCoordinate
-operator-( const BlockCoordinate& a )
+template <typename Ty>
+inline std::tuple<Ty, Ty, Ty>
+operator-( const std::tuple<Ty, Ty, Ty>& a )
 {
     return { -get<0>( a ), -get<1>( a ), -get<2>( a ) };
 }
@@ -59,13 +62,15 @@ GetMinecraftZ( Ty&& a )
     return std::get<MinecraftCoordinateZIndex>( a );
 }
 
-inline constexpr BlockCoordinate
+template <typename Ty = BlockCoordinate>
+inline constexpr Ty
 MakeMinecraftCoordinate( auto x, auto y, auto z )
 {
     return { x, z, y };
 }
 
-inline BlockCoordinate
+template <typename Ty = BlockCoordinate>
+inline Ty
 MakeCoordinate( auto x, auto y, auto z )
 {
     return { x, y, z };
