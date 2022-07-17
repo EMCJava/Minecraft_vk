@@ -19,9 +19,9 @@ class Chunk
     ChunkCoordinate m_Coordinate;
     ChunkCoordinate m_WorldCoordinate;
 
-    Block*    m_Blocks { };
+    Block*   m_Blocks { };
     int32_t* m_WorldHeightMap { };
-    uint8_t*  m_BlockFaces { };
+    uint8_t* m_BlockFaces { };
 
     int m_VisibleFacesCount = 0;
 
@@ -52,11 +52,24 @@ public:
     Chunk operator=( const Chunk& ) = delete;
     Chunk operator=( Chunk&& )      = delete;
 
+    /*
+     *
+     * Generation
+     *
+     * */
     void FillTerrain( const MinecraftNoise& generator );
     void FillBedRock( const MinecraftNoise& generator );
 
     // return true if target chunk become complete
     bool SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes = false );
+
+    /*
+     *
+     * Access tools
+     *
+     * */
+    [[nodiscard]] const Block* CheckBlock( const BlockCoordinate& blockCoordinate ) const;
+    [[nodiscard]] Block* GetBlock( const BlockCoordinate& blockCoordinate );
 
     inline void SetCoordinate( const ChunkCoordinate& coordinate )
     {
