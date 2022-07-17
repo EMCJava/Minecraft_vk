@@ -170,7 +170,7 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
     auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
     auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
 
-    const auto noiseOffset = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoiseOffset( );
+    const auto& noiseOffset = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoiseOffset( );
 
     delete[] m_WorldHeightMap;
     m_WorldHeightMap = new int32_t[ SectionSurfaceSize ];
