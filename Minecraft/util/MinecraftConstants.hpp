@@ -29,6 +29,11 @@ enum DirectionBit : uint8_t {
     DirBitSize  = 6
 };
 
+/*
+ *
+ * Chunk Sizes
+ *
+ * */
 static constexpr CoordinateType SectionUnitLength             = 16;
 static constexpr CoordinateType SectionUnitLengthBinaryOffset = IntLog<SectionUnitLength, 2>::value;
 static_assert( 1 << SectionUnitLengthBinaryOffset == SectionUnitLength );
@@ -41,10 +46,21 @@ static constexpr CoordinateType SectionVolumeBinaryOffset      = SectionSurfaceS
 static constexpr CoordinateType MaxSectionInChunk = 24;
 static constexpr CoordinateType ChunkMaxHeight    = SectionUnitLength * MaxSectionInChunk;
 
-static constexpr CoordinateType ChunkVolume    = MaxSectionInChunk * SectionVolume;
+static constexpr CoordinateType ChunkVolume = MaxSectionInChunk * SectionVolume;
 
+/*
+ *
+ * Chunk storage
+ *
+ * */
 static constexpr uint32_t ChunkThreadDelayPeriod = 100;
+static constexpr uint32_t ChunkAccessCacheSize = 8;
 
+/*
+ *
+ * Memory
+ *
+ * */
 static constexpr auto FaceVerticesCount = 4;
 static constexpr auto FaceIndicesCount  = 6;
 
