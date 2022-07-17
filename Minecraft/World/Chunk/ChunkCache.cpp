@@ -66,8 +66,8 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
             {
                 if ( const auto visibleFace = chunk.m_BlockFaces[ blockIndex ] )
                 {
-                    auto       textures = blockTextures.GetTextureLocation( chunk.m_Blocks[ blockIndex ] );
-                    const auto offset   = glm::vec3( chunkX + x, y, chunkZ + z );
+                    const auto& textures = blockTextures.GetTextureLocation( chunk.m_Blocks[ blockIndex ] );
+                    const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
                     if ( visibleFace & DirFrontBit )
                         AddFace( textures[ DirFront ], offset );
                     if ( visibleFace & DirBackBit )
