@@ -8,3 +8,4 @@
 /out/build
 /CMakeSettings.json
 .cache/
+/imgui.ini

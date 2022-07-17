@@ -7,11 +7,8 @@
 int
 main( )
 {
-    if ( !GlobalConfig::LoadFromFile( "../config.ini" ) )
-    {
-        bool result = GlobalConfig::LoadFromFile( "../../config.ini" );
-        assert( result );
-    }
+    bool result = GlobalConfig::LoadFromFile( "config.ini" );
+    assert( result );
 
     bool success = true;
 

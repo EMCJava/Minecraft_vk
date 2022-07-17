@@ -32,7 +32,7 @@ MainApplication::MainApplication( )
 
     m_MinecraftInstance = std::make_unique<Minecraft>( );
     m_MinecraftInstance->InitServer( );
-    m_MinecraftInstance->InitTexture( "../Resources/Texture" );
+    m_MinecraftInstance->InitTexture( "Resources/Texture" );
     {
         const auto&                                  generationCurve = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "generation_curve" ];
         std::vector<ImGuiAddons::CurveEditor::Point> points;

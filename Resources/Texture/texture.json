@@ -1,0 +1,38 @@
+{
+  "texture_name": "basic",
+  "resolution": 16,
+  "blocks": {
+    "BedRock": [
+    "bedrock.png",
+    "bedrock.png",
+    "bedrock.png",
+    "bedrock.png",
+    "bedrock.png",
+    "bedrock.png"
+    ],
+    "Stone": [
+      "stone.png",
+      "stone.png",
+      "stone.png",
+      "stone.png",
+      "stone.png",
+      "stone.png"
+    ],
+    "Grass": [
+      "grass_block_side.png",
+      "grass_block_side.png",
+      "grass_block_side.png",
+      "grass_block_side.png",
+      "azalea_top.png",
+      "dirt.png"
+    ],
+    "Dart": [
+      "dirt.png",
+      "dirt.png",
+      "dirt.png",
+      "dirt.png",
+      "dirt.png",
+      "dirt.png"
+    ]
+  }
+}

@@ -22,7 +22,7 @@ Minecraft::InitServer( )
     {
         m_Server = std::make_unique<MinecraftServer>( );
         m_Server->InitWorld( );
-        m_Server->AddDemoPlayer( { 0, 0, 0 } );
+        m_Server->AddDemoPlayer( { 0, 200, 0 } );
     }
 }
 
