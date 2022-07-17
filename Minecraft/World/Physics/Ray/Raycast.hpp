@@ -52,7 +52,7 @@ class Raycast
     };
 
 public:
-    
+
     template <typename Ty>
     static inline RaycastResult CastRay( MinecraftWorld& world, const EntityCoordinate& startingPosition, const Ray<Ty>& ray )
     {
