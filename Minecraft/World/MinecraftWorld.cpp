@@ -7,19 +7,24 @@
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
 #include <Include/GlobalConfig.hpp>
+#include <random>
 
 MinecraftWorld::MinecraftWorld( )
 {
-    m_WorldTerrainNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    Logger ::getInstance( ).LogLine( "Using \"random\" seed" );
+    std::random_device                      rd;
+    std::mt19937_64                         gen( rd( ) );
+    std::uniform_int_distribution<uint64_t> dis;
+
+    m_WorldTerrainNoise = std::make_unique<MinecraftNoise>( std::pair<uint64_t, uint64_t> { dis( gen ), dis( gen ) } );
     m_WorldTerrainNoise->SetNoiseType( Noise::FastNoiseLite::NoiseType_Perlin );
     m_WorldTerrainNoise->SetFractalType( Noise::FastNoiseLite::FractalType_FBm );
     m_WorldTerrainNoise->SetFractalLacunarity( 2.5f );
     m_WorldTerrainNoise->SetFractalGain( 0.32f );
 
     m_WorldTerrainNoise->SetFractalOctaves( 8 );
-    Logger ::getInstance( ).LogLine( "Using \"random\" seed" );
 
-    m_BedRockNoise = std::make_unique<MinecraftNoise>( rand( ) );
+    m_BedRockNoise = std::make_unique<MinecraftNoise>( std::pair<uint64_t, uint64_t> { dis( gen ), dis( gen ) } );
     m_BedRockNoise->SetFrequency( 16 );
     m_BedRockNoise->SetFractalOctaves( 1 );
 

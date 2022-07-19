@@ -23,6 +23,7 @@ Chunk::RegenerateChunk( )
 
     FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
     FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+    FillTree( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
 
     // Grass
     int  horizontalMapIndex = 0;
@@ -236,4 +237,24 @@ Chunk::GetBlock( const BlockCoordinate& blockCoordinate )
     const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
     assert( blockIndex < ChunkVolume );
     return &m_Blocks[ blockIndex ];
+}
+
+void
+Chunk::FillTree( const MinecraftNoise& generator )
+{
+    MinecraftNoise chunkNoise = GetChunkNoise( generator );
+
+    for ( int horizontalMapIndex = 0; horizontalMapIndex < SectionUnitLength; ++horizontalMapIndex )
+    {
+        if ( chunkNoise.NextUint64( ) % 80 == 0 )
+        {
+
+            auto heightAtPoint = m_WorldHeightMap[ horizontalMapIndex ] + 1;
+            auto treeHeight    = std::min( ChunkMaxHeight - heightAtPoint, 7 );
+            for ( int i = 0; i < treeHeight; ++i )
+            {
+                m_Blocks[ horizontalMapIndex + ScaleToSecond<1, SectionSurfaceSize>( heightAtPoint + i ) ] = BlockID::AcaciaLog;
+            }
+        }
+    }
 }

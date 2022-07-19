@@ -59,6 +59,16 @@ public:
      * */
     void FillTerrain( const MinecraftNoise& generator );
     void FillBedRock( const MinecraftNoise& generator );
+    void FillTree( const MinecraftNoise& generator );
+
+    [[nodiscard]] inline auto GetChunkNoise( const MinecraftNoise& terrainGenerator ) const
+    {
+        auto noiseSeed = terrainGenerator.CopySeed( );
+        noiseSeed.first ^= GetMinecraftX( m_WorldCoordinate );
+        noiseSeed.second ^= GetMinecraftZ( m_WorldCoordinate );
+
+        return MinecraftNoise { noiseSeed };
+    }
 
     // return true if target chunk become complete
     bool SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes = false );
@@ -69,7 +79,7 @@ public:
      *
      * */
     [[nodiscard]] const Block* CheckBlock( const BlockCoordinate& blockCoordinate ) const;
-    [[nodiscard]] Block* GetBlock( const BlockCoordinate& blockCoordinate );
+    [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
 
     inline void SetCoordinate( const ChunkCoordinate& coordinate )
     {
