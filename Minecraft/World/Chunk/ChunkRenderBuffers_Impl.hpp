@@ -10,9 +10,11 @@
 #include "ChunkRenderBuffers.hpp"
 #include <cmath>
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter>
-typename ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::SuitableAllocation
-ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize )
+#define ClassName( ... )                                                   \
+    template <typename VertexTy, typename IndexTy, typename SizeConverter> \
+    __VA_ARGS__ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>
+
+ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::SuitableAllocation )::CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize )
 {
     auto ratio = (float) sizeof( VertexTy ) / sizeof( IndexTy );
     assert( SizeConverter::ConvertToSecond( vertexDataSize ) >= indexDataSize );
@@ -85,9 +87,7 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CreateBuffer( uint32_t ver
     }
 }
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter>
-void
-ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::GrowCapacity( )
+ClassName( void )::GrowCapacity( )
 {
     using Usage = vk::BufferUsageFlagBits;
 
@@ -108,15 +108,12 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::GrowCapacity( )
     } );
 }
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter>
-ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::~ChunkRenderBuffers( )
+ClassName( )::~ChunkRenderBuffers( )
 {
     Clean( );
 }
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter>
-void
-ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer )
+ClassName( void )::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer )
 {
     using Usage = vk::BufferUsageFlagBits;
 
@@ -155,9 +152,7 @@ ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::CopyBuffer( ChunkRenderBuf
     transferQueue.waitIdle( );
 }
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter>
-void
-ChunkRenderBuffers<VertexTy, IndexTy, SizeConverter>::BufferChunk::UpdateIndirectDrawBuffers( )
+ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
 {
     if ( !shouldUpdateIndirectDrawBuffers ) return;
 
