@@ -33,6 +33,14 @@
       "dirt.png",
       "dirt.png",
       "dirt.png"
+    ],
+    "AcaciaLog": [
+      "acacia_log.png",
+      "acacia_log.png",
+      "acacia_log.png",
+      "acacia_log.png",
+      "acacia_log.png",
+      "acacia_log_top.png"
     ]
   }
 }
