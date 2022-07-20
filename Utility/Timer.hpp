@@ -7,6 +7,8 @@
 
 #include "Logger.hpp"
 
+#include <atomic>
+
 namespace
 {
 std::atomic<uint32_t> TimerInstanceCounter( 0 );
