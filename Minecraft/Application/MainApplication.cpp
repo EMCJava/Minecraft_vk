@@ -129,10 +129,10 @@ MainApplication::run( )
                 if ( buffer.m_DataSlots.empty( ) || !buffer.indirectDrawBuffers.GetBuffer( ) ) continue;
 
                 std::lock_guard<std::mutex> indirectDrawBufferLock( buffer.indirectDrawBuffersMutex );
-                command_buffer.bindVertexBuffers( 0, buffer.vertexBuffer, vk::DeviceSize( 0 ) );
+                command_buffer.bindVertexBuffers( 0, buffer.buffer, vk::DeviceSize( 0 ) );
 
                 static_assert( std::is_same<IndexBufferType, uint32_t>::value );
-                command_buffer.bindIndexBuffer( buffer.indexBuffer, 0, vk::IndexType::eUint32 );
+                command_buffer.bindIndexBuffer( buffer.buffer, 0, vk::IndexType::eUint32 );
 
                 command_buffer.drawIndexedIndirect( buffer.indirectDrawBuffers.GetBuffer( ), 0, buffer.indirectCommands.size( ), sizeof( vk::DrawIndexedIndirectCommand ) );
             }

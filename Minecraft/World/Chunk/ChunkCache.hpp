@@ -17,7 +17,7 @@
 
 #include <unordered_map>
 
-using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType, SCVISCC>;
+using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType>;
 
 class ChunkCache
 {

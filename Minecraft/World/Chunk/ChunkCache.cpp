@@ -36,7 +36,7 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
     auto&          api                  = MainApplication::GetInstance( ).GetVulkanAPI( );
     const auto&    noiseGenerator       = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( );
     const auto     suitableBufferRegion = renderBuffers.CreateBuffer( verticesDataSize, indicesDataSize );
-    const uint32_t indexOffset          = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( suitableBufferRegion.region.vertex.first );
+    const uint32_t indexOffset          = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( suitableBufferRegion.region.vertexStartingOffset );
 
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( chunk.m_VisibleFacesCount ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );

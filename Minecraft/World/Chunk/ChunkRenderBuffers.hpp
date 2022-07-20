@@ -13,15 +13,29 @@
 
 #include <deque>
 
-template <typename VertexTy, typename IndexTy, typename SizeConverter = ScaleToSecond_S<sizeof( VertexTy ), sizeof( IndexTy )>>
+template <typename VertexTy, typename IndexTy>
 class ChunkRenderBuffers
 {
     static_assert( ScaleToSecond<sizeof( VertexTy ), sizeof( IndexTy )>( sizeof( VertexTy ) ) == sizeof( IndexTy ) );
 
 public:
     struct SingleBufferRegion {
-        std::pair<uint32_t, uint32_t> vertex;
-        std::pair<uint32_t, uint32_t> index;
+        uint32_t vertexStartingOffset;
+        uint32_t vertexSize;
+
+        uint32_t indexStartingOffset;
+        uint32_t indexSize;
+
+        inline uint32_t GetOffsetDiff( )
+        {
+            assert( indexStartingOffset > vertexStartingOffset );
+            return indexStartingOffset - vertexStartingOffset;
+        }
+
+        inline uint32_t GetStartingPoint( ) const { return vertexStartingOffset; }
+        inline uint32_t GetEndingPoint( ) const { return indexStartingOffset + indexSize; }
+        inline uint32_t GetBufferSize( ) const { return vertexSize + indexSize; }
+        inline uint32_t GetTotalSize( ) const { return GetEndingPoint( ) - GetStartingPoint( ); }
     };
 
 private:
@@ -36,15 +50,11 @@ private:
 
         ~BufferChunk( )
         {
-            vmaDestroyBuffer( allocator, vertexBuffer, vertexAllocation );
-            vmaDestroyBuffer( allocator, indexBuffer, indexAllocation );
+            vmaDestroyBuffer( allocator, buffer, bufferAllocation );
         }
 
-        vk::Buffer    vertexBuffer { };
-        VmaAllocation vertexAllocation { };
-
-        vk::Buffer    indexBuffer { };
-        VmaAllocation indexAllocation { };
+        vk::Buffer    buffer { };
+        VmaAllocation bufferAllocation { };
 
         std::vector<vk::DrawIndexedIndirectCommand> indirectCommands;
 
@@ -57,18 +67,11 @@ private:
         void UpdateIndirectDrawBuffers( );
 
         std::vector<SingleBufferRegion> m_DataSlots;
-        std::vector<SingleBufferRegion> m_EmptySlots;
     };
 
     std::deque<BufferChunk> m_Buffers;
 
     void GrowCapacity( );
-
-    inline uint32_t
-    VertexBufferToIndexBufferIndex( uint32_t index )
-    {
-        return ScaleToSecond<sizeof( IndexBufferType ), 1>( SizeConverter::ConvertToSecond( index ) );
-    }
 
 public:
     explicit ChunkRenderBuffers( )
@@ -84,7 +87,8 @@ public:
 
     SuitableAllocation CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize );
     void               CopyBuffer( SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer );
-    void               UpdateAllIndirectDrawBuffers( )
+
+    void UpdateAllIndirectDrawBuffers( )
     {
         for ( auto& chunk : m_Buffers )
         {
