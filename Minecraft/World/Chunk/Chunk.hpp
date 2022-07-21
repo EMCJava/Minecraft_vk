@@ -39,6 +39,12 @@ private:
         m_WorldHeightMap = nullptr;
     }
 
+    /*
+     *
+     * Can only be used when surrounding chunk is loaded
+     *
+     * */
+    void RegenerateVisibleFacesAt( uint32_t index );
     void RegenerateVisibleFaces( );
     void RegenerateChunk( );
 
@@ -80,6 +86,8 @@ public:
      * */
     [[nodiscard]] const Block* CheckBlock( const BlockCoordinate& blockCoordinate ) const;
     [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
+
+    bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
     inline void SetCoordinate( const ChunkCoordinate& coordinate )
     {

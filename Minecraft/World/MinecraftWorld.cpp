@@ -143,3 +143,20 @@ MinecraftWorld::ResetChunkCache( )
         m_ChunkAccessCache[ i ].chunkCache  = m_ChunkPool->GetChunkCache( { 0, 0, 0 } );
     }
 }
+
+void
+MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
+{
+    if ( GetMinecraftY( blockCoordinate ) < 0 ) return;
+
+    if ( auto* chunkCache = GetChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+                                                                    0,
+                                                                    ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+         chunkCache != nullptr && chunkCache->initialized )
+    {
+        if ( chunkCache->chunk.SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
+                                                                  GetMinecraftY( blockCoordinate ),
+                                                                  GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ),
+                                         block ) ) chunkCache->ResetModel( m_ChunkPool->GetRenderBuffer( ) );
+    }
+}

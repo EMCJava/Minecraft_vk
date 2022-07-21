@@ -351,6 +351,17 @@ MainApplication::renderThread( const std::stop_token& st )
 
         m_deltaMouseHoldUpdate.test_and_set( );
 
+        static int oldMouseLeftState = GLFW_RELEASE;
+        int        mouseLeftState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_LEFT );
+        if ( mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
+        {
+            const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
+            if ( raycastResult.hitSolid ) MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air );
+
+            Logger ::getInstance( ).LogLine( "Mouse button pressed" );
+        }
+        oldMouseLeftState = mouseLeftState;
+
         /*
          *
          * Update game loop

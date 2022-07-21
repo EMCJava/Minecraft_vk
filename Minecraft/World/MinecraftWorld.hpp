@@ -69,8 +69,9 @@ public:
     ChunkCache* GetChunkCache( const ChunkCoordinate& chunkCoordinate );
     Chunk*      GetChunk( const ChunkCoordinate& chunkCoordinate );
     Block*      GetBlock( const BlockCoordinate& blockCoordinate );
+    void        SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
-    void ResetChunkCache();
+    void ResetChunkCache( );
 
     [[nodiscard]] const auto& GetBedRockNoise( ) const { return m_BedRockNoise; }
     [[nodiscard]] const auto& GetTerrainNoise( ) const { return m_WorldTerrainNoise; }
