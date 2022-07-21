@@ -22,32 +22,17 @@ sum_components( Tuple const& tuple )
         return ( e + ... );
     };
     return std::apply( sum_them, tuple );
-};
-
-template <class Ty>
-auto
-AbsDiff( const Ty& a, const Ty& b )
-{
-    return a > b ? a - b : b - a;
-}
-
-template <typename Ty>
-inline auto
-AlignTo( Ty size, Ty alignment )
-{
-    if ( const auto mod = size % alignment; mod != 0 )
-        size += alignment - mod;
-
-    return size;
 }
 }   // namespace
 
-#define ClassName( ... )                                                   \
+#define ClassName( ... )                           \
     template <typename VertexTy, typename IndexTy> \
     __VA_ARGS__ ChunkRenderBuffers<VertexTy, IndexTy>
 
 ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation )::CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize )
 {
+    std::lock_guard<std::recursive_mutex> lock( buffersMutex );
+
     const auto requitedSize = AlignTo<uint32_t>( vertexDataSize, sizeof( IndexTy ) ) + indexDataSize;
     if ( m_Buffers.empty( ) )
     {
@@ -82,7 +67,7 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
 
     if ( !suitableAllocations.empty( ) )
     {
-        const auto optimalBufferSize = requitedSize + OptimalBufferGap;
+        const auto optimalBufferSize = requitedSize + ( OptimalBufferGap << 1 );
         std::sort( suitableAllocations.begin( ), suitableAllocations.end( ), [ optimalBufferSize ]( const SuitableAllocation& a, const SuitableAllocation& b ) {
             const auto aDiff = AbsDiff( a.region.vertexSize, optimalBufferSize );
             const auto bDiff = AbsDiff( b.region.vertexSize, optimalBufferSize );
@@ -97,24 +82,31 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
         auto& chunkUsing  = *suitableAllocations.begin( )->targetChunk;
         auto& regionUsing = suitableAllocations.begin( )->region;
 
-        SingleBufferRegion newAllocation  = regionUsing;
-        newAllocation.vertexSize          = vertexDataSize;
-        newAllocation.indexStartingOffset = AlignTo<uint32_t>( newAllocation.vertexStartingOffset + vertexDataSize, sizeof( IndexTy ) );
-        newAllocation.indexSize           = indexDataSize;
+        // leave space for gap
+        if ( regionUsing.vertexStartingOffset != 0 && regionUsing.vertexSize > requitedSize )
+        {
+            const auto additionalSpace = std::min( regionUsing.vertexSize - requitedSize, optimalBufferSize << 1 );
+            regionUsing.vertexSize += additionalSpace >> 1;
+        }
+
+        SingleBufferRegion newAllocation = regionUsing;
+        newAllocation.SetBufferAllocation( newAllocation.vertexStartingOffset, vertexDataSize, indexDataSize );
 
         const auto insertIter = std::find_if( chunkUsing.m_DataSlots.begin( ), chunkUsing.m_DataSlots.end( ), [ newAllocation ]( const SingleBufferRegion& d ) { return d.vertexStartingOffset > newAllocation.vertexStartingOffset; } );
         chunkUsing.m_DataSlots.insert( insertIter, newAllocation );
 
-        auto& newCommand = chunkUsing.indirectCommands.emplace_back( );
+        {
+            std::lock_guard<std::mutex> indirectLock( chunkUsing.indirectDrawBuffersMutex );
+            auto&                       newCommand = chunkUsing.indirectCommands.emplace_back( );
 
-        newCommand.instanceCount = 1;
-        newCommand.firstInstance = 0;   // chunkUsing.m_DataSlots.size( ) - 1;
-        newCommand.firstIndex    = ScaleToSecond<sizeof( IndexTy ), 1>( newAllocation.indexStartingOffset );
-        newCommand.indexCount    = ScaleToSecond<sizeof( IndexTy ), 1>( indexDataSize );
-
+            newCommand.instanceCount = 1;
+            newCommand.firstInstance = 0;   // chunkUsing.m_DataSlots.size( ) - 1;
+            newCommand.firstIndex    = ScaleToSecond<sizeof( IndexTy ), 1>( newAllocation.indexStartingOffset );
+            newCommand.indexCount    = ScaleToSecond<sizeof( IndexTy ), 1>( indexDataSize );
+        }
         chunkUsing.shouldUpdateIndirectDrawBuffers = true;
 
-        Logger::getInstance( ).LogLine( "New Buffer at", std::make_tuple( newAllocation.vertexStartingOffset, newAllocation.indexStartingOffset, newAllocation.vertexSize, newAllocation.indexSize ) );
+        Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "New Buffer at", std::make_tuple( newAllocation.vertexStartingOffset, newAllocation.indexStartingOffset, newAllocation.vertexSize, newAllocation.indexSize ) );
         return { &chunkUsing, newAllocation };
 
     } else
@@ -124,6 +116,60 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
 
         return CreateBuffer( vertexDataSize, indexDataSize );
     }
+}
+
+ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation )::AlterBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation, uint32_t vertexDataSize, uint32_t indexDataSize )
+{
+    {
+        std::lock_guard<std::recursive_mutex> bufferLock( buffersMutex );
+        std::lock_guard<std::mutex> indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
+
+        const auto& bufferSize = allocation.region.GetTotalSize( );
+
+        const auto newRequitedSize = AlignTo<uint32_t>( vertexDataSize, sizeof( IndexTy ) ) + indexDataSize;
+
+        auto allocationIter = std::find( allocation.targetChunk->m_DataSlots.begin( ), allocation.targetChunk->m_DataSlots.end( ), allocation.region );
+        assert( allocationIter != allocation.targetChunk->m_DataSlots.end( ) );
+
+        auto oldCommandIter = std::find_if( allocation.targetChunk->indirectCommands.begin( ), allocation.targetChunk->indirectCommands.end( ), [ originalFirstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocation.region.indexStartingOffset ) ]( const vk::DrawIndexedIndirectCommand& command ) { return command.firstIndex == originalFirstIndex; } );
+        assert( oldCommandIter != allocation.targetChunk->indirectCommands.end( ) );
+
+        if ( newRequitedSize <= bufferSize )
+        {
+            // we don't allocate a buffer that is smaller than our current size
+
+            allocationIter->SetBufferAllocation( allocationIter->vertexStartingOffset, vertexDataSize, indexDataSize );
+            oldCommandIter->firstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocationIter->indexStartingOffset );
+            oldCommandIter->indexCount = ScaleToSecond<sizeof( IndexTy ), 1>( indexDataSize );
+
+            return { allocation.targetChunk, *allocationIter };
+        }
+
+        uint32_t nextBufferStarts = MaxMemoryAllocation;
+        if ( allocationIter + 1 != allocation.targetChunk->m_DataSlots.end( ) )
+        {
+            nextBufferStarts = ( allocationIter + 1 )->GetStartingPoint( );
+        }
+
+        if ( nextBufferStarts - allocationIter->GetStartingPoint( ) >= newRequitedSize )
+        {
+            // there's enough space for expanding this allocation
+
+            allocationIter->SetBufferAllocation( allocationIter->vertexStartingOffset, vertexDataSize, indexDataSize );
+            oldCommandIter->firstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocationIter->indexStartingOffset );
+            oldCommandIter->indexCount = ScaleToSecond<sizeof( IndexTy ), 1>( indexDataSize );
+
+            return { allocation.targetChunk, *allocationIter };
+        }
+
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Relocating buffer allocation" );
+
+        // else delete this allocation and find new allocation
+        allocation.targetChunk->m_DataSlots.erase( allocationIter );
+        allocation.targetChunk->indirectCommands.erase( oldCommandIter );
+    }
+
+    return CreateBuffer( vertexDataSize, indexDataSize );
 }
 
 ClassName( void )::GrowCapacity( )

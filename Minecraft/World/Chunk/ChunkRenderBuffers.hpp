@@ -26,16 +26,32 @@ public:
         uint32_t indexStartingOffset;
         uint32_t indexSize;
 
+        inline void SetBufferAllocation( uint32_t startingPoint, uint32_t vertexDataSize, uint32_t indexDataSize )
+        {
+            vertexStartingOffset = startingPoint;
+            vertexSize           = vertexDataSize;
+            indexStartingOffset  = AlignTo<uint32_t>( startingPoint + vertexDataSize, sizeof( IndexTy ) );
+            indexSize            = indexDataSize;
+        }
+
         inline uint32_t GetOffsetDiff( )
         {
             assert( indexStartingOffset > vertexStartingOffset );
             return indexStartingOffset - vertexStartingOffset;
         }
 
+        inline uint32_t GetVertexEndingPoint( ) const { return vertexStartingOffset + vertexSize; }
+        inline uint32_t GetIndexEndingPoint( ) const { return indexStartingOffset + indexSize; }
+
         inline uint32_t GetStartingPoint( ) const { return vertexStartingOffset; }
         inline uint32_t GetEndingPoint( ) const { return indexStartingOffset + indexSize; }
         inline uint32_t GetBufferSize( ) const { return vertexSize + indexSize; }
         inline uint32_t GetTotalSize( ) const { return GetEndingPoint( ) - GetStartingPoint( ); }
+
+        inline bool operator==( const SingleBufferRegion& other )
+        {
+            return vertexStartingOffset == other.vertexStartingOffset && vertexSize == other.vertexSize && indexStartingOffset == other.indexStartingOffset && indexSize == other.indexSize;
+        }
     };
 
 private:
@@ -69,6 +85,7 @@ private:
         std::vector<SingleBufferRegion> m_DataSlots;
     };
 
+    std::recursive_mutex    buffersMutex { };
     std::deque<BufferChunk> m_Buffers;
 
     void GrowCapacity( );
@@ -86,6 +103,7 @@ public:
     };
 
     SuitableAllocation CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize );
+    SuitableAllocation AlterBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation, uint32_t vertexDataSize, uint32_t indexDataSize );
     void               CopyBuffer( SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer );
 
     void UpdateAllIndirectDrawBuffers( )

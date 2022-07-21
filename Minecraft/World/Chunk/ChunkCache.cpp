@@ -31,12 +31,16 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
 
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndices = { 0, 1, 2, 2, 3, 0 };
 
-    const auto     verticesDataSize     = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( chunk.m_VisibleFacesCount );
-    const auto     indicesDataSize      = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( chunk.m_VisibleFacesCount ) );
-    auto&          api                  = MainApplication::GetInstance( ).GetVulkanAPI( );
-    const auto&    noiseGenerator       = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( );
-    const auto     suitableBufferRegion = renderBuffers.CreateBuffer( verticesDataSize, indicesDataSize );
-    const uint32_t indexOffset          = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( suitableBufferRegion.region.vertexStartingOffset );
+    const auto verticesDataSize = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( chunk.m_VisibleFacesCount );
+    const auto indicesDataSize  = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( chunk.m_VisibleFacesCount ) );
+    auto&      api              = MainApplication::GetInstance( ).GetVulkanAPI( );
+
+    if ( m_BufferAllocation.targetChunk == nullptr )
+        m_BufferAllocation = renderBuffers.CreateBuffer( verticesDataSize, indicesDataSize );
+    else
+        m_BufferAllocation = renderBuffers.AlterBuffer( m_BufferAllocation, verticesDataSize, indicesDataSize );
+
+    const uint32_t indexOffset = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( m_BufferAllocation.region.vertexStartingOffset );
 
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( chunk.m_VisibleFacesCount ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
@@ -57,7 +61,6 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
     };
 
     const auto& blockTextures = Minecraft::GetInstance( ).GetBlockTextures( );
-
     for ( int y = 0, blockIndex = 0; y < ChunkMaxHeight; ++y )
     {
         for ( int z = 0; z < SectionUnitLength; ++z )
@@ -85,5 +88,5 @@ ChunkCache::ResetModel( ChunkSolidBuffer& renderBuffers )
         }
     }
 
-    renderBuffers.CopyBuffer( suitableBufferRegion, chunkVertices.get( ), chunkIndices.get( ) );
+    renderBuffers.CopyBuffer( m_BufferAllocation, chunkVertices.get( ), chunkIndices.get( ) );
 }

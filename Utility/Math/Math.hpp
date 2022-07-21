@@ -90,5 +90,21 @@ struct ScaleToSecond_S {
     }
 };
 
+template <class Ty>
+auto
+AbsDiff( const Ty& a, const Ty& b )
+{
+    return a > b ? a - b : b - a;
+}
+
+template <typename Ty>
+inline auto
+AlignTo( Ty size, Ty alignment )
+{
+    if ( const auto mod = size % alignment; mod != 0 )
+        size += alignment - mod;
+
+    return size;
+}
 
 #endif   // MINECRAFT_VK_UTILITY_MATH_MATH_HPP

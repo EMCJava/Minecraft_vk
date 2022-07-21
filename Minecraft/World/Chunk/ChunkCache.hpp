@@ -25,6 +25,8 @@ private:
     uint32_t                       m_IndexBufferSize { };
     std::atomic_flag m_BufferReady ATOMIC_FLAG_INIT;
 
+    ChunkSolidBuffer::SuitableAllocation m_BufferAllocation;
+
 public:
     Chunk chunk;
     bool  initialized  = false;

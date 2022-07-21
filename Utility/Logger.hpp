@@ -7,10 +7,10 @@
 
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <type_traits>
-#include <mutex>
 
 #include <Utility/String/StringConcatConstexpr.hpp>
 
@@ -62,23 +62,27 @@ private:
         static constexpr std::string_view value = LogColorPrefix ? Join<Str, Strs...>::value : Join<Strs...>::value;
     };
 
-    static constexpr std::string_view ErrorStr = "[ ERROR ] ";
-    static constexpr std::string_view WarnStr  = "[ WARN ] ";
-    static constexpr std::string_view InfoStr  = "[ INFO ] ";
+    static constexpr std::string_view ErrorStr   = "[ ERROR ] ";
+    static constexpr std::string_view WarnStr    = "[ WARN ] ";
+    static constexpr std::string_view InfoStr    = "[ INFO ] ";
+    static constexpr std::string_view VerboseStr = "[ VERB ] ";
 
     static constexpr std::string_view RedStr    = "\033[38;5;9m";
     static constexpr std::string_view YellowStr = "\033[38;5;11m";
+    static constexpr std::string_view GrayStr   = "\033[38;5;7m";
     static constexpr std::string_view ResetStr  = "\033[38;5;15m";
 
-    static constexpr auto ErrorPrefix = JoinColorSrt<RedStr, ErrorStr>::value;
-    static constexpr auto WarnPrefix  = JoinColorSrt<YellowStr, WarnStr>::value;
-    static constexpr auto InfoPrefix  = JoinColorSrt<YellowStr, InfoStr>::value;
+    static constexpr auto ErrorPrefix   = JoinColorSrt<RedStr, ErrorStr>::value;
+    static constexpr auto WarnPrefix    = JoinColorSrt<YellowStr, WarnStr>::value;
+    static constexpr auto InfoPrefix    = JoinColorSrt<YellowStr, InfoStr>::value;
+    static constexpr auto VerbosePrefix = JoinColorSrt<GrayStr, VerboseStr>::value;
 
 public:
     enum class Color {
         wReset,
         eRed,
         eYellow,
+        eGray,
         eColorSize
     };
 
@@ -86,6 +90,7 @@ public:
         eError,
         eWarn,
         eInfo,
+        eVerbose,
         eLogTypeSize
     };
 
@@ -120,6 +125,8 @@ public:
             return WarnPrefix;
         case LogType::eInfo:
             return InfoPrefix;
+        case LogType::eVerbose:
+            return VerbosePrefix;
         default:
             break;
         }
@@ -138,6 +145,8 @@ public:
             return RedStr;
         case Color::eYellow:
             return YellowStr;
+        case Color::eGray:
+            return GrayStr;
         default:
             break;
         }
@@ -182,6 +191,12 @@ public:
     LogWithPrefix( Ty&& colorElement, Tys&&... elms )
     {
         std::stringstream output;
+        
+        if constexpr ( IncludeTime )
+        {
+            std::time_t t = std::time( nullptr );
+            output << "[ " << std::put_time( std::localtime( &t ), "%F %T" ) << " ] ";
+        }
 
         if constexpr ( LogColorPrefix || !std::is_same<typename std::decay<Ty>::type, Color>::value )
             output << prefix( colorElement );
