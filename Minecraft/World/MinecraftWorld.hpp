@@ -38,7 +38,7 @@ class MinecraftWorld : public Tickable
 public:
     MinecraftWorld( );
 
-    void IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius );
+    void IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t radius );
 
     /*
      *

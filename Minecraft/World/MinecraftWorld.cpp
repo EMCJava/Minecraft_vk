@@ -39,7 +39,7 @@ MinecraftWorld::MinecraftWorld( )
 }
 
 void
-MinecraftWorld::IntroduceChunkInRange( ChunkCoordinate centre, int32_t radius )
+MinecraftWorld::IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t radius )
 {
     m_ChunkPool->SetCentre( centre );
     for ( int i = -radius; i <= radius; ++i )

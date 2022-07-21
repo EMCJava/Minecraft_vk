@@ -46,7 +46,7 @@ public:
         : id( id )
     { }
 
-    inline bool Transparent( )
+    inline bool Transparent( ) const
     {
         switch ( id )
         {
@@ -57,7 +57,7 @@ public:
         }
     }
 
-    inline operator BlockID( )
+    inline operator BlockID( ) const
     {
         return id;
     }
