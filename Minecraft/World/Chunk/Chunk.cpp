@@ -8,6 +8,21 @@
 
 #include <cmath>
 
+namespace
+{
+
+constexpr auto dirUpFaceOffset         = SectionSurfaceSize;
+constexpr auto dirDownFaceOffset       = -SectionSurfaceSize;
+constexpr auto dirRightFaceOffset      = SectionUnitLength;
+constexpr auto dirRightChunkFaceOffset = SectionUnitLength - SectionSurfaceSize;
+constexpr auto dirLeftFaceOffset       = -SectionUnitLength;
+constexpr auto dirLeftChunkFaceOffset  = SectionSurfaceSize - SectionUnitLength;
+constexpr auto dirFrontFaceOffset      = 1;
+constexpr auto dirFrontChunkFaceOffset = 1 - SectionUnitLength;
+constexpr auto dirBackFaceOffset       = -1;
+constexpr auto dirBackChunkFaceOffset  = SectionUnitLength - 1;
+}   // namespace
+
 Chunk::~Chunk( )
 {
     DeleteChunk( );
@@ -195,7 +210,7 @@ Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
     const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
 
-    Logger::getInstance( ).LogLine( "Setting block at chunk:", m_Coordinate, "coordinate:", blockCoordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
+    Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "coordinate:", blockCoordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
 
     if ( m_Blocks[ blockIndex ] == block ) return false;
 
@@ -233,32 +248,72 @@ Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
             }
 
         if ( GetMinecraftZ( blockCoordinate ) != SectionUnitLength - 1 )
+        {
             if ( !blockPtr[ dirRightFaceOffset ].Transparent( ) )
             {
                 blockFacePtr[ dirRightFaceOffset ] ^= DirLeftBit;
                 ++faceDiff;
             }
+        } else
+        {
+
+            if ( !m_NearChunks[ DirRight ]->m_Blocks[ blockIndex + dirRightChunkFaceOffset ].Transparent( ) )
+            {
+                m_NearChunks[ DirRight ]->m_BlockFaces[ blockIndex + dirRightChunkFaceOffset ] ^= DirLeftBit;
+                m_NearChunks[ DirRight ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
+            }
+        }
 
         if ( GetMinecraftZ( blockCoordinate ) != 0 )
+        {
             if ( !blockPtr[ dirLeftFaceOffset ].Transparent( ) )
             {
                 blockFacePtr[ dirLeftFaceOffset ] ^= DirRightBit;
                 ++faceDiff;
             }
+        } else
+        {
+
+            if ( !m_NearChunks[ DirLeft ]->m_Blocks[ blockIndex + dirLeftChunkFaceOffset ].Transparent( ) )
+            {
+                m_NearChunks[ DirLeft ]->m_BlockFaces[ blockIndex + dirLeftChunkFaceOffset ] ^= DirRightBit;
+                m_NearChunks[ DirLeft ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
+            }
+        }
 
         if ( GetMinecraftX( blockCoordinate ) != SectionUnitLength - 1 )
+        {
             if ( !blockPtr[ dirFrontFaceOffset ].Transparent( ) )
             {
                 blockFacePtr[ dirFrontFaceOffset ] ^= DirBackBit;
                 ++faceDiff;
             }
+        } else
+        {
+
+            if ( !m_NearChunks[ DirFront ]->m_Blocks[ blockIndex + dirFrontChunkFaceOffset ].Transparent( ) )
+            {
+                m_NearChunks[ DirFront ]->m_BlockFaces[ blockIndex + dirFrontChunkFaceOffset ] ^= DirBackBit;
+                m_NearChunks[ DirFront ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
+            }
+        }
 
         if ( GetMinecraftX( blockCoordinate ) != 0 )
+        {
             if ( !blockPtr[ dirBackFaceOffset ].Transparent( ) )
             {
                 blockFacePtr[ dirBackFaceOffset ] ^= DirFrontBit;
                 ++faceDiff;
             }
+        } else
+        {
+
+            if ( !m_NearChunks[ DirBack ]->m_Blocks[ blockIndex + dirBackChunkFaceOffset ].Transparent( ) )
+            {
+                m_NearChunks[ DirBack ]->m_BlockFaces[ blockIndex + dirBackChunkFaceOffset ] ^= DirFrontBit;
+                m_NearChunks[ DirBack ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
+            }
+        }
 
         if ( block.Transparent( ) )
         {
@@ -284,17 +339,6 @@ Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 void
 Chunk::RegenerateVisibleFacesAt( uint32_t index )
 {
-    static constexpr auto dirUpFaceOffset         = SectionSurfaceSize;
-    static constexpr auto dirDownFaceOffset       = -SectionSurfaceSize;
-    static constexpr auto dirRightFaceOffset      = SectionUnitLength;
-    static constexpr auto dirRightChunkFaceOffset = SectionUnitLength - SectionSurfaceSize;
-    static constexpr auto dirLeftFaceOffset       = -SectionUnitLength;
-    static constexpr auto dirLeftChunkFaceOffset  = SectionSurfaceSize - SectionUnitLength;
-    static constexpr auto dirFrontFaceOffset      = 1;
-    static constexpr auto dirFrontChunkFaceOffset = 1 - SectionUnitLength;
-    static constexpr auto dirBackFaceOffset       = -1;
-    static constexpr auto dirBackChunkFaceOffset  = SectionUnitLength - 1;
-
     assert( m_EmptySlot == 0 );
     assert( m_NearChunks[ DirRight ] != nullptr && m_NearChunks[ DirLeft ] != nullptr && m_NearChunks[ DirFront ] != nullptr && m_NearChunks[ DirBack ] != nullptr );
 
