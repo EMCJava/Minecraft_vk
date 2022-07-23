@@ -11,10 +11,11 @@
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Utility/Math/Math.hpp>
 
+#include <Minecraft/util/Tickable.hpp>
 #include <deque>
 
 template <typename VertexTy, typename IndexTy>
-class ChunkRenderBuffers
+class ChunkRenderBuffers : public Tickable
 {
     static_assert( ScaleToSecond<sizeof( VertexTy ), sizeof( IndexTy )>( sizeof( VertexTy ) ) == sizeof( IndexTy ) );
 
@@ -85,8 +86,24 @@ private:
         std::vector<SingleBufferRegion> m_DataSlots;
     };
 
+public:
+    struct SuitableAllocation {
+        BufferChunk*       targetChunk { };
+        SingleBufferRegion region { };
+
+        friend std::ostream& operator<<( std::ostream& o, const SuitableAllocation& sa )
+        {
+            o << "[ " << sa.targetChunk << "] : (" << sa.region.vertexStartingOffset << ", " << sa.region.vertexSize << ", " << sa.region.indexStartingOffset << ", " << sa.region.indexSize << ')' << std::flush;
+            return o;
+        }
+    };
+
+private:
     std::recursive_mutex    buffersMutex { };
     std::deque<BufferChunk> m_Buffers;
+
+    std::mutex                                     m_PendingErasesLock;
+    std::deque<std::pair<SuitableAllocation, int>> m_PendingErases;
 
     void GrowCapacity( );
 
@@ -97,12 +114,9 @@ public:
 
     ~ChunkRenderBuffers( );
 
-    struct SuitableAllocation {
-        BufferChunk*       targetChunk { };
-        SingleBufferRegion region { };
-    };
 
     SuitableAllocation CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize );
+    void               DeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation );
     SuitableAllocation AlterBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation, uint32_t vertexDataSize, uint32_t indexDataSize );
     void               CopyBuffer( SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer );
 
@@ -118,6 +132,24 @@ public:
     {
         m_Buffers.clear( );
     }
+
+    inline auto& GetPendingErasesLock( ) { return m_PendingErasesLock; }
+
+    inline void Tick( float deltaTime )
+    {
+        std::lock_guard<std::mutex> lock( m_PendingErasesLock );
+        while ( m_PendingErases.size( ) > 0 )
+        {
+            auto& front = m_PendingErases.front( );
+
+            if ( front.second-- > 0 )
+            {
+                DeleteBuffer( front.first );
+                m_PendingErases.pop_front( );
+            }
+        }
+    }
+
 
     friend class MainApplication;
 };

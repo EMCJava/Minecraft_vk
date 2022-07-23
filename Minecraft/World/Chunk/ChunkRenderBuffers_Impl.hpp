@@ -55,6 +55,15 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
             }
         }
 
+        auto firstGap = MaxMemoryAllocation;
+        if ( !bufferChunk.m_DataSlots.empty( ) ) firstGap = bufferChunk.m_DataSlots.front( ).GetStartingPoint( );
+        if ( firstGap >= requitedSize )
+        {
+            suitableAllocations.push_back( SuitableAllocation {
+                &bufferChunk, {0, firstGap, 0}
+            } );
+        }
+
         auto lastGap = MaxMemoryAllocation;
         if ( !bufferChunk.m_DataSlots.empty( ) ) lastGap -= AlignTo<uint32_t>( bufferChunk.m_DataSlots.back( ).GetEndingPoint( ), sizeof( VertexTy ) );
         if ( lastGap >= requitedSize )
@@ -118,11 +127,16 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
     }
 }
 
+// #define ALTER_IN_PLACE
+
 ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation )::AlterBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation, uint32_t vertexDataSize, uint32_t indexDataSize )
 {
+
+#ifdef ALTER_IN_PLACE
+
     {
         std::lock_guard<std::recursive_mutex> bufferLock( buffersMutex );
-        std::lock_guard<std::mutex> indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
+        std::lock_guard<std::mutex>           indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
 
         const auto& bufferSize = allocation.region.GetTotalSize( );
 
@@ -168,6 +182,21 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
         allocation.targetChunk->m_DataSlots.erase( allocationIter );
         allocation.targetChunk->indirectCommands.erase( oldCommandIter );
     }
+
+#else
+
+    {
+        std::lock_guard<std::mutex> lock( m_PendingErasesLock );
+        std::lock_guard<std::mutex> indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
+
+        auto oldCommandIter = std::find_if( allocation.targetChunk->indirectCommands.begin( ), allocation.targetChunk->indirectCommands.end( ), [ originalFirstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocation.region.indexStartingOffset ) ]( const vk::DrawIndexedIndirectCommand& command ) { return command.firstIndex == originalFirstIndex; } );
+        assert( oldCommandIter != allocation.targetChunk->indirectCommands.end( ) );
+        allocation.targetChunk->indirectCommands.erase( oldCommandIter );
+
+        m_PendingErases.emplace_back( allocation, VulkanAPI::GetInstance( ).getSwapChainImagesCount( ) );
+    }
+
+#endif
 
     return CreateBuffer( vertexDataSize, indexDataSize );
 }
@@ -225,6 +254,18 @@ ClassName( void )::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation
     submitInfo.setCommandBuffers( commandBuffer );
     transferQueue.submit( submitInfo, nullptr );
     transferQueue.waitIdle( );
+}
+
+ClassName( void )::DeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation )
+{
+
+    std::lock_guard<std::recursive_mutex> bufferLock( buffersMutex );
+    Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Deleting buffer", allocation );
+
+    auto allocationIter = std::find( allocation.targetChunk->m_DataSlots.begin( ), allocation.targetChunk->m_DataSlots.end( ), allocation.region );
+    assert( allocationIter != allocation.targetChunk->m_DataSlots.end( ) );
+
+    allocation.targetChunk->m_DataSlots.erase( allocationIter );
 }
 
 ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
