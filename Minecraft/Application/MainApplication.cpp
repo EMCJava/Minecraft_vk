@@ -369,6 +369,9 @@ MainApplication::renderThread( const std::stop_token& st )
          * */
         m_MinecraftInstance->Tick( m_imgui_io->DeltaTime );
 
+        // just to delete outdated buffer
+        MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetRenderBuffer( ).Tick( 0 );
+
         /*
          *
          * Reset delta input
