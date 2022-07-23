@@ -96,12 +96,13 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                     }
                 }
             }
-            m_ChunkRenderBuffers.UpdateAllIndirectDrawBuffers( );
         } else
         {
             // std::this_thread::yield();
             std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
         }
+
+        m_ChunkRenderBuffers.UpdateAllIndirectDrawBuffers( );
     }
 
     while ( !m_RunningThreads.empty( ) )
