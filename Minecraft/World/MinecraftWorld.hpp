@@ -65,11 +65,10 @@ public:
      * Access tools
      *
      * */
-    Chunk*      GetCompleteChunk( const ChunkCoordinate& chunkCoordinate );
+    ChunkCache* GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate );
     ChunkCache* GetChunkCache( const ChunkCoordinate& chunkCoordinate );
-    Chunk*      GetChunk( const ChunkCoordinate& chunkCoordinate );
     Block*      GetBlock( const BlockCoordinate& blockCoordinate );
-    void        SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
+    bool        SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
     void ResetChunkCache( );
 

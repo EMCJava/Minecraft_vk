@@ -80,41 +80,29 @@ MinecraftWorld::CleanChunk( )
     m_ChunkPool->Clean( );
 }
 
-Chunk*
-MinecraftWorld::GetChunk( const ChunkCoordinate& chunkCoordinate )
-{
-    if ( const auto& chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr )
-    {
-        return &chunkCache->chunk;
-    }
-
-    return nullptr;
-}
-
 Block*
 MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
 {
     if ( GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
 
-    if ( auto* chunk = GetCompleteChunk( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
-                                                                  0,
-                                                                  ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
-         chunk != nullptr )
+    if ( auto* chunkCache = GetCompleteChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+                                                                            0,
+                                                                            ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+         chunkCache != nullptr )
     {
-        return chunk->GetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
-                                                         GetMinecraftY( blockCoordinate ),
-                                                         GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ) );
+        return chunkCache->GetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
+                                                              GetMinecraftY( blockCoordinate ),
+                                                              GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ) );
     }
 
     return nullptr;
 }
-
-Chunk*
-MinecraftWorld::GetCompleteChunk( const ChunkCoordinate& chunkCoordinate )
+ChunkCache*
+MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
-    if ( const auto& chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized )
+    if ( auto* chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized )
     {
-        return &chunkCache->chunk;
+        return chunkCache;
     }
 
     return nullptr;
@@ -144,19 +132,25 @@ MinecraftWorld::ResetChunkCache( )
     }
 }
 
-void
+bool
 MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 {
-    if ( GetMinecraftY( blockCoordinate ) < 0 ) return;
+    if ( GetMinecraftY( blockCoordinate ) < 0 ) return false;
 
     if ( auto* chunkCache = GetChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
                                                                     0,
                                                                     ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
          chunkCache != nullptr && chunkCache->initialized )
     {
-        if ( chunkCache->chunk.SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
-                                                                  GetMinecraftY( blockCoordinate ),
-                                                                  GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ),
-                                         block ) ) chunkCache->ResetModel( m_ChunkPool->GetRenderBuffer( ) );
+        if ( chunkCache->SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
+                                                            GetMinecraftY( blockCoordinate ),
+                                                            GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ),
+                                   block ) )
+        {
+            chunkCache->GenerateRenderBuffer( );
+            return true;
+        }
     }
+
+    return false;
 }

@@ -62,6 +62,8 @@ class MainApplication : public Singleton<MainApplication>
 
     std::unique_ptr<UBOData[]> renderUBOs;
 
+    std::unique_ptr<ChunkSolidBuffer> m_ChunkSolidBuffers;
+
     /*
      *
      * Minecraft

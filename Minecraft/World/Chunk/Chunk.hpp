@@ -21,21 +21,13 @@ class Chunk
 
     Block*   m_Blocks { };
     int32_t* m_WorldHeightMap { };
-    uint8_t* m_BlockFaces { };
-
-    int m_VisibleFacesCount = 0;
-
-    std::array<Chunk*, DirHorizontalSize> m_NearChunks { };
-    uint8_t                               m_EmptySlot = ( 1 << DirHorizontalSize ) - 1;
 
 private:
     inline void DeleteChunk( )
     {
         delete[] m_WorldHeightMap;
-        delete[] m_BlockFaces;
         delete[] m_Blocks;
         m_Blocks         = nullptr;
-        m_BlockFaces     = nullptr;
         m_WorldHeightMap = nullptr;
     }
 
@@ -44,8 +36,6 @@ private:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void RegenerateVisibleFacesAt( uint32_t index );
-    void RegenerateVisibleFaces( );
     void RegenerateChunk( );
 
 public:
@@ -76,9 +66,6 @@ public:
         return MinecraftNoise { noiseSeed };
     }
 
-    // return true if target chunk become complete
-    bool SyncChunkFromDirection( Chunk* other, Direction fromDir, bool changes = false );
-
     /*
      *
      * Access tools
@@ -88,6 +75,7 @@ public:
     [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
 
     bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
+    bool SetBlock( const uint32_t & blockIndex, const Block& block );
 
     inline void SetCoordinate( const ChunkCoordinate& coordinate )
     {

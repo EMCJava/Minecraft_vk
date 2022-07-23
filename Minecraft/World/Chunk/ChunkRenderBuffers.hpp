@@ -16,8 +16,8 @@
 
 template <typename VertexTy, typename IndexTy>
 class ChunkRenderBuffers : public Tickable
+    , public Singleton<ChunkRenderBuffers<VertexTy, IndexTy>>
 {
-    static_assert( ScaleToSecond<sizeof( VertexTy ), sizeof( IndexTy )>( sizeof( VertexTy ) ) == sizeof( IndexTy ) );
 
 public:
     struct SingleBufferRegion {
@@ -111,9 +111,7 @@ public:
     explicit ChunkRenderBuffers( )
         : allocator( VulkanAPI::GetInstance( ).getMemoryAllocator( ) )
     { }
-
     ~ChunkRenderBuffers( );
-
 
     SuitableAllocation CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize );
     void               DeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation );

@@ -30,6 +30,8 @@ MainApplication::MainApplication( )
 
     InitImgui( );
 
+    m_ChunkSolidBuffers = std::make_unique<ChunkSolidBuffer>( );
+
     m_MinecraftInstance = std::make_unique<Minecraft>( );
     m_MinecraftInstance->InitServer( );
     m_MinecraftInstance->InitTexture( "Resources/Texture" );
@@ -122,9 +124,7 @@ MainApplication::run( )
         {
             // this is ok, I guess
             // std::lock_guard renderBufferLock( chunkPool.GetRenderBufferLock( ) );
-            auto& renderBuffer = chunkPool.GetRenderBuffer( );
-
-            for ( auto& buffer : renderBuffer.m_Buffers )
+            for ( auto& buffer : m_ChunkSolidBuffers->m_Buffers )
             {
                 if ( buffer.m_DataSlots.empty( ) || !buffer.indirectDrawBuffers.GetBuffer( ) ) continue;
 
@@ -356,7 +356,7 @@ MainApplication::renderThread( const std::stop_token& st )
         if ( mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
         {
             const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
-            if ( raycastResult.hitSolid ) MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air );
+            if ( raycastResult.hitSolid && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
 
             Logger ::getInstance( ).LogLine( "Mouse button pressed" );
         }
@@ -370,7 +370,7 @@ MainApplication::renderThread( const std::stop_token& st )
         m_MinecraftInstance->Tick( m_imgui_io->DeltaTime );
 
         // just to delete outdated buffer
-        MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetRenderBuffer( ).Tick( 0 );
+        m_ChunkSolidBuffers->Tick( 0 );
 
         /*
          *

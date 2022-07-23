@@ -19,21 +19,69 @@
 
 using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType>;
 
-class ChunkCache
+class ChunkCache : public Chunk
 {
 private:
+    /*
+     *
+     * Chunk detail
+     *
+     * */
+    uint8_t* m_BlockFaces { };
+    int      m_VisibleFacesCount = 0;
+
+    std::array<ChunkCache*, DirHorizontalSize> m_NearChunks { };
+    uint8_t                                    m_EmptySlot = ( 1 << DirHorizontalSize ) - 1;
+
+    /*
+     *
+     * Render buffer
+     *
+     * */
     uint32_t                       m_IndexBufferSize { };
     std::atomic_flag m_BufferReady ATOMIC_FLAG_INIT;
 
     ChunkSolidBuffer::SuitableAllocation m_BufferAllocation;
 
-public:
-    Chunk chunk;
-    bool  initialized  = false;
-    bool  initializing = false;
+    /*
+     *
+     * Can only be used when surrounding chunk is loaded
+     *
+     * */
+    void RegenerateVisibleFacesAt( uint32_t index );
+    void RegenerateVisibleFaces( );
 
-    void ResetLoad( );
-    void ResetModel( ChunkSolidBuffer& renderBuffers );
+
+public:
+    ChunkCache( ) = default;
+    ~ChunkCache( )
+    {
+        DeleteCache( );
+    }
+
+    bool initialized  = false;
+    bool initializing = false;
+
+    void RegenerateChunk( );
+    void GenerateRenderBuffer( );
+
+    // return true if target chunk become complete
+    bool SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool changes = false );
+
+    /*
+     *
+     * Access tools
+     *
+     * */
+    bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
+
+    inline void DeleteCache( )
+    {
+        delete[] m_BlockFaces;
+        m_BlockFaces = nullptr;
+
+        m_VisibleFacesCount = 0;
+    }
 
     bool            IsBufferReady( ) const { return m_BufferReady.test( ); }
     inline uint32_t GetIndexBufferSize( ) const { return m_IndexBufferSize; }

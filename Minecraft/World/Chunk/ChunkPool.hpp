@@ -23,13 +23,10 @@ private:
     std::mutex                                       m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
 
-    std::mutex       m_RenderBufferLock;
-    ChunkSolidBuffer m_ChunkRenderBuffers;
-
     static void LoadChunk( ChunkCache* cache )
     {
         cache->initializing = true;
-        cache->ResetLoad( );
+        cache->RegenerateChunk( );
     }
 
     void UpdateThread( const std::stop_token& st );
@@ -68,7 +65,6 @@ public:
 
     void Clean( )
     {
-        m_ChunkRenderBuffers.Clean( );
         m_PendingThreads.clear( );
 
         std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), []( const auto& pair ) { delete pair.second; } );
@@ -80,7 +76,7 @@ public:
         if ( m_ChunkCache.contains( coordinate ) ) return;
 
         auto newChunk = new ChunkCache;
-        newChunk->chunk.SetCoordinate( coordinate );
+        newChunk->SetCoordinate( coordinate );
 
         AddJobContext( newChunk );
         m_ChunkCache.insert( { coordinate, newChunk } );
@@ -119,16 +115,6 @@ public:
         return m_ChunkCache.size( );
     }
 
-    inline auto& GetRenderBufferLock( )
-    {
-        return m_RenderBufferLock;
-    }
-
-    inline auto& GetRenderBuffer( )
-    {
-        return m_ChunkRenderBuffers;
-    }
-
     inline auto& GetChunkCacheLock( )
     {
         return m_ChunkCacheLock;
@@ -142,16 +128,6 @@ public:
     inline auto GetChunkIterEnd( ) const
     {
         return m_ChunkCache.end( );
-    }
-
-    [[nodiscard]] Chunk* GetChunk( const ChunkCoordinate& coordinate ) const
-    {
-        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
-        {
-            return &it->second->chunk;
-        }
-
-        return nullptr;
     }
 
     [[nodiscard]] ChunkCache* GetChunkCache( const ChunkCoordinate& coordinate ) const

@@ -5,8 +5,8 @@
 #ifndef MINECRAFT_VK_MINECRAFT_PHYSICS_RAY_RAYCAST_HPP
 #define MINECRAFT_VK_MINECRAFT_PHYSICS_RAY_RAYCAST_HPP
 
-#include <Utility/Timer.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
+#include <Utility/Timer.hpp>
 
 #define GET_STEP( X ) ( X ) > 0 ? 1 : ( ( X ) == 0 ? 0 : -1 )
 
@@ -28,11 +28,15 @@ struct RaycastResult {
     EntityCoordinate fluidHitPoint { };
 };
 
-class Raycast
+template <bool LogPath = false>
+class RaycastTemp
 {
 
-    struct RaycastPathLogger {
+    template <bool _LogPath = false>
+    struct RaycastPathLogger { };
 
+    template <>
+    struct RaycastPathLogger<true> {
         std::vector<BlockCoordinate> path;
 
         void AddCoordinate( const BlockCoordinate& coordinate )
@@ -51,20 +55,20 @@ class Raycast
         }
     };
 
-public:
 
+public:
     template <typename Ty>
     static inline RaycastResult CastRay( MinecraftWorld& world, const EntityCoordinate& startingPosition, const Ray<Ty>& ray )
     {
-        static constexpr Ty maxStep = 10000000;
-        // RaycastPathLogger   pathLog;
+        static constexpr Ty        maxStep = 10000000;
+        RaycastPathLogger<LogPath> pathLog;
 
         // Timer timer;
 
         BlockCoordinate currentCoordinate = { std::floor( std::get<0>( startingPosition ) ), std::floor( std::get<1>( startingPosition ) ), std::floor( std::get<2>( startingPosition ) ) };
         CoordinateType  stepX = GET_STEP( ray.x ), stepY = GET_STEP( ray.y ), stepZ = GET_STEP( ray.z );
         // CoordinateType  justOutX = stepX + ray.x + GetMinecraftX( startingPosition ), justOutY = stepY + ray.y + GetMinecraftY( startingPosition ), justOutZ = stepZ + ray.z + GetMinecraftZ( startingPosition );
-        Ty              tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
+        Ty tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
 
         /*
          *
@@ -115,7 +119,7 @@ public:
         Block* blockPtr;
         while ( true )
         {
-            // pathLog.AddCoordinate( currentCoordinate );
+            if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );
 
             blockPtr = world.GetBlock( currentCoordinate );
             if ( blockPtr != nullptr && !blockPtr->Transparent( ) ) break;
@@ -158,6 +162,8 @@ public:
         return { true, currentCoordinate };
     }
 };
+
+using Raycast = RaycastTemp<>;
 
 }   // namespace Physics
 
