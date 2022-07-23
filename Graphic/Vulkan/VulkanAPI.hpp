@@ -27,20 +27,26 @@ namespace DataType
 
 struct TexturedVertex : VertexDetail {
     glm::ivec3 pos;
-    glm::vec2  textureCoor;
+    glm::vec3  textureCoor_ColorIntensity;
 
 
-    TexturedVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec2 c = glm::vec2( 0 ) )
+    constexpr TexturedVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec2 c = glm::vec2( 0 ), float i = 1.0f )
         : pos( p )
-        , textureCoor( c )
+        , textureCoor_ColorIntensity( c.x, c.y, i )
     { }
 
     TexturedVertex& operator=( const TexturedVertex& other )
     {
-        pos         = other.pos;
-        textureCoor = other.textureCoor;
+        pos                        = other.pos;
+        textureCoor_ColorIntensity = other.textureCoor_ColorIntensity;
 
         return *this;
+    }
+
+    inline void SetTextureCoor( glm::vec2 c )
+    {
+        textureCoor_ColorIntensity.x = c.x;
+        textureCoor_ColorIntensity.y = c.y;
     }
 
     static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
@@ -54,8 +60,8 @@ struct TexturedVertex : VertexDetail {
 
         attributeDescriptions[ 1 ].setBinding( 0 );
         attributeDescriptions[ 1 ].setLocation( 1 );
-        attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32Sfloat );
-        attributeDescriptions[ 1 ].setOffset( offsetof( TexturedVertex, textureCoor ) );
+        attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32B32Sfloat );
+        attributeDescriptions[ 1 ].setOffset( offsetof( TexturedVertex, textureCoor_ColorIntensity ) );
 
         return attributeDescriptions;
     }
@@ -228,12 +234,12 @@ public:
          * Sync in renderer
          *
          * */
-        for ( int i = 0;i < m_vkRender_fence_syncs.size(); ++i )
+        for ( int i = 0; i < m_vkRender_fence_syncs.size( ); ++i )
         {
-            auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[i].get( ), true, std::numeric_limits<uint64_t>::max( ) );
-            m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[i].get( ) );
-            m_vkRender_fence_syncs[i] = m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } );
-            m_vkSwap_chain_image_fence_syncs[i] = nullptr;
+            auto wait_fence_result = m_vkLogicalDevice->waitForFences( m_vkRender_fence_syncs[ i ].get( ), true, std::numeric_limits<uint64_t>::max( ) );
+            m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[ i ].get( ) );
+            m_vkRender_fence_syncs[ i ]           = m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } );
+            m_vkSwap_chain_image_fence_syncs[ i ] = nullptr;
             assert( wait_fence_result == vk::Result::eSuccess );
         }
     }

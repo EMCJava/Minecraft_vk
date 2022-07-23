@@ -22,44 +22,68 @@ namespace
 //  |  B-|--D
 //  A----C
 
+
+constexpr glm::vec3 sun_dir { 1, 1, 2 };
+
+auto
+CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> vertices )
+{
+    const glm::vec3 edge1  = vertices[ 1 ].pos - vertices[ 0 ].pos;
+    const glm::vec3 edge2  = vertices[ 3 ].pos - vertices[ 0 ].pos;
+    const glm::vec3 normal = glm::normalize( glm::cross( edge1, edge2 ) );
+
+    const auto cosTheta = std::clamp( glm::dot( glm::normalize( sun_dir ), normal ), 0.1f, 1.f );
+
+    for ( auto& vertex : vertices )
+        vertex.textureCoor_ColorIntensity.z = cosTheta * vertex.textureCoor_ColorIntensity.z;
+
+    return vertices;
+}
+
 inline const BlockTexture::TextureLocation defaultBlockVertices {
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                             DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 0.0f, 0.f } }, // D
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
+                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 0.0f, 0.f } }, // D
  DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 1.0f, 0.f } }, // B
  DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 1.0f, 1.f } }, // F
  DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 0.0f, 1.f } },  // H
-    },
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                             DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 0.0f, 0.f } }, // A
+    }
+       ),
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
+                                                                              DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 0.0f, 0.f } }, // A
  DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 1.0f, 0.f } }, // C
  DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 1.0f, 1.f } },      // G
       DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 0.0f, 1.f } },  // E
-    },
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                             DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 0.f, 0.f } },  // C
+    }
+       ),
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
+                                                                              DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 0.f, 0.f } },  // C
   DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 1.f, 0.f } },  // D
   DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 1.f, 1.f } },      // H
       DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 0.f, 1.f } },  // G
-    },
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                             DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 0.f, 0.f } },  // B
+    }
+       ),
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
+                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 0.f, 0.f } },  // B
   DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 1.f, 0.f } },  // A
   DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 1.f, 1.f } },      // E
       DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 0.f, 1.f } },  // F
-    },
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                             DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 0.f, 0.f } },   // E
+    }
+       ),
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
+                                                                              DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 0.f, 0.f } },   // E
    DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 1.f, 0.f } },  // G
   DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 1.f, 1.f } },      // H
       DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 0.f, 1.f } }, // F
-    },
-    std::array<DataType::TexturedVertex, FaceVerticesCount> {
+    }
+       ),
+    CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
 
-                                                             DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 1.f, 0.f } },  // B
+                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 1.f, 0.f } },  // B
   DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 0.f, 0.f } }, // D
  DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 0.f, 1.f } },      // C
       DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 1.f, 1.f } }, // A
     }
+       )
 };
 
 }   // namespace
@@ -148,10 +172,10 @@ BlockTexture::BlockTexture( const std::string& folder )
             glm::vec2 offset { textureResolution * x, textureResolution * y };
 
             static_assert( FaceVerticesCount == 4 );
-            m_BlockTextures[ i ][ j ][ 0 ].textureCoor = offset;
-            m_BlockTextures[ i ][ j ][ 1 ].textureCoor = offset + glm::vec2 { textureResolution, 0 };
-            m_BlockTextures[ i ][ j ][ 2 ].textureCoor = offset + glm::vec2 { textureResolution, textureResolution };
-            m_BlockTextures[ i ][ j ][ 3 ].textureCoor = offset + glm::vec2 { 0, textureResolution };
+            m_BlockTextures[ i ][ j ][ 0 ].SetTextureCoor( offset );
+            m_BlockTextures[ i ][ j ][ 1 ].SetTextureCoor( offset + glm::vec2 { textureResolution, 0 } );
+            m_BlockTextures[ i ][ j ][ 2 ].SetTextureCoor( offset + glm::vec2 { textureResolution, textureResolution } );
+            m_BlockTextures[ i ][ j ][ 3 ].SetTextureCoor( offset + glm::vec2 { 0, textureResolution } );
 
             //            m_BlockTextures[ i ][ j ][ 0 ].textureCoor = {0, 0};
             //            m_BlockTextures[ i ][ j ][ 1 ].textureCoor = {1, 0};
