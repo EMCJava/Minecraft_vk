@@ -65,7 +65,11 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             {
                 std::lock_guard cacheModifyLocker( m_ChunkCacheLock );
                 for ( auto it = lastIt; it != m_PendingThreads.end( ); ++it )
-                    m_ChunkCache.erase( ( *it )->GetCoordinate( ) );
+                {
+                    auto chunkIter = m_ChunkCache.find( ( *it )->GetCoordinate( ) );
+                    delete chunkIter->second;
+                    m_ChunkCache.erase( chunkIter );
+                }
                 m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
             }
         }
