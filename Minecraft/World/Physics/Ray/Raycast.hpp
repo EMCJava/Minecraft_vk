@@ -19,11 +19,12 @@ struct Ray {
 
 struct RaycastResult {
 
-    bool             hitSolid = false;
+    bool             hasSolidHit = false;
     BlockCoordinate  solidHit { };
+    BlockCoordinate  beforeSolidHit { };
     EntityCoordinate solidHitPoint { };
 
-    bool             hitFluid = false;
+    bool             hasFluidHit = false;
     BlockCoordinate  fluidHit { };
     EntityCoordinate fluidHitPoint { };
 };
@@ -62,10 +63,11 @@ public:
     {
         static constexpr Ty        maxStep = 10000000;
         RaycastPathLogger<LogPath> pathLog;
+        RaycastResult              result;
 
         // Timer timer;
 
-        BlockCoordinate currentCoordinate = { std::floor( std::get<0>( startingPosition ) ), std::floor( std::get<1>( startingPosition ) ), std::floor( std::get<2>( startingPosition ) ) };
+        BlockCoordinate currentCoordinate = result.beforeSolidHit = { std::floor( std::get<0>( startingPosition ) ), std::floor( std::get<1>( startingPosition ) ), std::floor( std::get<2>( startingPosition ) ) };
         CoordinateType  stepX = GET_STEP( ray.x ), stepY = GET_STEP( ray.y ), stepZ = GET_STEP( ray.z );
         // CoordinateType  justOutX = stepX + ray.x + GetMinecraftX( startingPosition ), justOutY = stepY + ray.y + GetMinecraftY( startingPosition ), justOutZ = stepZ + ray.z + GetMinecraftZ( startingPosition );
         Ty tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
@@ -117,12 +119,13 @@ public:
             tMaxZ = tDeltaZ * ( GetMinecraftZ( std::as_const( startingPosition ) ) - std::floor( GetMinecraftZ( std::as_const( startingPosition ) ) ) );
 
         Block* blockPtr;
-        while ( true )
+        while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
         {
             if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );
 
             blockPtr = world.GetBlock( currentCoordinate );
             if ( blockPtr != nullptr && !blockPtr->Transparent( ) ) break;
+            result.beforeSolidHit = currentCoordinate;
 
             if ( tMaxX < tMaxY )
             {
@@ -156,10 +159,13 @@ public:
                 }
             }
 
-            if ( tMaxX > 1 && tMaxY > 1 && tMaxZ > 1 ) return { }; /* outside grid */
+            if ( tMaxX > 1 && tMaxY > 1 && tMaxZ > 1 ) return result; /* outside grid */
         }
 
-        return { true, currentCoordinate };
+        result.hasSolidHit = true;
+        result.solidHit    = currentCoordinate;
+
+        return result;
     }
 };
 

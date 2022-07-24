@@ -110,7 +110,7 @@ MainApplication::run( )
 
         const auto& playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
         const auto& blockLookingAt      = playerRaycastResult.solidHit;
-        if ( playerRaycastResult.hitSolid )
+        if ( playerRaycastResult.hasSolidHit )
             renderUBOs[ index ].ubo.highlightCoordinate = { GetMinecraftX( blockLookingAt ), GetMinecraftY( blockLookingAt ), GetMinecraftZ( blockLookingAt ) };
         else
             renderUBOs[ index ].ubo.highlightCoordinate = { -1, -1, -1 };
@@ -356,11 +356,24 @@ MainApplication::renderThread( const std::stop_token& st )
         if ( mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
         {
             const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
-            if ( raycastResult.hitSolid && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+            if ( raycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
 
-            Logger ::getInstance( ).LogLine( "Mouse button pressed" );
+            Logger ::getInstance( ).LogLine( "Mouse left button pressed" );
         }
+
         oldMouseLeftState = mouseLeftState;
+
+        static int oldMouseRightState = GLFW_RELEASE;
+        int        mouseRightState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_RIGHT );
+        if ( mouseRightState == GLFW_PRESS && oldMouseRightState == GLFW_RELEASE )
+        {
+            const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
+            if ( raycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.beforeSolidHit, BlockID::Stone ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+
+            Logger ::getInstance( ).LogLine( "Mouse right button pressed" );
+        }
+
+        oldMouseRightState = mouseRightState;
 
         /*
          *
