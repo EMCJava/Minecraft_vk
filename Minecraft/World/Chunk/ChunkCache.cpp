@@ -305,7 +305,7 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
             m_VisibleFacesCount += faceDiff - originalFaceCount;
         } else
         {
-            m_VisibleFacesCount -= faceDiff + newFaceCount;
+            m_VisibleFacesCount += newFaceCount - faceDiff;
         }
 
 #ifndef NDEBUG
