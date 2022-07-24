@@ -239,7 +239,6 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
                 m_NearChunks[ DirRight ]->m_BlockFaces[ blockIndex + dirRightChunkFaceOffset ] ^= DirLeftBit;
                 m_NearChunks[ DirRight ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirRight ]->SyncChunkFromDirection( this, DirLeft, true );
-                Logger::getInstance().LogLine("DirRight");
             }
         }
 
@@ -258,7 +257,6 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
                 m_NearChunks[ DirLeft ]->m_BlockFaces[ blockIndex + dirLeftChunkFaceOffset ] ^= DirRightBit;
                 m_NearChunks[ DirLeft ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirLeft ]->SyncChunkFromDirection( this, DirRight, true );
-                Logger::getInstance().LogLine("DirLeft");
             }
         }
 
@@ -277,7 +275,6 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
                 m_NearChunks[ DirFront ]->m_BlockFaces[ blockIndex + dirFrontChunkFaceOffset ] ^= DirBackBit;
                 m_NearChunks[ DirFront ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirFront ]->SyncChunkFromDirection( this, DirBack, true );
-                Logger::getInstance().LogLine("DirFront");
             }
         }
 
@@ -296,7 +293,6 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
                 m_NearChunks[ DirBack ]->m_BlockFaces[ blockIndex + dirBackChunkFaceOffset ] ^= DirFrontBit;
                 m_NearChunks[ DirBack ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirBack ]->SyncChunkFromDirection( this, DirFront, true );
-                Logger::getInstance().LogLine("DirBack");
             }
         }
 
@@ -314,7 +310,6 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
         for ( int i = 0; i < ChunkVolume; ++i )
             checkingFaceCount += std::popcount( m_BlockFaces[ i ] );
         assert( m_VisibleFacesCount == checkingFaceCount );
-
 #endif
     }
 
