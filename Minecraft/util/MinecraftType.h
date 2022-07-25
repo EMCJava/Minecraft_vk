@@ -76,7 +76,7 @@ MakeCoordinate( auto x, auto y, auto z )
     return { x, y, z };
 }
 
-inline BlockCoordinate
+constexpr inline BlockCoordinate
 ToCartesianCoordinate( BlockCoordinate&& coor )
 {
     if constexpr ( MinecraftCoordinateXIndex != 0 )
@@ -108,7 +108,7 @@ ToCartesianCoordinate( BlockCoordinate&& coor )
     return coor;
 }
 
-inline BlockCoordinate
+constexpr inline BlockCoordinate
 ToMinecraftCoordinate( BlockCoordinate&& coor )
 {
     if constexpr ( MinecraftCoordinateXIndex != 0 )
