@@ -58,6 +58,20 @@ MinecraftWorld::Tick( float deltaTime )
         auto chunkCoordinate      = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
         get<2>( chunkCoordinate ) = 0;
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
+
+        if ( m_ChunkPool->IsChunkErased( ) ) // reload cache
+        {
+            std::lock_guard<std::mutex> lock( m_ChunkPool->GetChunkCacheLock( ) );
+            const auto                  firstCache = *m_ChunkPool->GetChunkIterBegin( );
+
+            for ( uint32_t i = 0; i < ChunkAccessCacheSize; ++i )
+                if ( m_ChunkPool->GetChunkCache( m_ChunkAccessCache[ i ].coordinates ) == nullptr )
+                {
+                    m_ChunkAccessCache[ i ].coordinates = firstCache.first;
+                    m_ChunkAccessCache[ i ].chunkCache  = firstCache.second;
+                }
+        }
+
         m_TimeSinceChunkLoad = 0;
     }
 }

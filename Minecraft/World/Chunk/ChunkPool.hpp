@@ -23,6 +23,8 @@ private:
     std::mutex                                       m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
 
+    std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
+
     static void LoadChunk( ChunkCache* cache )
     {
         cache->initializing = true;
@@ -78,8 +80,8 @@ public:
         auto newChunk = new ChunkCache;
         newChunk->SetCoordinate( coordinate );
 
-        AddJobContext( newChunk );
         m_ChunkCache.insert( { coordinate, newChunk } );
+        AddJobContext( newChunk );
     }
 
     bool IsChunkLoading( const BlockCoordinate& coordinate ) const
@@ -128,6 +130,13 @@ public:
     inline auto GetChunkIterEnd( ) const
     {
         return m_ChunkCache.end( );
+    }
+
+    inline bool IsChunkErased( )
+    {
+        bool result = m_ChunkErased.test( );
+        m_ChunkErased.clear( );
+        return result;
     }
 
     [[nodiscard]] ChunkCache* GetChunkCache( const ChunkCoordinate& coordinate ) const

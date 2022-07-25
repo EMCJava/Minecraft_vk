@@ -115,6 +115,7 @@ public:
 
     SuitableAllocation CreateBuffer( uint32_t vertexDataSize, uint32_t indexDataSize );
     void               DeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation );
+    void               DelayedDeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation );
     SuitableAllocation AlterBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation, uint32_t vertexDataSize, uint32_t indexDataSize );
     void               CopyBuffer( SuitableAllocation allocation, void* vertexBuffer, void* indexBuffer );
 

@@ -384,6 +384,7 @@ MainApplication::renderThread( const std::stop_token& st )
 
         // just to delete outdated buffer
         m_ChunkSolidBuffers->Tick( 0 );
+        m_ChunkSolidBuffers->UpdateAllIndirectDrawBuffers( );
 
         /*
          *

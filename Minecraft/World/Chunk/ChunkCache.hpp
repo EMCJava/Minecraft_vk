@@ -57,6 +57,14 @@ public:
     ~ChunkCache( )
     {
         DeleteCache( );
+
+        if ( m_BufferAllocation.targetChunk != nullptr )
+        {
+            ChunkSolidBuffer::GetInstance( ).DelayedDeleteBuffer( m_BufferAllocation );
+        }
+
+        for ( int i = 0; i < DirHorizontalSize; ++i )
+            if ( m_NearChunks[ i ] != nullptr ) m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<Direction>( i ^ 0b1 ) );
     }
 
     bool initialized  = false;
@@ -66,7 +74,8 @@ public:
     void GenerateRenderBuffer( );
 
     // return true if target chunk become complete
-    bool SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool changes = false );
+    std::recursive_mutex m_SyncMutex { };
+    bool                 SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool changes = false );
 
     /*
      *

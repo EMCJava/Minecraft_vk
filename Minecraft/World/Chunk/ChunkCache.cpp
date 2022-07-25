@@ -38,6 +38,8 @@ ChunkCache::RegenerateChunk( )
 void
 ChunkCache::RegenerateVisibleFaces( )
 {
+    std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
+
     for ( int i = 0; i < ChunkVolume; ++i )
         RegenerateVisibleFacesAt( i );
 
@@ -319,19 +321,24 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
 bool
 ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool changes )
 {
+    std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
     if ( m_EmptySlot == 0 )
     {
-        if ( m_NearChunks[ fromDir ] == nullptr )
+        if ( !( m_NearChunks[ fromDir ] = other ) )
         {
-            m_NearChunks[ fromDir ] = other;
-        } else if ( changes )
+            Logger ::getInstance( ).LogLine( GetCoordinate( ), "are now incomplete chunks" );
+            m_EmptySlot |= 1 << fromDir;
+
+        } else if ( changes )   // not necessarily, but performance tho
         {
             GenerateRenderBuffer( );
         }
     } else
     {
-        m_NearChunks[ fromDir ] = other;
-        m_EmptySlot &= ~( 1 << fromDir );
+        if ( ( m_NearChunks[ fromDir ] = other ) )
+            m_EmptySlot &= ~( 1 << fromDir );
+        else
+            m_EmptySlot |= ( 1 << fromDir );
 
         if ( m_EmptySlot == 0 )
         {
@@ -340,4 +347,6 @@ ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool c
             return true;
         }
     }
+
+    return false;
 }

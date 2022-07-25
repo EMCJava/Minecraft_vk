@@ -185,16 +185,7 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
 
 #else
 
-    {
-        std::lock_guard<std::mutex> lock( m_PendingErasesLock );
-        std::lock_guard<std::mutex> indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
-
-        auto oldCommandIter = std::find_if( allocation.targetChunk->indirectCommands.begin( ), allocation.targetChunk->indirectCommands.end( ), [ originalFirstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocation.region.indexStartingOffset ) ]( const vk::DrawIndexedIndirectCommand& command ) { return command.firstIndex == originalFirstIndex; } );
-        assert( oldCommandIter != allocation.targetChunk->indirectCommands.end( ) );
-        allocation.targetChunk->indirectCommands.erase( oldCommandIter );
-
-        m_PendingErases.emplace_back( allocation, VulkanAPI::GetInstance( ).getSwapChainImagesCount( ) );
-    }
+    DelayedDeleteBuffer( allocation );
 
 #endif
 
@@ -268,9 +259,23 @@ ClassName( void )::DeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& a
     allocation.targetChunk->m_DataSlots.erase( allocationIter );
 }
 
+ClassName( void )::DelayedDeleteBuffer( const ChunkRenderBuffers::SuitableAllocation& allocation )
+{
+    std::lock_guard<std::mutex> lock( m_PendingErasesLock );
+    std::lock_guard<std::mutex> indirectLock( allocation.targetChunk->indirectDrawBuffersMutex );
+
+    auto oldCommandIter = std::find_if( allocation.targetChunk->indirectCommands.begin( ), allocation.targetChunk->indirectCommands.end( ), [ originalFirstIndex = ScaleToSecond<sizeof( IndexTy ), 1>( allocation.region.indexStartingOffset ) ]( const vk::DrawIndexedIndirectCommand& command ) { return command.firstIndex == originalFirstIndex; } );
+    assert( oldCommandIter != allocation.targetChunk->indirectCommands.end( ) );
+    allocation.targetChunk->indirectCommands.erase( oldCommandIter );
+    allocation.targetChunk->shouldUpdateIndirectDrawBuffers = true;
+
+    m_PendingErases.emplace_back( allocation, VulkanAPI::GetInstance( ).getSwapChainImagesCount( ) );
+}
+
 ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
 {
     if ( !shouldUpdateIndirectDrawBuffers ) return;
+    shouldUpdateIndirectDrawBuffers = false;
 
     std::lock_guard<std::mutex> lock( indirectDrawBuffersMutex );
     const auto                  newIndirectDrawBufferSize = indirectCommands.size( ) * sizeof( indirectCommands[ 0 ] );

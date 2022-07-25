@@ -53,25 +53,29 @@ ChunkPool::UpdateThread( const std::stop_token& st )
     {
         if ( m_RemoveJobAfterRange > 0 )
         {
-            std::lock_guard<std::mutex> guard( m_PendingThreadsMutex );
+            std::lock_guard<std::mutex> cacheModifyLocker( m_ChunkCacheLock );
+            std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const std::pair<BlockCoordinate, ChunkCache*>& cache ) {
+                if ( cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
+                {
+                    Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "Erasing chunk outside range", cache.first );
+                    delete cache.second;
+                }
+            } );
 
-            const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) < range; } );
+            if ( std::erase_if( m_ChunkCache, [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ); } ) > 0 )
+            {
+                m_ChunkErased.test_and_set( );
+            }
+
+            std::lock_guard<std::mutex> guard( m_PendingThreadsMutex );
+            const auto                  lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
+                                                                 [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
 
             const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
 
             // elements outside the range
             if ( amountToRemove > 0 )
-            {
-                std::lock_guard cacheModifyLocker( m_ChunkCacheLock );
-                for ( auto it = lastIt; it != m_PendingThreads.end( ); ++it )
-                {
-                    auto chunkIter = m_ChunkCache.find( ( *it )->GetCoordinate( ) );
-                    delete chunkIter->second;
-                    m_ChunkCache.erase( chunkIter );
-                }
                 m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
-            }
         }
 
         auto finished = UpdateSorted( &ChunkPool::LoadChunk,
@@ -105,8 +109,6 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             // std::this_thread::yield();
             std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
         }
-
-        ChunkSolidBuffer::GetInstance( ).UpdateAllIndirectDrawBuffers( );
     }
 
     while ( !m_RunningThreads.empty( ) )
