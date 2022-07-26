@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_STRUCTURE_HPP
 #define MINECRAFT_VK_STRUCTURE_HPP
 
+#include <Minecraft/util/MinecraftType.h>
+
 class Structure
 {
 

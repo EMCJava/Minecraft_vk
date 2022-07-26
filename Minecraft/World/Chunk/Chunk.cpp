@@ -3,7 +3,7 @@
 //
 
 #include "Chunk.hpp"
-#include "Structure/StructureTree.hpp"
+#include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 

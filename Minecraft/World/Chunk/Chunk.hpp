@@ -7,11 +7,11 @@
 
 #include <Minecraft/Block/Block.hpp>
 #include <Minecraft/World/Generation/MinecraftNoise.hpp>
+#include <Minecraft/World/Generation/Structure/Structure.hpp>
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 
 #include "ChunkStatus.hpp"
-#include "Structure/Structure.hpp"
 
 #include <array>
 #include <cmath>
@@ -74,7 +74,6 @@ public:
      * */
     void FillTerrain( const MinecraftNoise& generator );
     void FillBedRock( const MinecraftNoise& generator );
-    void FillTree( const MinecraftNoise& generator );
 
     [[nodiscard]] inline auto GetChunkNoise( const MinecraftNoise& terrainGenerator ) const
     {

@@ -4,7 +4,7 @@
 
 #include "StructureTree.hpp"
 
-#include <Minecraft/World/Chunk/Chunk.hpp>
+#include "Minecraft/World/Chunk/Chunk.hpp"
 
 void
 StructureTree::Generate( Chunk& chunk )
