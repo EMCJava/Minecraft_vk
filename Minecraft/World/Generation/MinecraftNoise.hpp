@@ -46,9 +46,16 @@ public:
         , Noise::FastNoiseLite( GetIntSeed( ) )
     { }
 
+    MinecraftNoise( const MinecraftNoise& other )
+        : m_Seed { .seed = other.m_Seed.seed }
+        , FastNoiseLite( GetIntSeed( ) )
+    {
+    }
+
     MinecraftNoise& operator=( const MinecraftNoise& other )
     {
         m_Seed.seed = other.m_Seed.seed;
+        Noise::FastNoiseLite::SetSeed( GetIntSeed( ) );
         return *this;
     }
 
