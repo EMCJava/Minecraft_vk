@@ -80,6 +80,7 @@ public:
         auto newChunk = new ChunkCache;
         newChunk->SetCoordinate( coordinate );
 
+        std::lock_guard lock( m_ChunkCacheLock );
         m_ChunkCache.insert( { coordinate, newChunk } );
         AddJobContext( newChunk );
     }

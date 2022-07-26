@@ -3,6 +3,7 @@
 //
 
 #include "Chunk.hpp"
+#include "Structure/StructureTree.hpp"
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
@@ -20,9 +21,7 @@ Chunk::RegenerateChunk( )
 
     m_Blocks = new Block[ ChunkVolume ];
 
-    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
-    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
-    FillTree( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+    UpgradeChunk( eFull );
 
     // Grass
     int  horizontalMapIndex = 0;
@@ -50,9 +49,9 @@ Chunk::RegenerateChunk( )
         blocksPtr += SectionSurfaceSize;
     }
 
-//        if ( ManhattanDistance( { 0, 0, 0 } ) != 0 )
-//            for ( int i = 0; i < ChunkVolume; ++i )
-//                m_Blocks[ i ] = BlockID::Air;
+    //        if ( ManhattanDistance( { 0, 0, 0 } ) != 0 )
+    //            for ( int i = 0; i < ChunkVolume; ++i )
+    //                m_Blocks[ i ] = BlockID::Air;
 }
 
 void
@@ -129,26 +128,6 @@ Chunk::GetBlock( const BlockCoordinate& blockCoordinate )
     return &m_Blocks[ blockIndex ];
 }
 
-void
-Chunk::FillTree( const MinecraftNoise& generator )
-{
-    MinecraftNoise chunkNoise = GetChunkNoise( generator );
-
-    for ( int horizontalMapIndex = 0; horizontalMapIndex < SectionUnitLength; ++horizontalMapIndex )
-    {
-        if ( chunkNoise.NextUint64( ) % 80 == 0 )
-        {
-
-            auto heightAtPoint = m_WorldHeightMap[ horizontalMapIndex ] + 1;
-            auto treeHeight    = std::min( ChunkMaxHeight - heightAtPoint, 7 );
-            for ( int i = 0; i < treeHeight; ++i )
-            {
-                m_Blocks[ horizontalMapIndex + ScaleToSecond<1, SectionSurfaceSize>( heightAtPoint + i ) ] = BlockID::AcaciaLog;
-            }
-        }
-    }
-}
-
 bool
 Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 {
@@ -161,10 +140,87 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
 {
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
 
-    Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
+    // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
 
     if ( m_Blocks[ blockIndex ] == block ) return false;
 
+    // update height map
+    if ( !block.Transparent( ) )
+    {
+        auto& originalHeight = m_WorldHeightMap[ blockIndex & SectionSurfaceSize ];
+        if ( originalHeight > ( blockIndex >> SectionSurfaceSizeBinaryOffset ) )
+            originalHeight = blockIndex >> SectionSurfaceSizeBinaryOffset;
+    }
+
     m_Blocks[ blockIndex ] = block;
     return true;
+}
+
+void
+Chunk::UpgradeChunk( ChunkStatus targetStatus )
+{
+    assert( targetStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( targetStatus <= m_Status ) return;
+
+    for ( ++m_Status; m_Status <= targetStatus; ++m_Status )
+    {
+        switch ( m_Status )
+        {
+        // case eEmpty: break; // just no
+        case eStructureStart: RunStructureStart( ); break;
+        case eStructureReference: RunStructureReference( ); break;
+        case eNoise: RunNoise( ); break;
+        case eFeature: RunFeature( ); break;
+        }
+    }
+}
+
+void
+Chunk::RunStructureStart( )
+{
+    StructureTree::TryGenerate( *this, m_StructureStarts );
+}
+
+void
+Chunk::RunStructureReference( )
+{
+}
+
+void
+Chunk::RunNoise( )
+{
+    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+}
+
+void
+Chunk::RunFeature( )
+{
+    for ( auto& ss : m_StructureStarts )
+    {
+        ss->Generate( *this );
+    }
+
+    for ( auto& ss : m_StructureReferences )
+    {
+        ss.lock( )->Generate( *this );
+    }
+}
+
+CoordinateType
+Chunk::GetHeight( uint32_t index )
+{
+    return m_WorldHeightMap[ index ];
+}
+
+void
+Chunk::SetCoordinate( const ChunkCoordinate& coordinate )
+{
+    m_WorldCoordinate = m_Coordinate = coordinate;
+    GetMinecraftX( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
+    GetMinecraftZ( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
+
+    m_ChunkNoise = GetChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
 }

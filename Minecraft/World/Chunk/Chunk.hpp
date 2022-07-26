@@ -10,8 +10,12 @@
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 
+#include "ChunkStatus.hpp"
+#include "Structure/Structure.hpp"
+
 #include <array>
 #include <cmath>
+#include <memory>
 
 class Chunk
 {
@@ -21,6 +25,14 @@ class Chunk
 
     Block*   m_Blocks { };
     int32_t* m_WorldHeightMap { };
+
+    MinecraftNoise m_ChunkNoise;
+
+    // TODO: to not use shared & weak ptr
+    std::vector<std::shared_ptr<Structure>> m_StructureStarts;
+    std::vector<std::weak_ptr<Structure>>   m_StructureReferences;
+
+    ChunkStatus m_Status = ChunkStatus::eEmpty;
 
 private:
     inline void DeleteChunk( )
@@ -37,6 +49,13 @@ private:
      *
      * */
     void RegenerateChunk( );
+
+    void UpgradeChunk( ChunkStatus targetStatus );
+
+    void RunStructureStart( );
+    void RunStructureReference( );
+    void RunNoise( );
+    void RunFeature( );
 
 public:
     Chunk( ) = default;
@@ -68,6 +87,13 @@ public:
 
     /*
      *
+     * Stats
+     *
+     * */
+    CoordinateType GetHeight( uint32_t index );
+
+    /*
+     *
      * Access tools
      *
      * */
@@ -75,14 +101,11 @@ public:
     [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
 
     bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
-    bool SetBlock( const uint32_t & blockIndex, const Block& block );
+    bool SetBlock( const uint32_t& blockIndex, const Block& block );
 
-    inline void SetCoordinate( const ChunkCoordinate& coordinate )
-    {
-        m_WorldCoordinate = m_Coordinate = coordinate;
-        GetMinecraftX( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
-        GetMinecraftZ( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
-    }
+    void SetCoordinate( const ChunkCoordinate& coordinate );
+
+    inline auto GetChunkNoise( ) { return m_ChunkNoise; }
 
     inline const ChunkCoordinate& GetCoordinate( ) { return m_Coordinate; }
 

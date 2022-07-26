@@ -36,7 +36,7 @@ private:
 
 
 public:
-    explicit MinecraftNoise( const std::pair<uint64_t, uint64_t>& seed )
+    explicit MinecraftNoise( const std::pair<uint64_t, uint64_t>& seed = { 0, 0 } )
         : m_Seed { .seed = seed }
         , Noise::FastNoiseLite( GetIntSeed( ) )
     { }
@@ -46,6 +46,11 @@ public:
         , Noise::FastNoiseLite( GetIntSeed( ) )
     { }
 
+    MinecraftNoise& operator=( const MinecraftNoise& other )
+    {
+        m_Seed.seed = other.m_Seed.seed;
+        return *this;
+    }
 
     inline const auto& GetSeed( ) const { return m_Seed; }
     inline const auto  CopySeed( ) const { return m_Seed.seed; }

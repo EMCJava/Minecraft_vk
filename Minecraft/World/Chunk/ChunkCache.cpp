@@ -326,7 +326,7 @@ ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool c
     {
         if ( !( m_NearChunks[ fromDir ] = other ) )
         {
-            Logger ::getInstance( ).LogLine( GetCoordinate( ), "are now incomplete chunks" );
+            // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, GetCoordinate( ), "are now incomplete chunks" );
             m_EmptySlot |= 1 << fromDir;
 
         } else if ( changes )   // not necessarily, but performance tho

@@ -1,0 +1,3 @@
+add_library(StructureTreeLib StructureTree.hpp StructureTree.cpp)
+
+set_property(DIRECTORY PROPERTY StructureLib StructureTreeLib)
