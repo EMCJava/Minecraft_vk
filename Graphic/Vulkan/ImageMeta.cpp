@@ -109,6 +109,10 @@ ImageMeta::CopyToImage( vk::DeviceSize imageSize, std::pair<int, int> imageOffse
     static std::mutex           copy_buffer_lock;
     std::lock_guard<std::mutex> guard( copy_buffer_lock );
 
+    // this will lock the transfer queue
+    const auto& transferFamilyIndicesResources = VulkanAPI::GetInstance( ).GetTransferFamilyIndices( );
+    auto        transferQueue                  = VulkanAPI::GetInstance( ).getLogicalDevice( ).getQueue( transferFamilyIndicesResources.resources.first, transferFamilyIndicesResources.resources.second );
+
     vk::CommandBufferAllocateInfo allocInfo { };
     allocInfo.setCommandPool( *VulkanAPI::GetInstance( ).GetTransferCommandPool( ) );
     allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
@@ -163,9 +167,6 @@ ImageMeta::CopyToImage( vk::DeviceSize imageSize, std::pair<int, int> imageOffse
                                    imageTransReadBarrier );
 
     commandBuffer.end( );
-
-    const auto& transferFamilyIndices = VulkanAPI::GetInstance( ).GetTransferFamilyIndices( );
-    auto        transferQueue         = VulkanAPI::GetInstance( ).getLogicalDevice( ).getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
 
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers( commandBuffer );

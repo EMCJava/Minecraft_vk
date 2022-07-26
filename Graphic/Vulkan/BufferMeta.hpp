@@ -77,6 +77,10 @@ public:
         static std::mutex           copy_buffer_lock;
         std::lock_guard<std::mutex> guard( copy_buffer_lock );
 
+        // this will lock the transfer queue
+        const auto& transferFamilyIndicesResources = api.GetTransferFamilyIndices( );
+        auto        transferQueue                  = api.getLogicalDevice( ).getQueue( transferFamilyIndicesResources.resources.first, transferFamilyIndicesResources.resources.second );
+
         vk::CommandBufferAllocateInfo allocInfo { };
         allocInfo.setCommandPool( *api.GetTransferCommandPool( ) );
         allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
@@ -88,9 +92,6 @@ public:
         commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
         commandBuffer.copyBuffer( bufferData.buffer, buffer, dataRegion );
         commandBuffer.end( );
-
-        const auto& transferFamilyIndices = api.GetTransferFamilyIndices( );
-        auto        transferQueue         = api.getLogicalDevice( ).getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
 
         vk::SubmitInfo submitInfo;
         submitInfo.setCommandBuffers( commandBuffer );

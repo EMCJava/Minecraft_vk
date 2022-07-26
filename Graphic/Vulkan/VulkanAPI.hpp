@@ -9,6 +9,7 @@
 #include <Include/vk_mem_alloc.h>
 
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
+#include <Utility/Thread/MutexResources.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
 
@@ -268,7 +269,7 @@ public:
         m_requested_queue[ key ] = { 0, type };
     }
 
-    auto&                         GetTransferFamilyIndices( ) { return m_vkTransfer_family_indices; }
+    auto                          GetTransferFamilyIndices( ) { return MakeMutexResources( m_vkTransfer_family_indices_mutex, m_vkTransfer_family_indices ); }
     auto&                         GetTransferCommandPool( ) { return m_vkTransferCommandPool; }
     auto&                         getMemoryAllocator( ) { return m_vkmAllocator; }
     inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.get( ); }
@@ -353,6 +354,7 @@ private:
     std::unique_ptr<QueueFamilyManager>        m_queue_family_manager;
     std::vector<std::pair<uint32_t, uint32_t>> m_saved_queue_index;
     QueueFamilyIndices                         m_vkQueue_family_indices;
+    std::mutex                                 m_vkTransfer_family_indices_mutex;
     std::pair<uint32_t, uint32_t>              m_vkTransfer_family_indices;
     vk::Queue                                  m_vkGraphicQueue;
     vk::Queue                                  m_vkPresentQueue;

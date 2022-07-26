@@ -222,6 +222,10 @@ ClassName( void )::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation
     stagingBuffer.writeBuffer( vertexBuffer, allocation.region.vertexSize );
     stagingBuffer.writeBufferOffseted( indexBuffer, allocation.region.indexSize, allocation.region.GetOffsetDiff( ) );
 
+    // this will lock the transfer queue
+    const auto& transferFamilyIndicesResources = VulkanAPI::GetInstance( ).GetTransferFamilyIndices( );
+    auto        transferQueue                  = VulkanAPI::GetInstance( ).getLogicalDevice( ).getQueue( transferFamilyIndicesResources.resources.first, transferFamilyIndicesResources.resources.second );
+
     vk::CommandBufferAllocateInfo allocInfo { };
     allocInfo.setCommandPool( *VulkanAPI::GetInstance( ).GetTransferCommandPool( ) );
     allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
@@ -237,9 +241,6 @@ ClassName( void )::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation
     commandBuffer.copyBuffer( stagingBuffer.GetBuffer( ), allocation.targetChunk->buffer, bufferRegion );
 
     commandBuffer.end( );
-
-    const auto& transferFamilyIndices = VulkanAPI::GetInstance( ).GetTransferFamilyIndices( );
-    auto        transferQueue         = VulkanAPI::GetInstance( ).getLogicalDevice( ).getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
 
     vk::SubmitInfo submitInfo;
     submitInfo.setCommandBuffers( commandBuffer );
