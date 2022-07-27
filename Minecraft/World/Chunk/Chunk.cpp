@@ -23,32 +23,6 @@ Chunk::RegenerateChunk( )
 
     UpgradeChunk( eFull );
 
-    // Grass
-    int  horizontalMapIndex = 0;
-    auto blocksPtr          = m_Blocks;
-    for ( int i = 0; i < ChunkMaxHeight; ++i )
-    {
-        horizontalMapIndex = 0;
-        for ( int k = 0; k < SectionUnitLength; ++k )
-            for ( int j = 0; j < SectionUnitLength; ++j )
-            {
-                if ( i > m_WorldHeightMap[ horizontalMapIndex ] - 3 )
-                {
-                    if ( i == m_WorldHeightMap[ horizontalMapIndex ] )
-                    {
-                        blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
-                    } else if ( i <= m_WorldHeightMap[ horizontalMapIndex ] )
-                    {
-                        blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
-                    }
-                }
-
-                ++horizontalMapIndex;
-            }
-
-        blocksPtr += SectionSurfaceSize;
-    }
-
     //        if ( ManhattanDistance( { 0, 0, 0 } ) != 0 )
     //            for ( int i = 0; i < ChunkVolume; ++i )
     //                m_Blocks[ i ] = BlockID::Air;
@@ -80,6 +54,31 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
 
                 blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
                 if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_WorldHeightMap[ horizontalMapIndex ] = i;
+
+                ++horizontalMapIndex;
+            }
+
+        blocksPtr += SectionSurfaceSize;
+    }
+
+    // surface block
+    blocksPtr = m_Blocks;
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+    {
+        horizontalMapIndex = 0;
+        for ( int k = 0; k < SectionUnitLength; ++k )
+            for ( int j = 0; j < SectionUnitLength; ++j )
+            {
+                if ( i > m_WorldHeightMap[ horizontalMapIndex ] - 3 )
+                {
+                    if ( i == m_WorldHeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
+                    } else if ( i <= m_WorldHeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
+                    }
+                }
 
                 ++horizontalMapIndex;
             }
