@@ -27,6 +27,14 @@ struct Ratio {
     static constexpr Ty ratio { static_cast<Ty>( SecondSize ) / static_cast<Ty>( FirstSize ) };
 };
 
+template <std::integral auto Binary>
+auto
+GetConstantBinaryMask( )
+{
+    static_assert( IntLog<Binary, 2>::perfect_log );
+    return Binary - 1;
+}
+
 template <std::integral auto FirstSize, std::integral auto SecondSize, typename FallbackTy = float, typename Parm>
 inline constexpr auto
 ScaleToSecond( Parm&& size )
