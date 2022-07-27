@@ -19,6 +19,13 @@
 #include <thread>
 #include <unordered_set>
 
+namespace
+{
+
+ImFont* ImGuiBigFont { };
+
+}
+
 MainApplication::MainApplication( )
 {
     InitWindow( );
@@ -268,6 +275,15 @@ MainApplication::InitImgui( )
     // io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     // IM_ASSERT(font != NULL);
+
+    ImGuiIO&     io = ImGui::GetIO( );
+    ImFontConfig config;
+    config.SizePixels  = 24;
+    // config.OversampleH = config.OversampleV = 0;
+    // config.PixelSnapH                       = true;
+    io.Fonts->AddFontDefault( );
+    ImGuiBigFont = io.Fonts->AddFontDefault( &config );
+    IM_ASSERT( font != NULL );
 
     // Upload Fonts
     {
@@ -544,7 +560,11 @@ MainApplication::renderImguiCursor( uint32_t renderIndex ) const
     auto windowSize = ImGui::GetWindowSize( );
     auto textSize   = ImGui::CalcTextSize( "X" );
     ImGui::SetCursorPos( ( windowSize - textSize ) * 0.5f );
+    ImGui::PushFont( ImGuiBigFont );
+    ImGui::PushStyleColor( ImGuiCol_Text, IM_COL32( 255, 255, 255, 255 ) );
     ImGui::Text( "X" );
+    ImGui::PopStyleColor( );
+    ImGui::PopFont( );
     ImGui::End( );
 }
 
