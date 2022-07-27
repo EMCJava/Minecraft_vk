@@ -147,8 +147,8 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
     // update height map
     if ( !block.Transparent( ) )
     {
-        auto& originalHeight = m_WorldHeightMap[ blockIndex & SectionSurfaceSize ];
-        if ( originalHeight > ( blockIndex >> SectionSurfaceSizeBinaryOffset ) )
+        auto& originalHeight = m_WorldHeightMap[ blockIndex & GetConstantBinaryMask<SectionSurfaceSize>( ) ];
+        if ( originalHeight < ( blockIndex >> SectionSurfaceSizeBinaryOffset ) )
             originalHeight = blockIndex >> SectionSurfaceSizeBinaryOffset;
     }
 
