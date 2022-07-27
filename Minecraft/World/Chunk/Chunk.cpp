@@ -163,15 +163,15 @@ Chunk::UpgradeChunk( ChunkStatus targetStatus )
     // already fulfilled
     if ( targetStatus <= m_Status ) return;
 
-    for ( ++m_Status; m_Status <= targetStatus; ++m_Status )
+    for ( ; m_Status < targetStatus; ++m_Status )
     {
         switch ( m_Status )
         {
-        // case eEmpty: break; // just no
-        case eStructureStart: RunStructureStart( ); break;
-        case eStructureReference: RunStructureReference( ); break;
-        case eNoise: RunNoise( ); break;
-        case eFeature: RunFeature( ); break;
+        case eEmpty: RunStructureStart( ); break;
+        case eStructureStart: RunStructureReference( ); break;
+        case eStructureReference: RunNoise( ); break;
+        case eNoise: RunFeature( ); break;
+        case eFeature: break;
         }
     }
 }
