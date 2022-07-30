@@ -13,7 +13,7 @@ enum ChunkStatus : ChunkStatusTy {
     eStructureReference,   // chunk if surrounding chunk has structure that expended to this chunk
     eNoise,                // starts generating chunk, e.g. land scape
     eFeature,              // final decoration, e.g. placing trees / structure
-    eFull                  // a completed chunk
+    eFull = eFeature       // a completed chunk
 };
 
 inline ChunkStatus&

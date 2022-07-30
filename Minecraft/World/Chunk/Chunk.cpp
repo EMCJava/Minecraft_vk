@@ -15,17 +15,10 @@ Chunk::~Chunk( )
 }
 
 void
-Chunk::RegenerateChunk( )
+Chunk::RegenerateChunk( ChunkStatus status )
 {
     DeleteChunk( );
-
-    m_Blocks = new Block[ ChunkVolume ];
-
-    UpgradeChunk( eFull );
-
-    //        if ( ManhattanDistance( { 0, 0, 0 } ) != 0 )
-    //            for ( int i = 0; i < ChunkVolume; ++i )
-    //                m_Blocks[ i ] = BlockID::Air;
+    UpgradeChunk( status );
 }
 
 void
@@ -40,6 +33,9 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
     m_WorldHeightMap = new int32_t[ SectionSurfaceSize ];
     for ( int i = 0; i < SectionSurfaceSize; ++i )
         m_WorldHeightMap[ i ] = -1;
+
+    delete[] m_Blocks;
+    m_Blocks = new Block[ ChunkVolume ];
 
     auto     blocksPtr          = m_Blocks;
     uint32_t horizontalMapIndex = 0;
@@ -163,39 +159,76 @@ Chunk::UpgradeChunk( ChunkStatus targetStatus )
     // already fulfilled
     if ( targetStatus <= m_Status ) return;
 
-    for ( ; m_Status < targetStatus; ++m_Status )
+    for ( ; !IsChunkStatusAtLeast( targetStatus ); ++m_Status )
     {
         switch ( m_Status )
         {
-        case eEmpty: RunStructureStart( ); break;
-        case eStructureStart: RunStructureReference( ); break;
-        case eStructureReference: RunNoise( ); break;
-        case eNoise: RunFeature( ); break;
+        case eEmpty:
+            if ( !AttemptRunStructureStart( ) ) return;
+            break;
+        case eStructureStart:
+            if ( !AttemptRunStructureReference( ) ) return;
+            break;
+        case eStructureReference:
+            if ( !AttemptRunNoise( ) ) return;
+            break;
+        case eNoise:
+            if ( !AttemptRunFeature( ) ) return;
+            break;
         case eFeature: break;
         }
     }
 }
 
-void
-Chunk::RunStructureStart( )
+bool
+Chunk::AttemptRunStructureStart( )
 {
     StructureTree::TryGenerate( *this, m_StructureStarts );
+    return true;
 }
 
-void
-Chunk::RunStructureReference( )
+bool
+Chunk::AttemptRunStructureReference( )
 {
+    std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+    bool                                  attemptFailed = false;
+    for ( int dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
+    {
+        for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz )
+        {
+            const auto  chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+            const auto* chunkCache      = m_World->GetChunkCache( chunkCoordinate );
+            if ( chunkCache == nullptr || !chunkCache->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) )
+            {
+                m_World->IntroduceChunk( chunkCoordinate, ChunkStatus::eStructureStart );
+                attemptFailed = true;
+            }
+            if ( attemptFailed ) continue;
+
+            const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
+            m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
+            for ( const auto& chunkReferenceStart : chunkReferenceStarts )
+                m_StructureReferences.emplace_back( chunkReferenceStart );
+        }
+    }
+
+    if ( attemptFailed )
+        m_StructureReferences.clear( );
+
+    return !attemptFailed;
 }
 
-void
-Chunk::RunNoise( )
+bool
+Chunk::AttemptRunNoise( )
 {
     FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
     FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+
+    return true;
 }
 
-void
-Chunk::RunFeature( )
+bool
+Chunk::AttemptRunFeature( )
 {
     for ( auto& ss : m_StructureStarts )
     {
@@ -204,8 +237,10 @@ Chunk::RunFeature( )
 
     for ( auto& ss : m_StructureReferences )
     {
-        ss.lock( )->Generate( *this );
+        // ss.lock( )->Generate( *this );
     }
+
+    return true;
 }
 
 CoordinateType
@@ -222,4 +257,35 @@ Chunk::SetCoordinate( const ChunkCoordinate& coordinate )
     GetMinecraftZ( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
 
     m_ChunkNoise = GetChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+}
+
+bool
+Chunk::CanRunStructureStart( ) const
+{
+    return true;
+}
+
+bool
+Chunk::CanRunStructureReference( ) const
+{
+    for ( int dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
+        for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz )
+            if ( auto* chunkCache = m_World->GetChunkCache( m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz ) );
+                 chunkCache != nullptr && !chunkCache->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) ) return false;
+    // chunk exist and not at target status
+    // if chunk not exist AttemptRun* will add them
+
+    return true;
+}
+
+bool
+Chunk::CanRunNoise( ) const
+{
+    return true;
+}
+
+bool
+Chunk::CanRunFeature( ) const
+{
+    return true;
 }

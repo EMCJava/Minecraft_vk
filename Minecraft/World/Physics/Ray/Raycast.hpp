@@ -118,7 +118,8 @@ public:
         else
             tMaxZ = tDeltaZ * ( GetMinecraftZ( std::as_const( startingPosition ) ) - std::floor( GetMinecraftZ( std::as_const( startingPosition ) ) ) );
 
-        Block* blockPtr;
+        std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
+        Block*                                blockPtr;
         while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
         {
             if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );

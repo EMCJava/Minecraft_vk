@@ -278,12 +278,12 @@ MainApplication::InitImgui( )
 
     ImGuiIO&     io = ImGui::GetIO( );
     ImFontConfig config;
-    config.SizePixels  = 24;
+    config.SizePixels = 24;
     // config.OversampleH = config.OversampleV = 0;
     // config.PixelSnapH                       = true;
     io.Fonts->AddFontDefault( );
     ImGuiBigFont = io.Fonts->AddFontDefault( &config );
-    IM_ASSERT( font != NULL );
+    IM_ASSERT( ImGuiBigFont != nullptr );
 
     // Upload Fonts
     {
@@ -619,6 +619,59 @@ MainApplication::renderImgui( uint32_t renderIndex )
         }
 
         ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
+
+        if ( ImGui::CollapsingHeader( "Player" ) )
+        {
+            static float pos[ 3 ];
+            ImGui::InputFloat3( "Player position", pos );
+
+            ImGui::SameLine( );
+            if ( ImGui::Button( "Teleport" ) )
+            {
+                MinecraftServer::GetInstance( ).GetPlayer( 0 ).SetCoordinate( MakeMinecraftCoordinate( pos[ 0 ], pos[ 1 ], pos[ 2 ] ) );
+            }
+        }
+
+        if ( ImGui::CollapsingHeader( "Minecraft World" ) )
+        {
+            const int                 span   = ( GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + StructureReferenceStatusRange );
+            const int                 size   = span * 2 + 1;
+            std::unique_ptr<double[]> values = std::make_unique<double[]>( size * size );
+            srand( (unsigned int) ( ImGui::GetTime( ) * 1000000 ) );
+
+            auto playerPosition             = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
+            GetMinecraftY( playerPosition ) = 0;
+
+            {
+                std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
+                int                                   index = 0;
+                for ( int i = -span; i <= span; ++i )
+                {
+                    for ( int j = -span; j <= span; ++j, ++index )
+                    {
+                        if ( auto* chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( playerPosition + MakeMinecraftCoordinate( i, 0, j ) ); chunkCache != nullptr )
+                        {
+                            values[ index ] = (int) chunkCache->GetStatus( );
+                        } else
+                        {
+                            values[ index ] = 0;
+                        }
+                    }
+                }
+            }
+
+            ImPlot::PushColormap( ImPlotColormap_Cool );
+
+            if ( ImPlot::BeginPlot( "##Heatmap1", ImVec2( 225, 225 ) ) )
+            {
+                ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations );
+                // ImPlot::SetupAxesLimits( -1, 1, -1, 1 );
+                ImPlot::PlotHeatmap( "Chunk Completeness", values.get( ), size, size, eEmpty, eFull, nullptr );
+                ImPlot::EndPlot( );
+            }
+
+            ImPlot::PopColormap( );
+        }
 
         if ( ImGui::CollapsingHeader( "Performance" ) )
         {

@@ -20,6 +20,8 @@
 class Chunk
 {
 
+    class MinecraftWorld* m_World;
+
     ChunkCoordinate m_Coordinate;
     ChunkCoordinate m_WorldCoordinate;
 
@@ -41,6 +43,10 @@ private:
         delete[] m_Blocks;
         m_Blocks         = nullptr;
         m_WorldHeightMap = nullptr;
+
+        m_Status = ChunkStatus::eEmpty;
+        m_StructureStarts.clear( );
+        m_StructureReferences.clear( );
     }
 
     /*
@@ -48,17 +54,31 @@ private:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void RegenerateChunk( );
+    void RegenerateChunk( ChunkStatus status );
 
     void UpgradeChunk( ChunkStatus targetStatus );
 
-    void RunStructureStart( );
-    void RunStructureReference( );
-    void RunNoise( );
-    void RunFeature( );
+    bool CanRunStructureStart( ) const;
+    bool CanRunStructureReference( ) const;
+    bool CanRunNoise( ) const;
+    bool CanRunFeature( ) const;
+
+    bool AttemptRunStructureStart( );
+    bool AttemptRunStructureReference( );
+    bool AttemptRunNoise( );
+    bool AttemptRunFeature( );
+
+    /*
+     *
+     * Generation
+     *
+     * */
+    [[nodiscard]] const auto& GetStructureStarts( ) const { return m_StructureStarts; }
 
 public:
-    Chunk( ) = default;
+    Chunk( class MinecraftWorld* world )
+        : m_World( world )
+    { }
     ~Chunk( );
 
     Chunk( const Chunk& ) = delete;
@@ -66,6 +86,8 @@ public:
 
     Chunk operator=( const Chunk& ) = delete;
     Chunk operator=( Chunk&& )      = delete;
+
+    void SetWorld( class MinecraftWorld* world ) { m_World = world; }
 
     /*
      *
@@ -90,6 +112,8 @@ public:
      *
      * */
     CoordinateType GetHeight( uint32_t index );
+
+    [[nodiscard]] bool IsChunkStatusAtLeast( ChunkStatus status ) const { return m_Status >= status; }
 
     /*
      *

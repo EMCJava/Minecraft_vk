@@ -53,6 +53,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
     {
         if ( m_RemoveJobAfterRange > 0 )
         {
+            std::lock_guard<std::recursive_mutex> cacheModifyLocker( m_ChunkCacheLock );
             std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
             const auto                            lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
                                                                            [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
@@ -63,13 +64,12 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             if ( amountToRemove > 0 )
                 m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
 
-            std::lock_guard<std::mutex> cacheModifyLocker( m_ChunkCacheLock );
-            std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) {
-                if ( cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
-                {
-                    Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "About to erase chunk outside range", cache.first, cache.second.get() );
-                }
-            } );
+            //            std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) {
+            //                if ( cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
+            //                {
+            //                    Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "About to erase chunk outside range", cache.first, cache.second.get( ) );
+            //                }
+            //            } );
 
             if ( std::erase_if( m_ChunkCache, [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ); } ) > 0 )
             {
@@ -77,8 +77,17 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             }
         }
 
-        auto finished = UpdateSorted( &ChunkPool::LoadChunk,
+        auto finished = UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
                                       [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
+                                          const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
+                                          const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
+                                          if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
+
+                                          const auto aEmergency = a->GetEmergencyLevel( );
+                                          const auto bEmergency = b->GetEmergencyLevel( );
+                                          if ( aEmergency != bEmergency )
+                                              return aEmergency < bEmergency;
+
                                           return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
                                       } );
         if ( !finished.empty( ) )
@@ -89,17 +98,20 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                 cache->initializing = false;
                 cache->initialized  = true;
 
-                for ( int i = 0; i < DirHorizontalSize; ++i )
+                if ( cache->GetStatus( ) == ChunkStatus::eFull )
                 {
-                    auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetCoordinate( ) + NearChunkDirection[ i ] );
-                    if ( chunkPtr != nullptr && chunkPtr->initialized )
+                    for ( int i = 0; i < DirHorizontalSize; ++i )
                     {
-                        // this is fast, I guess? (nope)
+                        auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetCoordinate( ) + NearChunkDirection[ i ] );
+                        if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
+                        {
+                            // this is fast, I guess? (nope)
 
-                        // this is ok, I guess
-                        // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
-                        if ( cache->SyncChunkFromDirection( chunkPtr, static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
-                        if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
+                            // this is ok, I guess
+                            // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
+                            if ( cache->SyncChunkFromDirection( chunkPtr, static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
+                            if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
+                        }
                     }
                 }
             }

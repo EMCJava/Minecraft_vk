@@ -32,9 +32,9 @@ MinecraftWorld::MinecraftWorld( )
     for ( int i = 0; i < ChunkMaxHeight; ++i )
         m_TerrainNoiseOffsetPerLevel[ i ] = 0;
 
-    m_ChunkPool         = std::make_unique<ChunkPool>( GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
+    m_ChunkPool         = std::make_unique<ChunkPool>( this, GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
     m_ChunkLoadingRange = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( );
-    m_ChunkPool->SetValidRange( m_ChunkLoadingRange );
+    m_ChunkPool->SetValidRange( m_ChunkLoadingRange + StructureReferenceStatusRange );
     m_ChunkPool->StartThread( );
 }
 
@@ -44,7 +44,7 @@ MinecraftWorld::IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t ra
     m_ChunkPool->SetCentre( centre );
     for ( int i = -radius; i <= radius; ++i )
         for ( int j = -radius; j <= radius; ++j )
-            m_ChunkPool->AddCoordinate( centre + MakeMinecraftCoordinate( i, 0, j ) );
+            IntroduceChunk( centre + MakeMinecraftCoordinate( i, 0, j ), ChunkStatus::eFull );
 }
 
 void
@@ -61,8 +61,8 @@ MinecraftWorld::Tick( float deltaTime )
 
         if ( m_ChunkPool->IsChunkErased( ) )   // reload cache
         {
-            std::lock_guard<std::mutex> lock( m_ChunkPool->GetChunkCacheLock( ) );
-            const auto&                 firstCache = *m_ChunkPool->GetChunkIterBegin( );
+            std::lock_guard<std::recursive_mutex> lock( m_ChunkPool->GetChunkCacheLock( ) );
+            const auto&                           firstCache = *m_ChunkPool->GetChunkIterBegin( );
 
             for ( uint32_t i = 0; i < ChunkAccessCacheSize; ++i )
                 if ( m_ChunkPool->GetChunkCache( m_ChunkAccessCache[ i ].coordinates ) == nullptr )
@@ -114,7 +114,7 @@ MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
 ChunkCache*
 MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
-    if ( auto* chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized )
+    if ( auto* chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized && chunkCache->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
     {
         return chunkCache;
     }
@@ -167,4 +167,10 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
     }
 
     return false;
+}
+
+ChunkCache*
+MinecraftWorld::IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus )
+{
+    return m_ChunkPool->AddCoordinate( position, minimumStatus );
 }

@@ -50,6 +50,14 @@ static constexpr CoordinateType ChunkVolume = MaxSectionInChunk * SectionVolume;
 
 /*
  *
+ * Generation
+ *
+ * */
+static constexpr CoordinateType StructureReferenceStatusRange = 8;
+
+
+/*
+ *
  * Chunk storage
  *
  * */

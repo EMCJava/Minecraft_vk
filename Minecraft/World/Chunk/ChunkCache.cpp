@@ -32,7 +32,8 @@ ChunkCache::RegenerateChunk( )
     DeleteCache( );
     m_BlockFaces = new uint8_t[ ChunkVolume ];
 
-    Chunk::RegenerateChunk( );
+    // Chunk::RegenerateChunk( m_RequiredStatus );
+    Chunk::UpgradeChunk( m_RequiredStatus );
 }
 
 void
@@ -349,4 +350,48 @@ ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool c
     }
 
     return false;
+}
+bool
+ChunkCache::StatusUpgradeAllSatisfied( ) const
+{
+    assert( m_RequiredStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( m_RequiredStatus <= m_Status ) return true;
+
+    auto temStatus = m_Status;
+    bool satisfied = true;
+    for ( ; temStatus < m_RequiredStatus && satisfied; ++temStatus )
+    {
+        switch ( m_Status )
+        {
+        case eEmpty: satisfied = CanRunStructureStart( ); break;
+        case eStructureStart: satisfied = CanRunStructureReference( ); break;
+        case eStructureReference: satisfied = CanRunNoise( ); break;
+        case eNoise: satisfied = CanRunFeature( ); break;
+        case eFeature: return true;   // ???
+        }
+    }
+
+    return satisfied;
+}
+
+bool
+ChunkCache::NextStatusUpgradeSatisfied( ) const
+{
+    assert( m_RequiredStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( m_RequiredStatus <= m_Status ) return true;
+
+    switch ( m_Status )
+    {
+    case eEmpty: return CanRunStructureStart( );
+    case eStructureStart: return CanRunStructureReference( );
+    case eStructureReference: return CanRunNoise( );
+    case eNoise: return CanRunFeature( );
+    case eFeature: return true;   // ???
+    }
+
+    return false;   // ???
 }

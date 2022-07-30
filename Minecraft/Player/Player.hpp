@@ -40,7 +40,7 @@ public:
     void SetCoordinate( const EntityCoordinate& coordinate )
     {
         m_Coordinate      = coordinate;
-        m_Camera.Position = { std::get<0>( coordinate ), std::get<1>( coordinate ), std::get<2>( coordinate ) };
+        m_Camera.Position = { GetMinecraftX( coordinate ), GetMinecraftY( coordinate ), GetMinecraftZ( coordinate ) };
     };
 
     EntityCoordinate GetCoordinate( ) { return m_Coordinate; };
