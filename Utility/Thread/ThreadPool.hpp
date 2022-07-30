@@ -26,9 +26,8 @@ private:
 
 public:
     struct ThreadInstance {
-        Context*           context { };
-        std::jthread*      thread { };
-        std::atomic<bool>* running { };
+        Context*      context { };
+        std::jthread* thread { };
 
         operator Context*( ) const
         {
@@ -39,7 +38,6 @@ public:
         ~ThreadInstance( )
         {
             delete thread;
-            delete running;
         }
 
         ThreadInstance( const ThreadInstance& )     = delete;
@@ -51,7 +49,10 @@ public:
 
     struct ThreadInstanceWrapper {
 
-        std::unique_ptr<ThreadInstance> threadInstance;
+        std::unique_ptr<ThreadInstance> threadInstance { };
+        bool                            occupied = false;
+
+        ThreadInstanceWrapper( ) = default;
 
         ThreadInstanceWrapper( ThreadInstance* threadInstancePtr )
             : threadInstance( threadInstancePtr )
@@ -72,96 +73,62 @@ protected:
 
     explicit ThreadPool( uint32_t maxThread )
         : m_maxThread( maxThread )
-    { }
-
-    static void RunJob( ThreadInstance* threadInstance, const std::function<void( Context* )>& Job )
     {
-        threadInstance->running->wait( false );
-        Job( threadInstance->context );
-        threadInstance->running->store( false );
+        m_RunningThreads.resize( m_maxThread );
     }
 
-    //    std::remove_copy_if( m_RunningThreads.begin( ), m_RunningThreads.end( ), )
-    //    std::vector<Context*> CleanRunningThread( )
-    //    {
-    //        std::vector<Context*> finished;
-    //        for ( int i = 0; i < m_RunningThreads.size( ); ++i )
-    //        {
-    //            if ( !m_RunningThreads[ i ]->running->load( ) )
-    //            {
-    //                finished.push_back( m_RunningThreads[ i ]->context );
-    //                m_RunningThreads.erase( m_RunningThreads.begin( ) + i-- );
-    //            }
-    //        }
-    //
-    //        return finished;
-    //    }
-
-    std::vector<Context*> CleanRunningThread( )
+    static void RunJob( ThreadInstanceWrapper& wrapper, const std::function<void( Context* )>& Job )
     {
-        const auto lastIt = std::partition( m_RunningThreads.begin( ), m_RunningThreads.end( ),
-                                            []( const auto& data ) { return data.threadInstance->running->load( ); } );
-
-        // exists finished job(s)
-        if ( lastIt != m_RunningThreads.end( ) )
-        {
-            std::vector<Context*> finished( lastIt, m_RunningThreads.end( ) );
-
-            m_RunningThreads.erase( lastIt, m_RunningThreads.end( ) );
-
-            return finished;
-        }
-
-        return { };
+        Job( wrapper.threadInstance->context );
+        wrapper.occupied = false;
     }
 
-    std::vector<Context*> UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp )
+    void CleanRunningThread( std::vector<Context*>* finished = nullptr )
     {
-        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
-        std::vector<Context*>                 finished      = CleanRunningThread( );
-        size_t                                threadVacancy = m_maxThread - m_RunningThreads.size( );
-
-        threadVacancy = std::min( m_PendingThreads.size( ), threadVacancy );
-        if ( threadVacancy > 0 )
+        for ( int i = 0; i < m_RunningThreads.size( ); ++i )
         {
-            boost::sort::flat_stable_sort( m_PendingThreads.begin( ), m_PendingThreads.end( ), Comp );
-            for ( int i = 0; i < threadVacancy; ++i )
+            //                Finished
+            if ( m_RunningThreads[ i ].threadInstance != nullptr && !m_RunningThreads[ i ].occupied )
             {
-                auto* newThread = new ThreadInstance;
-                m_RunningThreads.emplace_back( newThread );
+                if ( finished ) finished->push_back( m_RunningThreads[ i ].threadInstance->context );
+                m_RunningThreads[ i ].threadInstance.reset( );
+            }
+        }
+    }
 
-                newThread->context = m_PendingThreads[ i ];
-                newThread->running = new std::atomic<bool>( false );
-                newThread->thread  = new std::jthread( &ThreadPool::RunJob, newThread, Job );
-                newThread->running->store( true );
-                newThread->running->notify_one( );
+    void UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp, std::vector<Context*>* finishedJob = nullptr )
+    {
+        if ( finishedJob ) finishedJob->clear( );
+        CleanRunningThread( finishedJob );
+
+        if ( m_PendingThreads.empty( ) ) return;
+
+        int emptySlot = 0;
+        for ( ; emptySlot < m_maxThread; ++emptySlot )
+            if ( m_RunningThreads[ emptySlot ].threadInstance == nullptr ) break;
+
+        if ( emptySlot != m_maxThread )
+        {
+            std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
+            boost::sort::flat_stable_sort( m_PendingThreads.begin( ), m_PendingThreads.end( ), Comp );
+
+            int newThreadIndex = 0;
+            for ( ; emptySlot < m_maxThread; ++emptySlot )
+            {
+                if ( m_RunningThreads[ emptySlot ].threadInstance != nullptr ) continue;
+                if ( newThreadIndex == m_PendingThreads.size( ) ) break;
+
+                auto* newThread                              = new ThreadInstance;
+                m_RunningThreads[ emptySlot ].threadInstance = std::unique_ptr<ThreadInstance>( newThread );
+                m_RunningThreads[ emptySlot ].occupied       = true;
+
+                newThread->context = m_PendingThreads[ newThreadIndex++ ];
+                newThread->thread  = new std::jthread( &ThreadPool::RunJob, std::ref( m_RunningThreads[ emptySlot ] ), Job );
             }
 
-            m_PendingThreads.erase( m_PendingThreads.begin( ), std::next( m_PendingThreads.begin( ), threadVacancy ) );
+            m_PendingThreads.erase( m_PendingThreads.begin( ), std::next( m_PendingThreads.begin( ), newThreadIndex ) );
         }
-
-        return finished;
     }
-
-    //    std::vector<Context*> Update( const std::function<void( Context* )>& Job )
-    //    {
-    //        std::vector<Context*> finished;
-    //        const int32_t         threadVacancy = m_maxThread - m_RunningThreads.size( );
-    //
-    //        if ( threadVacancy > 0 )
-    //        {
-    //            finished.reserve( threadVacancy );
-    //            for ( int i = 0; i < threadVacancy; ++i )
-    //            {
-    //                finished.push_back( m_PendingThreads[ i ] );
-    //                m_RunningThreads.emplace_back( ThreadInstance { m_PendingThreads[ i ], new std::thread( Job, m_PendingThreads[ i ] ) } );
-    //            }
-    //
-    //            m_PendingThreads.erase( m_PendingThreads.begin( ), m_PendingThreads.begin( ) + threadVacancy );
-    //        }
-    //
-    //        return finished;
-    //    }
 
     void AddJobContext( Context* context )
     {

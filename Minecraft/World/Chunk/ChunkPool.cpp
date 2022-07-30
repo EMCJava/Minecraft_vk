@@ -49,6 +49,8 @@ constexpr std::array<ChunkCoordinate, DirHorizontalSize> NearChunkDirection { ge
 void
 ChunkPool::UpdateThread( const std::stop_token& st )
 {
+    std::vector<ChunkCache*> finished( m_maxThread );
+
     while ( !st.stop_requested( ) )
     {
         if ( m_RemoveJobAfterRange > 0 )
@@ -77,19 +79,21 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             }
         }
 
-        auto finished = UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
-                                      [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
-                                          const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
-                                          const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
-                                          if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
+        UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
+                      [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
+                          const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
+                          const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
+                          if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
 
-                                          const auto aEmergency = a->GetEmergencyLevel( );
-                                          const auto bEmergency = b->GetEmergencyLevel( );
-                                          if ( aEmergency != bEmergency )
-                                              return aEmergency < bEmergency;
+                          const auto aEmergency = a->GetEmergencyLevel( );
+                          const auto bEmergency = b->GetEmergencyLevel( );
+                          if ( aEmergency != bEmergency )
+                              return aEmergency < bEmergency;
 
-                                          return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
-                                      } );
+                          return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
+                      },
+                      &finished );
+
         if ( !finished.empty( ) )
         {
             for ( auto& cache : finished )
