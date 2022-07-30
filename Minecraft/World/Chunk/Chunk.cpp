@@ -190,30 +190,39 @@ Chunk::AttemptRunStructureStart( )
 bool
 Chunk::AttemptRunStructureReference( )
 {
-    std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
-    bool                                  attemptFailed = false;
-    for ( int dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
-    {
-        for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz )
-        {
-            const auto  chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
-            const auto* chunkCache      = m_World->GetChunkCache( chunkCoordinate );
-            if ( chunkCache == nullptr || !chunkCache->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) )
-            {
-                m_World->IntroduceChunk( chunkCoordinate, ChunkStatus::eStructureStart );
-                attemptFailed = true;
-            }
-            if ( attemptFailed ) continue;
+    std::vector<ChunkCoordinate> missingChunk;
+    bool                         attemptFailed = false;
 
-            const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
-            m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
-            for ( const auto& chunkReferenceStart : chunkReferenceStarts )
-                m_StructureReferences.emplace_back( chunkReferenceStart );
+    {
+        std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+        for ( int dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
+        {
+            for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz )
+            {
+                const auto  chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto* chunkCache      = m_World->GetChunkCache( chunkCoordinate );
+                if ( chunkCache == nullptr || !chunkCache->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) )
+                {
+                    missingChunk.push_back( chunkCoordinate );
+                    attemptFailed = true;
+                }
+                if ( attemptFailed ) continue;
+
+                const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
+                m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
+                for ( const auto& chunkReferenceStart : chunkReferenceStarts )
+                    m_StructureReferences.emplace_back( chunkReferenceStart );
+            }
         }
     }
 
     if ( attemptFailed )
+    {
+        for ( const auto& chunk : missingChunk )
+            m_World->IntroduceChunk( chunk, ChunkStatus::eStructureStart );
+
         m_StructureReferences.clear( );
+    }
 
     return !attemptFailed;
 }
@@ -268,6 +277,7 @@ Chunk::CanRunStructureStart( ) const
 bool
 Chunk::CanRunStructureReference( ) const
 {
+    std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
     for ( int dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
         for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz )
             if ( auto* chunkCache = m_World->GetChunkCache( m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz ) );

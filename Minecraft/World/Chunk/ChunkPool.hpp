@@ -85,35 +85,39 @@ public:
 
     ChunkCache* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
     {
-        std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
-        if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
+        ChunkCache* newChunk = nullptr;
+
         {
-            // need upgrade
-            if ( find_it->second->GetTargetStatus( ) < status )
+            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+            if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
             {
-                find_it->second->SetExpectedStatus( status );
-
-                // still in queue, just modify the target status
-                // if ( !find_it->second->initializing && !find_it->second->initialized )
-                // {
-                // } else
-
-                if ( find_it->second->initialized || find_it->second->initializing )   //  previous job already started or ended, need to add job for upgrading
+                // need upgrade
+                if ( find_it->second->GetTargetStatus( ) < status )
                 {
-                    AddJobContext( find_it->second.get( ) );
+                    find_it->second->SetExpectedStatus( status );
+
+                    // still in queue, just modify the target status
+                    // if ( !find_it->second->initializing && !find_it->second->initialized )
+                    // {
+                    // } else
+
+                    if ( find_it->second->initialized || find_it->second->initializing )   //  previous job already started or ended, need to add job for upgrading
+                    {
+                        AddJobContext( find_it->second.get( ) );
+                    }
                 }
+
+                return find_it->second.get( );
             }
 
-            return find_it->second.get( );
+            newChunk = new ChunkCache( m_World );
+            newChunk->SetCoordinate( coordinate );
+            newChunk->SetExpectedStatus( status );
+
+            m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkCache>( newChunk ) } );
         }
 
-        auto newChunk = new ChunkCache( m_World );
-        newChunk->SetCoordinate( coordinate );
-        newChunk->SetExpectedStatus( status );
-
-        m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkCache>( newChunk ) } );
         AddJobContext( newChunk );
-
         return newChunk;
     }
 
