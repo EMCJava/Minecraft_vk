@@ -20,8 +20,8 @@ private:
     BlockCoordinate               m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread> m_UpdateThread;
 
-    std::mutex                                       m_ChunkCacheLock;
-    std::unordered_map<BlockCoordinate, ChunkCache*> m_ChunkCache;
+    std::mutex                                                       m_ChunkCacheLock;
+    std::unordered_map<BlockCoordinate, std::unique_ptr<ChunkCache>> m_ChunkCache;
 
     std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
 
@@ -144,7 +144,7 @@ public:
     {
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
         {
-            return it->second;
+            return it->second.get();
         }
 
         return nullptr;

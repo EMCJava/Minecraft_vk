@@ -64,7 +64,7 @@ public:
     };
 
 protected:
-    std::mutex                         m_PendingThreadsMutex;
+    std::recursive_mutex               m_PendingThreadsMutex;
     std::vector<Context*>              m_PendingThreads;
     std::vector<ThreadInstanceWrapper> m_RunningThreads;
 
@@ -117,9 +117,9 @@ protected:
 
     std::vector<Context*> UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp )
     {
-        std::lock_guard<std::mutex> guard( m_PendingThreadsMutex );
-        std::vector<Context*>       finished      = CleanRunningThread( );
-        size_t                      threadVacancy = m_maxThread - m_RunningThreads.size( );
+        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
+        std::vector<Context*>                 finished      = CleanRunningThread( );
+        size_t                                threadVacancy = m_maxThread - m_RunningThreads.size( );
 
         threadVacancy = std::min( m_PendingThreads.size( ), threadVacancy );
         if ( threadVacancy > 0 )
@@ -165,7 +165,7 @@ protected:
 
     void AddJobContext( Context* context )
     {
-        std::lock_guard<std::mutex> guard( m_PendingThreadsMutex );
+        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
         m_PendingThreads.push_back( context );
     }
 
