@@ -94,35 +94,34 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                       },
                       &finished );
 
-        if ( !finished.empty( ) )
-        {
-            for ( auto& cache : finished )
-            {
-
-                cache->initializing = false;
-                cache->initialized  = true;
-
-                if ( cache->GetStatus( ) == ChunkStatus::eFull )
-                {
-                    for ( int i = 0; i < DirHorizontalSize; ++i )
-                    {
-                        auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetCoordinate( ) + NearChunkDirection[ i ] );
-                        if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
-                        {
-                            // this is fast, I guess? (nope)
-
-                            // this is ok, I guess
-                            // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
-                            if ( cache->SyncChunkFromDirection( chunkPtr, static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
-                            if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
-                        }
-                    }
-                }
-            }
-        } else
+        if ( finished.empty( ) )
         {
             // std::this_thread::yield();
             std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
+            continue;
+        }
+
+        for ( auto& cache : finished )
+        {
+            cache->initializing = false;
+            cache->initialized  = true;
+
+            if ( cache->GetStatus( ) == ChunkStatus::eFull )
+            {
+                for ( int i = 0; i < DirHorizontalSize; ++i )
+                {
+                    auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetCoordinate( ) + NearChunkDirection[ i ] );
+                    if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
+                    {
+                        // this is fast, I guess? (nope)
+
+                        // this is ok, I guess
+                        // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
+                        if ( cache->SyncChunkFromDirection( chunkPtr, static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
+                        if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
+                    }
+                }
+            }
         }
     }
 
