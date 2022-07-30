@@ -125,9 +125,10 @@ ChunkPool::UpdateThread( const std::stop_token& st )
         }
     }
 
-    while ( !m_RunningThreads.empty( ) )
+    uint32_t leftRunningThread = 0;
+    while ( ( leftRunningThread = GetRunningThreadCount( ) ) != 0 )
     {
-        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Waiting", m_RunningThreads.size( ), "thread to be finished" );
+        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Waiting", leftRunningThread, "thread to be finished" );
         CleanRunningThread( );
         std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
     }

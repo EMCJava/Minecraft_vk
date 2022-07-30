@@ -83,6 +83,21 @@ protected:
         wrapper.occupied = false;
     }
 
+    inline uint32_t GetRunningThreadCount( ) const
+    {
+        int runningThreadCount = 0;
+        for ( int i = 0; i < m_maxThread; ++i )
+            if ( m_RunningThreads[ i ].occupied ) runningThreadCount++;
+        return runningThreadCount;
+    }
+
+    inline bool IsAllThreadCompleted( ) const
+    {
+        for ( int i = 0; i < m_maxThread; ++i )
+            if ( m_RunningThreads[ i ].threadInstance != nullptr ) return false;
+        return true;
+    }
+
     void CleanRunningThread( std::vector<Context*>* finished = nullptr )
     {
         for ( int i = 0; i < m_RunningThreads.size( ); ++i )
