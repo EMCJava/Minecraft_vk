@@ -98,6 +98,12 @@ public:
         transferQueue.submit( submitInfo, nullptr );
         transferQueue.waitIdle( );
     }
+
+    friend std::ostream& operator<<( std::ostream& o, const BufferMeta& bm )
+    {
+        o << (VkBuffer) bm.buffer << std::flush;
+        return o;
+    }
 };
 
 
