@@ -79,21 +79,24 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             }
         }
 
-        UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
-                      [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
-                          const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
-                          const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
-                          if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
+        {
+            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+            std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
+            UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
+                          [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
+                              const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
+                              const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
+                              if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
 
-                          const auto aEmergency = a->GetEmergencyLevel( );
-                          const auto bEmergency = b->GetEmergencyLevel( );
-                          if ( aEmergency != bEmergency )
-                              return aEmergency < bEmergency;
+                              const auto aEmergency = a->GetEmergencyLevel( );
+                              const auto bEmergency = b->GetEmergencyLevel( );
+                              if ( aEmergency != bEmergency )
+                                  return aEmergency < bEmergency;
 
-                          return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
-                      },
-                      &finished );
-
+                              return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
+                          },
+                          &finished );
+        }
         if ( finished.empty( ) )
         {
             // std::this_thread::yield();
