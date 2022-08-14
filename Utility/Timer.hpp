@@ -9,27 +9,49 @@
 
 #include <atomic>
 
-namespace
+template <bool LogOnDeconstruct>
+class TTimer
 {
-std::atomic<uint32_t> TimerInstanceCounter( 0 );
-};
-
-class Timer
-{
-    std::chrono::high_resolution_clock::time_point startTime;
+    std::chrono::high_resolution_clock::time_point m_StartTime;
 
 public:
-    Timer( )
-        : startTime( std::chrono::high_resolution_clock::now( ) )
+    TTimer( ) { Start( ); }
+    ~TTimer( )
     {
-        ++TimerInstanceCounter;
-    };
+        if constexpr ( LogOnDeconstruct ) Log( );
+    }
 
-    ~Timer( )
+    void Log( const std::string& prefix )
     {
-        Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Timer[", TimerInstanceCounter, "]:", std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now( ) - startTime ).count( ), "mic-s." );
-        --TimerInstanceCounter;
+        Logger::getInstance( )
+            .LogLine(
+                Logger::LogType::eInfo,
+                "Timer [",
+                prefix,
+                ']',
+                std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now( ) - m_StartTime ).count( ),
+                "mic-s." );
+    }
+
+    void Log( )
+    {
+        Logger::getInstance( )
+            .LogLine(
+                Logger::LogType::eInfo,
+                "Timer",
+                std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now( ) - m_StartTime ).count( ),
+                "mic-s." );
+    }
+
+    void Start( ) { m_StartTime = std::chrono::high_resolution_clock::now( ); }
+
+    void Step( )
+    {
+        Log( );
+        Start( );
     }
 };
+
+using Timer = TTimer<true>;
 
 #endif   // MINECRAFT_VK_UTILITY_TIMER_HPP
