@@ -283,9 +283,9 @@ ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
     if ( indirectDrawBufferSize < newIndirectDrawBufferSize )
     {
         indirectDrawBufferSize = newIndirectDrawBufferSize + ( IndirectDrawBufferSizeStep - ( newIndirectDrawBufferSize % IndirectDrawBufferSizeStep ) );
-        // Logger::getInstance( ).LogLine( "Creating indirectDrawBuffer with size:", indirectDrawBufferSize );
 
         indirectDrawBuffers.Create( indirectDrawBufferSize, vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferDst, VMA_MEMORY_USAGE_GPU_ONLY );
+        Logger::getInstance( ).LogLine( "Creating indirectDrawBuffer [", indirectDrawBuffers, "] with size:", indirectDrawBufferSize );
 
         // Logger::getInstance( ).LogLine( "Creating indirectDrawStagingBuffer with size:", indirectDrawBufferSize );
         stagingBuffer.Create( indirectDrawBufferSize, vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc, VMA_MEMORY_USAGE_CPU_ONLY );
