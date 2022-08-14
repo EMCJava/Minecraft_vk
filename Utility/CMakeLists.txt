@@ -1,3 +1,4 @@
+add_subdirectory(Resources)
 add_subdirectory(Vulkan)
 add_subdirectory(Thread)
 add_subdirectory(ImguiAddons)
