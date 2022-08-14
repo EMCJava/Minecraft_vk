@@ -13,13 +13,6 @@
 
 class MinecraftWorld : public Tickable
 {
-    struct ChunkAccessCache {
-        ChunkCache*     chunkCache { };
-        ChunkCoordinate coordinates { };
-    };
-    std::array<ChunkAccessCache, ChunkAccessCacheSize> m_ChunkAccessCache;
-    uint32_t                                           ChunkAccessCacheIndex = 0;
-
     std::unique_ptr<ChunkPool> m_ChunkPool;
 
     std::unique_ptr<float[]>        m_TerrainNoiseOffsetPerLevel;
@@ -70,8 +63,6 @@ public:
     ChunkCache* GetChunkCache( const ChunkCoordinate& chunkCoordinate );
     Block*      GetBlock( const BlockCoordinate& blockCoordinate );
     bool        SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
-
-    void ResetChunkCache( );
 
     [[nodiscard]] const auto& GetBedRockNoise( ) const { return m_BedRockNoise; }
     [[nodiscard]] const auto& GetTerrainNoise( ) const { return m_WorldTerrainNoise; }

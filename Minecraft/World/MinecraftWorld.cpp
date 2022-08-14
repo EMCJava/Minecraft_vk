@@ -59,19 +59,6 @@ MinecraftWorld::Tick( float deltaTime )
         get<2>( chunkCoordinate ) = 0;
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
 
-        if ( m_ChunkPool->IsChunkErased( ) )   // reload cache
-        {
-            std::lock_guard<std::recursive_mutex> lock( m_ChunkPool->GetChunkCacheLock( ) );
-            const auto&                           firstCache = *m_ChunkPool->GetChunkIterBegin( );
-
-            for ( uint32_t i = 0; i < ChunkAccessCacheSize; ++i )
-                if ( m_ChunkPool->GetChunkCache( m_ChunkAccessCache[ i ].coordinates ) == nullptr )
-                {
-                    m_ChunkAccessCache[ i ].coordinates = firstCache.first;
-                    m_ChunkAccessCache[ i ].chunkCache  = firstCache.second.get( );
-                }
-        }
-
         m_TimeSinceChunkLoad = 0;
     }
 }
@@ -125,25 +112,7 @@ MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 ChunkCache*
 MinecraftWorld::GetChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
-    for ( uint32_t i = ChunkAccessCacheIndex; i < ChunkAccessCacheSize; ++i )
-        if ( m_ChunkAccessCache[ i ].coordinates == chunkCoordinate ) return m_ChunkAccessCache[ i ].chunkCache;
-    for ( uint32_t i = 0; i < ChunkAccessCacheIndex; ++i )
-        if ( m_ChunkAccessCache[ i ].coordinates == chunkCoordinate ) return m_ChunkAccessCache[ i ].chunkCache;
-
-    ChunkAccessCacheIndex                                         = ( ChunkAccessCacheIndex + 1 ) % ChunkAccessCacheSize;
-    m_ChunkAccessCache[ ChunkAccessCacheIndex ].coordinates       = chunkCoordinate;
-    return m_ChunkAccessCache[ ChunkAccessCacheIndex ].chunkCache = m_ChunkPool->GetChunkCache( chunkCoordinate );
-}
-
-void
-MinecraftWorld::ResetChunkCache( )
-{
-    m_ChunkPool->AddCoordinate( { 0, 0, 0 } );
-    for ( uint32_t i = 0; i < ChunkAccessCacheSize; ++i )
-    {
-        m_ChunkAccessCache[ i ].coordinates = { 0, 0, 0 };
-        m_ChunkAccessCache[ i ].chunkCache  = m_ChunkPool->GetChunkCache( { 0, 0, 0 } );
-    }
+    return m_ChunkPool->GetChunkCache( chunkCoordinate );
 }
 
 bool

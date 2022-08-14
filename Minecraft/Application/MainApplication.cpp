@@ -55,8 +55,6 @@ MainApplication::MainApplication( )
         SetGenerationOffsetByCurve( );
     }
 
-    MinecraftServer::GetInstance( ).GetWorld( ).ResetChunkCache( );
-
     Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Finished Initializing" );
 }
 
@@ -649,7 +647,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
                 {
                     for ( int j = -span; j <= span; ++j, ++index )
                     {
-                        if ( auto* chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( playerPosition + MakeMinecraftCoordinate( i, 0, j ) ); chunkCache != nullptr )
+                        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( playerPosition + MakeMinecraftCoordinate( i, 0, j ) ); chunkCache != nullptr )
                         {
                             values[ index ] = (int) chunkCache->GetStatus( );
                         } else
