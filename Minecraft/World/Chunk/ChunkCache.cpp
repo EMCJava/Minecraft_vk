@@ -211,7 +211,7 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
         const auto newFaceCount = std::popcount( m_BlockFaces[ blockIndex ] );
 
         int         faceDiff     = 0;
-        const auto* blockPtr     = m_Blocks + blockIndex;
+        const auto* blockPtr     = m_Blocks.get( ) + blockIndex;
         auto* const blockFacePtr = m_BlockFaces + blockIndex;
         if ( GetMinecraftY( blockCoordinate ) != ChunkMaxHeight - 1 )
             if ( !blockPtr[ dirUpFaceOffset ].Transparent( ) )

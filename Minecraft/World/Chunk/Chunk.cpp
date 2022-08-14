@@ -29,15 +29,16 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
 
     const auto& noiseOffset = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoiseOffset( );
 
-    delete[] m_WorldHeightMap;
-    m_WorldHeightMap = new int32_t[ SectionSurfaceSize ];
-    for ( int i = 0; i < SectionSurfaceSize; ++i )
-        m_WorldHeightMap[ i ] = -1;
+    for ( auto& height : m_WorldHeightMap )
+    {
+        height = std::make_unique<int32_t[]>( SectionSurfaceSize );
+        for ( int i = 0; i < SectionSurfaceSize; ++i )
+            height[ i ] = -1;
+    }
 
-    delete[] m_Blocks;
-    m_Blocks = new Block[ ChunkVolume ];
+    m_Blocks = std::make_unique<Block[]>( ChunkVolume );
 
-    auto     blocksPtr          = m_Blocks;
+    auto     blocksPtr          = m_Blocks.get( );
     uint32_t horizontalMapIndex = 0;
     for ( int i = 0; i < ChunkMaxHeight; ++i )
     {
@@ -49,7 +50,7 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
                 noiseValue += noiseOffset[ i ];
 
                 blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
-                if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_WorldHeightMap[ horizontalMapIndex ] = i;
+                if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_WorldHeightMap[ eNoiseHeight ][ horizontalMapIndex ] = i;
 
                 ++horizontalMapIndex;
             }
@@ -58,16 +59,16 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
     }
 
     // surface block
-    blocksPtr = m_Blocks;
+    blocksPtr = m_Blocks.get( );
     for ( int i = 0; i < ChunkMaxHeight; ++i )
     {
         horizontalMapIndex = 0;
         for ( int k = 0; k < SectionUnitLength; ++k )
             for ( int j = 0; j < SectionUnitLength; ++j )
             {
-                if ( i > m_WorldHeightMap[ horizontalMapIndex ] - 3 )
+                if ( i > m_WorldHeightMap[ eNoiseHeight ][ horizontalMapIndex ] - 3 )
                 {
-                    if ( i == m_WorldHeightMap[ horizontalMapIndex ] )
+                    if ( i == m_WorldHeightMap[ eNoiseHeight ][ horizontalMapIndex ] )
                     {
                         blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
                     } else if ( i <= m_WorldHeightMap[ horizontalMapIndex ] )
@@ -142,9 +143,13 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
     // update height map
     if ( !block.Transparent( ) )
     {
-        auto& originalHeight = m_WorldHeightMap[ blockIndex & GetConstantBinaryMask<SectionSurfaceSize>( ) ];
-        if ( originalHeight < ( blockIndex >> SectionSurfaceSizeBinaryOffset ) )
-            originalHeight = blockIndex >> SectionSurfaceSizeBinaryOffset;
+        int heightMapLayerStart = m_Status >= eFeature ? eFullHeight : ( m_Status >= eNoise ? eFeatureHeight : eNoiseHeight );
+        for ( ; heightMapLayerStart <= eFullHeight; ++heightMapLayerStart )
+        {
+            auto&      originalHeight = m_WorldHeightMap[ heightMapLayerStart ][ blockIndex & GetConstantBinaryMask<SectionSurfaceSize>( ) ];
+            const auto height         = blockIndex >> SectionSurfaceSizeBinaryOffset;
+            if ( originalHeight < height ) originalHeight = height;
+        }
     }
 
     m_Blocks[ blockIndex ] = block;
@@ -246,7 +251,7 @@ Chunk::AttemptRunFeature( )
 
     for ( auto& ss : m_StructureReferences )
     {
-        // ss.lock( )->Generate( *this );
+        ss.lock( )->Generate( *this );
     }
 
     return true;

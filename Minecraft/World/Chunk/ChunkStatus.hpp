@@ -5,6 +5,14 @@
 #ifndef MINECRAFT_VK_CHUNKSTATUS_HPP
 #define MINECRAFT_VK_CHUNKSTATUS_HPP
 
+using HeightMapStatusTy = uint8_t;
+enum HeightMapStatus : HeightMapStatusTy {
+    eNoiseHeight,                  // starts generating chunk, e.g. land scape
+    eFeatureHeight,                // final decoration, e.g. placing trees / structure
+    eFullHeight = eFeatureHeight   // a completed chunk
+};
+
+
 using ChunkStatusTy = uint8_t;
 enum ChunkStatus : ChunkStatusTy {
 

@@ -25,8 +25,9 @@ class Chunk
     ChunkCoordinate m_Coordinate;
     ChunkCoordinate m_WorldCoordinate;
 
-    Block*   m_Blocks { };
-    int32_t* m_WorldHeightMap { };
+
+    std::unique_ptr<Block[]>                                m_Blocks { };
+    std::array<std::unique_ptr<int32_t[]>, eFullHeight + 1> m_WorldHeightMap { };
 
     MinecraftNoise m_ChunkNoise;
 
