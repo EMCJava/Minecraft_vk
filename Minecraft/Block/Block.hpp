@@ -17,6 +17,7 @@ enum BlockID : uint8_t {
     Dart,
     BedRock,
     AcaciaLog,
+    AzaleaLeaves,
     BlockIDSize
 };
 
@@ -31,6 +32,7 @@ toString( const BlockID& id )
         SWITCH_TOSTRING( Dart )
         SWITCH_TOSTRING( BedRock )
         SWITCH_TOSTRING( AcaciaLog )
+        SWITCH_TOSTRING( AzaleaLeaves )
     case BlockIDSize: break;
     }
 
