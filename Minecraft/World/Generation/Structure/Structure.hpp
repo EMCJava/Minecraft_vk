@@ -5,9 +5,11 @@
 #ifndef MINECRAFT_VK_STRUCTURE_HPP
 #define MINECRAFT_VK_STRUCTURE_HPP
 
+#include "StructurePieces.hpp"
+
 #include <Minecraft/util/MinecraftType.h>
 
-class Structure
+class Structure : public StructurePieces
 {
 
 protected:

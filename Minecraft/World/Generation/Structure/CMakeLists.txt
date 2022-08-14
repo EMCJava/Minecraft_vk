@@ -1,3 +1,4 @@
+add_library(StructurePiecesLib StructurePieces.hpp StructurePieces.cpp)
 add_library(StructureTreeLib StructureTree.hpp StructureTree.cpp)
 
-set_property(DIRECTORY PROPERTY StructureLib StructureTreeLib)
+set_property(DIRECTORY PROPERTY StructureLib StructurePiecesLib StructureTreeLib)
