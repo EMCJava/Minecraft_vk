@@ -119,13 +119,29 @@ public:
             tMaxZ = tDeltaZ * ( GetMinecraftZ( std::as_const( startingPosition ) ) - std::floor( GetMinecraftZ( std::as_const( startingPosition ) ) ) );
 
         std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
-        Block*                                blockPtr;
+
+        auto                        chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate ) + ChunkCoordinate { 1, 0, 0 };
+        std::shared_ptr<ChunkCache> currentChunk;
+        Block*                      blockPtr;
         while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
         {
             if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );
 
-            blockPtr = world.GetBlock( currentCoordinate );
-            if ( blockPtr != nullptr && !blockPtr->Transparent( ) ) break;
+            auto newChunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate );
+            if ( chunkCoordinate != newChunkCoordinate )
+            {
+                currentChunk = world.GetChunkCache( newChunkCoordinate );
+                if ( currentChunk != nullptr && !currentChunk->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
+                    currentChunk = nullptr;
+            }
+
+            if ( currentChunk )
+            {
+                blockPtr = currentChunk->GetBlock( MinecraftWorld::BlockToChunkRelativeCoordinate( currentCoordinate ) );
+                if ( !blockPtr->Transparent( ) )
+                    break;
+            }
+
             result.beforeSolidHit = currentCoordinate;
 
             if ( tMaxX < tMaxY )
