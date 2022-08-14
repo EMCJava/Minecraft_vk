@@ -71,7 +71,13 @@ Chunk::FillTerrain( const MinecraftNoise& generator )
                     if ( i == m_WorldHeightMap[ eNoiseHeight ][ horizontalMapIndex ] )
                     {
                         blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
-                    } else if ( i <= m_WorldHeightMap[ horizontalMapIndex ] )
+
+                        if ( k == 0 || j == 0 )
+                        {
+                            blocksPtr[ horizontalMapIndex ] = BlockID::BedRock;
+                        }
+
+                    } else if ( i <= m_WorldHeightMap[ eNoiseHeight ][ horizontalMapIndex ] )
                     {
                         blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
                     }
