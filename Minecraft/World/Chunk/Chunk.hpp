@@ -17,7 +17,7 @@
 #include <cmath>
 #include <memory>
 
-class Chunk
+class Chunk : public AABB
 {
 
     class MinecraftWorld* m_World;
@@ -35,15 +35,19 @@ class Chunk
     std::vector<std::shared_ptr<Structure>> m_StructureStarts;
     std::vector<std::weak_ptr<Structure>>   m_StructureReferences;
 
+    static constexpr auto                                ChunkReferenceRange = StructureReferenceStatusRange * 2 + 1;
+    static constexpr auto                                ChunkReferenceSize  = ChunkReferenceRange * ChunkReferenceRange;
+    std::array<std::weak_ptr<Chunk>, ChunkReferenceSize> m_ChunkReferencesSaves;
+
     ChunkStatus m_Status = ChunkStatus::eEmpty;
 
 private:
     inline void DeleteChunk( )
     {
-        delete[] m_WorldHeightMap;
-        delete[] m_Blocks;
-        m_Blocks         = nullptr;
-        m_WorldHeightMap = nullptr;
+        //        delete[] m_WorldHeightMap;
+        //        delete[] m_Blocks;
+        //        m_Blocks         = nullptr;
+        //        m_WorldHeightMap = nullptr;
 
         m_Status = ChunkStatus::eEmpty;
         m_StructureStarts.clear( );
@@ -58,6 +62,10 @@ private:
     void RegenerateChunk( ChunkStatus status );
 
     void UpgradeChunk( ChunkStatus targetStatus );
+
+    std::vector<std::weak_ptr<Chunk>> GetChunkRefInRange( int range );
+    bool                              UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range );
+    bool                              IsStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const;
 
     bool CanRunStructureStart( ) const;
     bool CanRunStructureReference( ) const;
@@ -75,6 +83,14 @@ private:
      *
      * */
     [[nodiscard]] const auto& GetStructureStarts( ) const { return m_StructureStarts; }
+
+    /*
+     *
+     * Return and update the chunk reference
+     *
+     * */
+    std::weak_ptr<Chunk>  GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const;
+    std::weak_ptr<Chunk>& GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate );
 
 public:
     Chunk( class MinecraftWorld* world )
@@ -101,8 +117,8 @@ public:
     [[nodiscard]] inline auto GetChunkNoise( const MinecraftNoise& terrainGenerator ) const
     {
         auto noiseSeed = terrainGenerator.CopySeed( );
-        noiseSeed.first ^= GetMinecraftX( m_WorldCoordinate );
-        noiseSeed.second ^= GetMinecraftZ( m_WorldCoordinate );
+        noiseSeed.first ^= GetMinecraftX( m_WorldCoordinate ) << 13;
+        noiseSeed.second ^= GetMinecraftZ( m_WorldCoordinate ) << 7;
 
         return MinecraftNoise { noiseSeed };
     }

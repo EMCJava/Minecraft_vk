@@ -54,6 +54,7 @@ ChunkCache::RegenerateVisibleFacesAt( uint32_t index )
 {
     assert( m_EmptySlot == 0 );
     assert( m_NearChunks[ DirRight ] != nullptr && m_NearChunks[ DirLeft ] != nullptr && m_NearChunks[ DirFront ] != nullptr && m_NearChunks[ DirBack ] != nullptr );
+    assert( m_BlockFaces != nullptr );
 
     m_BlockFaces[ index ] = 0;
     if ( m_Blocks[ index ].Transparent( ) ) return;
@@ -120,7 +121,7 @@ ChunkCache::GenerateRenderBuffer( )
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Generating chunk:", chunk.GetCoordinate( ) );
 
-    auto [ chunkX, chunkZ, chunkY ] = GetCoordinate( );
+    auto [ chunkX, chunkZ, chunkY ] = GetChunkCoordinate( );
 
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;

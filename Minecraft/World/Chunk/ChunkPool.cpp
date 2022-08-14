@@ -113,7 +113,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             {
                 for ( int i = 0; i < DirHorizontalSize; ++i )
                 {
-                    auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetCoordinate( ) + NearChunkDirection[ i ] );
+                    auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
                     if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
                     {
                         // this is fast, I guess? (nope)
