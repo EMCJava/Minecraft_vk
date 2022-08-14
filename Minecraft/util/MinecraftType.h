@@ -20,6 +20,13 @@ using EntityCoordinate = std::tuple<float, float, float>;
 using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
 using ChunkCoordinate  = BlockCoordinate;
 
+template <typename Ty, typename Num>
+inline std::tuple<Ty, Ty, Ty>
+operator>>( const std::tuple<Ty, Ty, Ty>& a, const Num& b )
+{
+    return { get<0>( a ) >> b, get<1>( a ) >> b, get<2>( a ) >> b };
+}
+
 template <typename Ty>
 inline std::tuple<Ty, Ty, Ty>
 operator+( const std::tuple<Ty, Ty, Ty>& a, const std::tuple<Ty, Ty, Ty>& b )
