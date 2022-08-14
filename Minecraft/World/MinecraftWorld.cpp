@@ -86,30 +86,30 @@ MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
 {
     if ( GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
 
-    if ( auto* chunkCache = GetCompleteChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
-                                                                            0,
-                                                                            ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+    if ( auto chunkCache = GetCompleteChunkCache( BlockToChunkWorldCoordinate( blockCoordinate ) );
          chunkCache != nullptr )
     {
-        return chunkCache->GetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
-                                                              GetMinecraftY( blockCoordinate ),
-                                                              GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ) );
+        return chunkCache->GetBlock( BlockToChunkRelativeCoordinate( blockCoordinate ) );
     }
 
     return nullptr;
 }
-ChunkCache*
+
+std::shared_ptr<ChunkCache>
 MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
-    if ( auto* chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr && chunkCache->initialized && chunkCache->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
+    if ( auto chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr )
     {
-        return chunkCache;
+        if ( chunkCache->initialized && chunkCache->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
+        {
+            return chunkCache;
+        }
     }
 
-    return nullptr;
+    return { };
 }
 
-ChunkCache*
+std::shared_ptr<ChunkCache>
 MinecraftWorld::GetChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
     return m_ChunkPool->GetChunkCache( chunkCoordinate );
@@ -120,15 +120,12 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
 {
     if ( GetMinecraftY( blockCoordinate ) < 0 ) return false;
 
-    if ( auto* chunkCache = GetChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
-                                                                    0,
-                                                                    ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
-         chunkCache != nullptr && chunkCache->initialized )
+    if ( auto chunkCache = GetChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+                                                                   0,
+                                                                   ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+         chunkCache != nullptr )
     {
-        if ( chunkCache->SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ),
-                                                            GetMinecraftY( blockCoordinate ),
-                                                            GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ),
-                                   block ) )
+        if ( chunkCache->initialized && chunkCache->SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ), GetMinecraftY( blockCoordinate ), GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ), block ) )
         {
             chunkCache->GenerateRenderBuffer( );
             return true;

@@ -117,7 +117,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
 
                         // this is ok, I guess
                         // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
-                        if ( cache->SyncChunkFromDirection( chunkPtr, static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
+                        if ( cache->SyncChunkFromDirection( chunkPtr.get( ), static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
                         if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
                     }
                 }

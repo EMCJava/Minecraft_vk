@@ -23,7 +23,7 @@ private:
     std::unique_ptr<std::jthread> m_UpdateThread;
 
     std::recursive_mutex                                             m_ChunkCacheLock;
-    std::unordered_map<BlockCoordinate, std::unique_ptr<ChunkCache>> m_ChunkCache;
+    std::unordered_map<BlockCoordinate, std::shared_ptr<ChunkCache>> m_ChunkCache;
 
     std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
 
@@ -88,7 +88,8 @@ public:
         ChunkCache* newChunk = nullptr;
 
         {
-            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+            std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+            std::lock_guard<std::recursive_mutex> threadLock( m_PendingThreadsMutex );
             if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
             {
                 // need upgrade
@@ -176,14 +177,15 @@ public:
         return result;
     }
 
-    [[nodiscard]] ChunkCache* GetChunkCache( const ChunkCoordinate& coordinate )
+    [[nodiscard]] std::shared_ptr<ChunkCache> GetChunkCache( const ChunkCoordinate& coordinate )
     {
+        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
         {
-            return it->second.get( );
+            return it->second;
         }
 
-        return nullptr;
+        return { };
     }
 };
 
