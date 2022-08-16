@@ -67,7 +67,7 @@ StructureTree::Generate( WorldChunk& chunk )
                 const auto leafDensity = std::abs( x ) + std::abs( y ) + std::abs( z );
                 if ( chunkNoise.NextUint64( ) % 8 >= leafDensity )
                 {
-                    chunk.SetBlockAtWorldCoordinate( leafOrigin + MakeMinecraftCoordinate( x, y, z ), BlockID::AzaleaLeaves );
+                    SetBlock( chunk, leafOrigin + MakeMinecraftCoordinate( x, y, z ), BlockID::AzaleaLeaves );
                 }
             }
 }
