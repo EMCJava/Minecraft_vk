@@ -7,6 +7,7 @@
 
 #include <array>
 #include <concepts>
+#include <cstdint>
 #include <functional>
 
 template <std::integral auto Size, typename KeyTy, typename ValueTy>
