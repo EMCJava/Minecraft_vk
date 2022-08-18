@@ -39,7 +39,6 @@ private:
      *
      * */
     uint32_t                       m_IndexBufferSize { };
-    std::atomic_flag m_BufferReady ATOMIC_FLAG_INIT;
 
     ChunkSolidBuffer::SuitableAllocation m_BufferAllocation;
 
@@ -128,7 +127,6 @@ public:
     inline const auto& GetTargetStatus( ) const { return m_RequiredStatus; }
     inline const bool  IsAtLeastTargetStatus( ) const { return GetTargetStatus( ) <= m_Status; }
 
-    bool            IsBufferReady( ) const { return m_BufferReady.test( ); }
     inline uint32_t GetIndexBufferSize( ) const { return m_IndexBufferSize; }
 };
 
