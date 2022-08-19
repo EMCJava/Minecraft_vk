@@ -19,32 +19,32 @@ ToHorizontalIndex( const auto& coordinate )
 };   // namespace
 
 void
-StructureTree::Generate( Chunk& chunk )
+StructureTree::Generate( WorldChunk& chunk )
 {
     auto           startingCoordinate = chunk.WorldToChunkRelativeCoordinate( m_StartingPosition );
     auto           startingIndex      = ToHorizontalIndex( startingCoordinate );
     CoordinateType heightAtPoint, treeHeight;
     MinecraftNoise chunkNoise;
 
+    assert( GetMinecraftY( m_StartingPosition ) == 0 );
     if ( chunk.IsPointInsideHorizontally( m_StartingPosition ) )
     {
         heightAtPoint = chunk.GetHeight( startingIndex, eNoiseHeight ) + 1;
         treeHeight    = std::min( ChunkMaxHeight - heightAtPoint, 7 );
-        chunkNoise    = chunk.GetChunkNoise( );
+        chunkNoise    = chunk.CopyChunkNoise( );
 
     } else
     {
-        assert( GetMinecraftY( m_StartingPosition ) == 0 );
         const auto originalChunkCoordinate = m_StartingPosition >> SectionUnitLengthBinaryOffset;
         // const
-        auto originalChunk           = chunk.GetWorld( )->GetChunkCache( originalChunkCoordinate );
-        const auto relativeCoordinate      = originalChunk->WorldToChunkRelativeCoordinate( m_StartingPosition );
+        auto       originalChunk      = chunk.GetWorld( )->GetChunkCache( originalChunkCoordinate );
+        const auto relativeCoordinate = originalChunk->WorldToChunkRelativeCoordinate( m_StartingPosition );
         if ( GetMinecraftX( relativeCoordinate ) < 0 || GetMinecraftX( relativeCoordinate ) >= SectionUnitLength || GetMinecraftZ( relativeCoordinate ) < 0 || GetMinecraftZ( relativeCoordinate ) >= SectionUnitLength )
             originalChunk = chunk.GetWorld( )->GetChunkCache( originalChunkCoordinate );
         const auto horizontalIndex = ToHorizontalIndex( relativeCoordinate );
         heightAtPoint              = originalChunk->GetHeight( horizontalIndex, eNoiseHeight ) + 1;
         treeHeight                 = std::min( ChunkMaxHeight - heightAtPoint, 7 );
-        chunkNoise                 = originalChunk->GetChunkNoise( );
+        chunkNoise                 = originalChunk->CopyChunkNoise( );
     }
 
     // trunk
@@ -53,7 +53,7 @@ StructureTree::Generate( Chunk& chunk )
 
         for ( int i = 0; i < treeHeight; ++i )
         {
-            chunk.SetBlock( startingIndex + ScaleToSecond<1, SectionSurfaceSize>( heightAtPoint + i ), BlockID::AcaciaLog );
+            chunk.SetBlock( startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), BlockID::AcaciaLog );
         }
     }
 
@@ -73,10 +73,10 @@ StructureTree::Generate( Chunk& chunk )
 }
 
 bool
-StructureTree::TryGenerate( Chunk& chunk, std::vector<std::shared_ptr<Structure>>& structureList )
+StructureTree::TryGenerate( WorldChunk& chunk, std::vector<std::shared_ptr<Structure>>& structureList )
 {
     bool           generated  = false;
-    MinecraftNoise chunkNoise = chunk.GetChunkNoise( );
+    MinecraftNoise chunkNoise = chunk.CopyChunkNoise( );
 
     int horizontalMapIndex = 0;
     for ( int k = 0; k < SectionUnitLength; ++k )

@@ -1,0 +1,402 @@
+//
+// Created by lys on 8/18/22.
+//
+
+#include "WorldChunk.hpp"
+#include <Minecraft/World/Generation/Structure/StructureTree.hpp>
+
+#include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
+
+namespace
+{
+inline void
+ResetHeightMap( std::unique_ptr<int32_t[]>& map )
+{
+    for ( int i = 0; i < SectionSurfaceSize; ++i )
+        map[ i ] = -1;
+}
+}   // namespace
+
+void
+WorldChunk::RegenerateChunk( ChunkStatus status )
+{
+    ResetChunk( );
+    UpgradeChunk( status );
+}
+
+void
+WorldChunk::FillTerrain( const MinecraftNoise& generator )
+{
+    auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
+    auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
+
+    const auto& noiseOffset = MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoiseOffset( );
+
+    m_HeightMap = std::make_unique<int32_t[]>( SectionSurfaceSize );
+    ResetHeightMap( m_HeightMap );
+    for ( auto& height : m_StatusHeightMap )
+        ResetHeightMap( height = std::make_unique<int32_t[]>( SectionSurfaceSize ) );
+
+    m_Blocks = std::make_unique<Block[]>( ChunkVolume );
+
+    auto     blocksPtr          = m_Blocks.get( );
+    uint32_t horizontalMapIndex = 0;
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+    {
+        horizontalMapIndex = 0;
+        for ( int k = 0; k < SectionUnitLength; ++k )
+            for ( int j = 0; j < SectionUnitLength; ++j )
+            {
+                auto noiseValue = generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
+                noiseValue += noiseOffset[ i ];
+
+                blocksPtr[ horizontalMapIndex ]   = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
+                if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_HeightMap[ horizontalMapIndex ] = i;
+
+                ++horizontalMapIndex;
+            }
+
+        blocksPtr += SectionSurfaceSize;
+    }
+
+    // surface block
+    blocksPtr = m_Blocks.get( );
+    for ( int i = 0; i < ChunkMaxHeight; ++i )
+    {
+        horizontalMapIndex = 0;
+        for ( int k = 0; k < SectionUnitLength; ++k )
+            for ( int j = 0; j < SectionUnitLength; ++j )
+            {
+                if ( i > m_HeightMap[ horizontalMapIndex ] - 3 )
+                {
+                    if ( i == m_HeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
+
+                        if ( k == 0 || j == 0 )
+                        {
+                            blocksPtr[ horizontalMapIndex ] = BlockID::BedRock;
+                        }
+
+                    } else if ( i <= m_HeightMap[ horizontalMapIndex ] )
+                    {
+                        blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
+                    }
+                }
+
+                ++horizontalMapIndex;
+            }
+
+        blocksPtr += SectionSurfaceSize;
+    }
+}
+
+void
+WorldChunk::FillBedRock( const MinecraftNoise& generator )
+{
+    auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
+    auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
+
+    auto blackRockHeightMap = std::make_unique<uint32_t[]>( SectionSurfaceSize );
+
+    int horizontalMapIndex = 0;
+    for ( int k = 0; k < SectionUnitLength; ++k )
+        for ( int j = 0; j < SectionUnitLength; ++j )
+        {
+            const auto& noiseValue                   = generator.GetNoiseInt( xCoordinate + j, zCoordinate + k ) + 1;
+            blackRockHeightMap[ horizontalMapIndex ] = noiseValue * 2 + 1;
+
+            for ( int i = 0; i < blackRockHeightMap[ horizontalMapIndex ]; ++i )
+                m_Blocks[ horizontalMapIndex + SectionSurfaceSize * i ] = BlockID ::BedRock;
+
+            ++horizontalMapIndex;
+        }
+}
+
+void
+WorldChunk::UpgradeChunk( ChunkStatus targetStatus )
+{
+    assert( targetStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( targetStatus <= m_Status ) return;
+
+    for ( ; !IsChunkStatusAtLeast( targetStatus ); ++m_Status )
+    {
+        switch ( m_Status )
+        {
+        case eEmpty:
+            if ( !AttemptRunStructureStart( ) ) return;
+            break;
+        case eStructureStart:
+            if ( !AttemptRunStructureReference( ) ) return;
+            break;
+        case eStructureReference:
+            if ( !AttemptRunNoise( ) ) return;
+            CopyHeightMapTo( eNoiseHeight );
+            break;
+        case eNoise:
+            if ( !AttemptRunFeature( ) ) return;
+            CopyHeightMapTo( eFullHeight );
+            break;
+        case eFeature: break;
+        }
+    }
+}
+
+bool
+WorldChunk::AttemptRunStructureStart( )
+{
+    StructureTree::TryGenerate( *this, m_StructureStarts );
+    return true;
+}
+
+bool
+WorldChunk::AttemptRunStructureReference( )
+{
+    std::vector<ChunkCoordinate> missingChunk;
+    bool                         attemptFailed = false;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+        for ( int index = 0, dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
+        {
+            for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz, ++index )
+            {
+                const auto                  worldCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto                  weakChunkCache  = GetChunkReference( index, worldCoordinate );
+                std::shared_ptr<WorldChunk> chunkCache;
+                //                if ( weakChunkCache.expired( ) || ( chunkCache = weakChunkCache.lock( ) ) == nullptr || !chunkCache->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) )
+                if ( weakChunkCache.expired( ) || !( chunkCache = weakChunkCache.lock( ) )->IsChunkStatusAtLeast( ChunkStatus::eStructureStart ) )
+                {
+                    missingChunk.push_back( worldCoordinate );
+                    attemptFailed = true;
+                }
+                if ( attemptFailed ) continue;
+
+                const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
+                m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
+                for ( const auto& chunkReferenceStart : chunkReferenceStarts )
+                {
+                    if ( chunkReferenceStart->IsOverlappingAny( *this ) )
+                    {
+                        m_StructureReferences.emplace_back( chunkReferenceStart );
+                    }
+                }
+            }
+        }
+    }
+
+    if ( attemptFailed )
+    {
+        for ( const auto& chunk : missingChunk )
+        {
+            m_World->IntroduceChunk( chunk, ChunkStatus::eStructureStart );
+            // m_MissingEssentialChunks[ chunk ] = std::max( m_MissingEssentialChunks[ chunk ], (ChunkStatusTy) ChunkStatus::eStructureStart );
+        }
+
+        m_StructureReferences.clear( );
+    }
+
+    return !attemptFailed;
+}
+
+bool
+WorldChunk::AttemptRunNoise( )
+{
+    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+
+    return true;
+}
+
+bool
+WorldChunk::AttemptRunFeature( )
+{
+
+    if ( UpgradeStatusAtLeastInRange( ChunkStatus::eNoise, 2 ) ) return false;
+
+    for ( auto& ss : m_StructureStarts )
+    {
+        ss->Generate( *this );
+    }
+
+    for ( auto& ss : m_StructureReferences )
+    {
+        ss.lock( )->Generate( *this );
+    }
+
+    return true;
+}
+
+void
+WorldChunk::SetCoordinate( const ChunkCoordinate& coordinate )
+{
+    Chunk::SetCoordinate( coordinate );
+
+    m_ChunkNoise = GetChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+}
+
+bool
+WorldChunk::CanRunStructureStart( ) const
+{
+    return true;
+}
+
+bool
+WorldChunk::CanRunStructureReference( ) const
+{
+    return IsStatusAtLeastInRange( ChunkStatus::eStructureStart, StructureReferenceStatusRange );
+}
+
+bool
+WorldChunk::CanRunNoise( ) const
+{
+    return true;
+}
+
+bool
+WorldChunk::CanRunFeature( ) const
+{
+    return IsStatusAtLeastInRange( ChunkStatus::eNoise, 2 );
+}
+
+std::weak_ptr<WorldChunk>&
+WorldChunk::GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate )
+{
+    if ( auto& chunkPtr = m_ChunkReferencesSaves[ index ]; !chunkPtr.expired( ) )
+    {
+        return chunkPtr;
+    }
+
+    return m_ChunkReferencesSaves[ index ] = m_World->GetChunkCache( worldCoordinate );
+}
+
+std::weak_ptr<WorldChunk>
+WorldChunk::GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const
+{
+    if ( auto& chunkPtr = m_ChunkReferencesSaves[ index ]; !chunkPtr.expired( ) )
+    {
+        return chunkPtr;
+    }
+
+    return { };
+}
+
+bool
+WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
+{
+    assert( range <= ChunkReferenceRange );
+    int unitOffset = StructureReferenceStatusRange - range;
+
+    std::vector<ChunkCoordinate> missingChunk;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+        for ( int dz = -range; dz <= range; ++dz )
+            for ( int dx = -range; dx <= range; ++dx )
+            {
+                const auto chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                if ( auto chunkCache = GetChunkReferenceConst( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz ) );
+                     chunkCache.expired( ) || !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) )
+                    missingChunk.push_back( chunkCoordinate );
+            }
+        // chunk exist and not at target status
+        // if chunk not exist AttemptRun* will add them
+    }
+
+    for ( const auto& chunkCoordinate : missingChunk )
+        m_World->IntroduceChunk( chunkCoordinate, ChunkStatus::eStructureStart );
+
+    return !missingChunk.empty( );
+}
+
+bool
+WorldChunk::IsStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const
+{
+    assert( range <= ChunkReferenceRange );
+    int unitOffset = StructureReferenceStatusRange - range;
+
+    std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+    for ( int dz = -range; dz <= range; ++dz )
+        for ( int dx = -range; dx <= range; ++dx )
+            if ( auto chunkCache = GetChunkReferenceConst( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz ) );
+                 !chunkCache.expired( ) && !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) ) return false;
+    // chunk exist and not at target status
+    // if chunk not exist AttemptRun* will add them
+
+    return true;
+}
+
+std::vector<std::weak_ptr<WorldChunk>>
+WorldChunk::GetChunkRefInRange( int range )
+{
+    assert( range <= ChunkReferenceRange );
+    int unitOffset = StructureReferenceStatusRange - range;
+
+    std::vector<std::weak_ptr<WorldChunk>> chunks;
+
+    {
+        std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+        for ( int dz = -range; dz <= range; ++dz )
+            for ( int dx = -range; dx <= range; ++dx )
+            {
+                const auto chunkCoordinate    = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto chunkRelativeIndex = ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range );
+                chunks.push_back( GetChunkReferenceConst( chunkRelativeIndex, chunkCoordinate ) );
+            }
+    }
+
+    return chunks;
+}
+
+CoordinateType
+WorldChunk::GetHeight( uint32_t index, HeightMapStatus status )
+{
+    return m_StatusHeightMap[ status ][ index ];
+}
+
+bool
+WorldChunk::StatusUpgradeAllSatisfied( ) const
+{
+    assert( m_RequiredStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( m_RequiredStatus <= m_Status ) return true;
+
+    auto temStatus = m_Status;
+    bool satisfied = true;
+    for ( ; temStatus < m_RequiredStatus && satisfied; ++temStatus )
+    {
+        switch ( m_Status )
+        {
+        case eEmpty: satisfied = CanRunStructureStart( ); break;
+        case eStructureStart: satisfied = CanRunStructureReference( ); break;
+        case eStructureReference: satisfied = CanRunNoise( ); break;
+        case eNoise: satisfied = CanRunFeature( ); break;
+        case eFeature: return true;   // ???
+        }
+    }
+
+    return satisfied;
+}
+
+bool
+WorldChunk::NextStatusUpgradeSatisfied( ) const
+{
+    assert( m_RequiredStatus <= ChunkStatus::eFull );
+
+    // already fulfilled
+    if ( m_RequiredStatus <= m_Status ) return true;
+
+    switch ( m_Status )
+    {
+    case eEmpty: return CanRunStructureStart( );
+    case eStructureStart: return CanRunStructureReference( );
+    case eStructureReference: return CanRunNoise( );
+    case eNoise: return CanRunFeature( );
+    case eFeature: return true;   // ???
+    }
+
+    return false;   // ???
+}

@@ -19,84 +19,19 @@
 
 class Chunk : public AABB
 {
-
+protected:
     class MinecraftWorld* m_World;
 
     ChunkCoordinate m_Coordinate;
     ChunkCoordinate m_WorldCoordinate;
 
-
-    std::unique_ptr<Block[]>                                m_Blocks { };
-    std::array<std::unique_ptr<int32_t[]>, eFullHeight + 1> m_WorldHeightMap { };
-
-    MinecraftNoise m_ChunkNoise;
-
-    // TODO: to not use shared & weak ptr
-    std::vector<std::shared_ptr<Structure>> m_StructureStarts;
-    std::vector<std::weak_ptr<Structure>>   m_StructureReferences;
-
-    static constexpr auto                                ChunkReferenceRange = StructureReferenceStatusRange * 2 + 1;
-    static constexpr auto                                ChunkReferenceSize  = ChunkReferenceRange * ChunkReferenceRange;
-    std::array<std::weak_ptr<Chunk>, ChunkReferenceSize> m_ChunkReferencesSaves;
-
-    ChunkStatus m_Status = ChunkStatus::eEmpty;
-
-private:
-    inline void DeleteChunk( )
-    {
-        //        delete[] m_WorldHeightMap;
-        //        delete[] m_Blocks;
-        //        m_Blocks         = nullptr;
-        //        m_WorldHeightMap = nullptr;
-
-        m_Status = ChunkStatus::eEmpty;
-        m_StructureStarts.clear( );
-        m_StructureReferences.clear( );
-    }
-
-    /*
-     *
-     * Can only be used when surrounding chunk is loaded
-     *
-     * */
-    void RegenerateChunk( ChunkStatus status );
-
-    void UpgradeChunk( ChunkStatus targetStatus );
-
-    std::vector<std::weak_ptr<Chunk>> GetChunkRefInRange( int range );
-    bool                              UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range );
-    bool                              IsStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const;
-
-    bool CanRunStructureStart( ) const;
-    bool CanRunStructureReference( ) const;
-    bool CanRunNoise( ) const;
-    bool CanRunFeature( ) const;
-
-    bool AttemptRunStructureStart( );
-    bool AttemptRunStructureReference( );
-    bool AttemptRunNoise( );
-    bool AttemptRunFeature( );
-
-    /*
-     *
-     * Generation
-     *
-     * */
-    [[nodiscard]] const auto& GetStructureStarts( ) const { return m_StructureStarts; }
-
-    /*
-     *
-     * Return and update the chunk reference
-     *
-     * */
-    std::weak_ptr<Chunk>  GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const;
-    std::weak_ptr<Chunk>& GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate );
+    std::unique_ptr<Block[]>   m_Blocks { };
+    std::unique_ptr<int32_t[]> m_HeightMap { };
 
 public:
-    Chunk( class MinecraftWorld* world )
+    explicit Chunk( class MinecraftWorld* world )
         : m_World( world )
     { }
-    ~Chunk( );
 
     Chunk( const Chunk& ) = delete;
     Chunk( Chunk&& )      = delete;
@@ -108,29 +43,10 @@ public:
 
     /*
      *
-     * Generation
-     *
-     * */
-    void FillTerrain( const MinecraftNoise& generator );
-    void FillBedRock( const MinecraftNoise& generator );
-
-    [[nodiscard]] inline auto GetChunkNoise( const MinecraftNoise& terrainGenerator ) const
-    {
-        auto noiseSeed = terrainGenerator.CopySeed( );
-        noiseSeed.first ^= GetMinecraftX( m_WorldCoordinate ) << 13;
-        noiseSeed.second ^= GetMinecraftZ( m_WorldCoordinate ) << 7;
-
-        return MinecraftNoise { noiseSeed };
-    }
-
-    /*
-     *
      * Stats
      *
      * */
-    CoordinateType GetHeight( uint32_t index, HeightMapStatus status = eFullHeight );
-
-    [[nodiscard]] bool IsChunkStatusAtLeast( ChunkStatus status ) const { return m_Status >= status; }
+    CoordinateType GetHeight( uint32_t index );
 
     /*
      *
@@ -145,8 +61,6 @@ public:
     bool SetBlock( const uint32_t& blockIndex, const Block& block );
 
     void SetCoordinate( const ChunkCoordinate& coordinate );
-
-    inline auto GetChunkNoise( ) { return m_ChunkNoise; }
 
     inline auto&                  GetWorld( ) { return m_World; }
     inline BlockCoordinate        WorldToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) { return blockCoordinate - m_WorldCoordinate; }
@@ -170,8 +84,6 @@ public:
             + std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) )
             + std::abs( std::get<2>( m_Coordinate ) - std::get<2>( other ) );
     }
-
-    friend class ChunkCache;
 };
 
 

@@ -11,9 +11,9 @@
 class StructureTree : public Structure
 {
 public:
-    void Generate( class Chunk& chunk ) override;
+    void Generate( class WorldChunk& chunk ) override;
 
-    static bool TryGenerate( class Chunk& chunk, std::vector<std::shared_ptr<Structure>>& structureList );
+    static bool TryGenerate( class WorldChunk& chunk, std::vector<std::shared_ptr<Structure>>& structureList );
 };
 
 

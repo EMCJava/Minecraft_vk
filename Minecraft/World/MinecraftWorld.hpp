@@ -31,8 +31,8 @@ class MinecraftWorld : public Tickable
 public:
     MinecraftWorld( );
 
-    void        IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t radius );
-    ChunkCache* IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus );
+    void     IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t radius );
+    ChunkTy* IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus );
 
     /*
      *
@@ -61,8 +61,8 @@ public:
      * */
     static inline ChunkCoordinate BlockToChunkWorldCoordinate( const BlockCoordinate& blockCoordinate ) { return MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ), 0, ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ); }
     static inline ChunkCoordinate BlockToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) { return MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ), GetMinecraftY( blockCoordinate ), GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ); }
-    std::shared_ptr<ChunkCache>   GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate );
-    std::shared_ptr<ChunkCache>   GetChunkCache( const ChunkCoordinate& chunkCoordinate );
+    std::shared_ptr<ChunkTy>      GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate );
+    std::shared_ptr<ChunkTy>      GetChunkCache( const ChunkCoordinate& chunkCoordinate );
     Block*                        GetBlock( const BlockCoordinate& blockCoordinate );
     bool                          SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 

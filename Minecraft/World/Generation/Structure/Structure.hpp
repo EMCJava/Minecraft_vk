@@ -17,7 +17,7 @@ protected:
 
 public:
     virtual ~Structure( )                                 = default;
-    virtual void Generate( class Chunk& chunk ) = 0;
+    virtual void Generate( class WorldChunk& chunk ) = 0;
 };
 
 #endif   // MINECRAFT_VK_STRUCTURE_HPP

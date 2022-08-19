@@ -121,7 +121,7 @@ public:
         std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
 
         auto                        chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate ) + ChunkCoordinate { 1, 0, 0 };
-        std::shared_ptr<ChunkCache> currentChunk;
+        std::shared_ptr<ChunkTy> currentChunk;
         Block*                      blockPtr;
         while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
         {

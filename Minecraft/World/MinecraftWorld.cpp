@@ -95,7 +95,7 @@ MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
     return nullptr;
 }
 
-std::shared_ptr<ChunkCache>
+std::shared_ptr<ChunkTy>
 MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
     if ( auto chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr )
@@ -109,7 +109,7 @@ MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
     return { };
 }
 
-std::shared_ptr<ChunkCache>
+std::shared_ptr<ChunkTy>
 MinecraftWorld::GetChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
     return m_ChunkPool->GetChunkCache( chunkCoordinate );
@@ -135,7 +135,7 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
     return false;
 }
 
-ChunkCache*
+ChunkTy*
 MinecraftWorld::IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus )
 {
     return m_ChunkPool->AddCoordinate( position, minimumStatus );

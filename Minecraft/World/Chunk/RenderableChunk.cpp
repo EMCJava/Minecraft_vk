@@ -9,7 +9,7 @@
 
 #include <Utility/Logger.hpp>
 
-#include "ChunkCache.hpp"
+#include "RenderableChunk.hpp"
 
 namespace
 {
@@ -27,17 +27,14 @@ constexpr auto dirBackChunkFaceOffset  = SectionUnitLength - 1;
 }   // namespace
 
 void
-ChunkCache::RegenerateChunk( )
+RenderableChunk::ResetRenderBuffer( )
 {
     DeleteCache( );
     m_BlockFaces = new uint8_t[ ChunkVolume ];
-
-    // Chunk::RegenerateChunk( m_RequiredStatus );
-    Chunk::UpgradeChunk( m_RequiredStatus );
 }
 
 void
-ChunkCache::RegenerateVisibleFaces( )
+RenderableChunk::RegenerateVisibleFaces( )
 {
     std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
 
@@ -50,7 +47,7 @@ ChunkCache::RegenerateVisibleFaces( )
 }
 
 void
-ChunkCache::RegenerateVisibleFacesAt( uint32_t index )
+RenderableChunk::RegenerateVisibleFacesAt( uint32_t index )
 {
     assert( m_EmptySlot == 0 );
     assert( m_NearChunks[ DirRight ] != nullptr && m_NearChunks[ DirLeft ] != nullptr && m_NearChunks[ DirFront ] != nullptr && m_NearChunks[ DirBack ] != nullptr );
@@ -115,7 +112,7 @@ ChunkCache::RegenerateVisibleFacesAt( uint32_t index )
 
 
 void
-ChunkCache::GenerateRenderBuffer( )
+RenderableChunk::GenerateRenderBuffer( )
 {
     if ( m_VisibleFacesCount == 0 ) return;
 
@@ -189,7 +186,7 @@ ChunkCache::GenerateRenderBuffer( )
 }
 
 bool
-ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
+RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 {
     const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
@@ -321,7 +318,7 @@ ChunkCache::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block
 }
 
 bool
-ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool changes )
+RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, Direction fromDir, bool changes )
 {
     std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
     if ( m_EmptySlot == 0 )
@@ -345,54 +342,11 @@ ChunkCache::SyncChunkFromDirection( ChunkCache* other, Direction fromDir, bool c
         if ( m_EmptySlot == 0 )
         {
             // Chunk surrounding completed
+            ResetRenderBuffer( );
             RegenerateVisibleFaces( );
             return true;
         }
     }
 
     return false;
-}
-bool
-ChunkCache::StatusUpgradeAllSatisfied( ) const
-{
-    assert( m_RequiredStatus <= ChunkStatus::eFull );
-
-    // already fulfilled
-    if ( m_RequiredStatus <= m_Status ) return true;
-
-    auto temStatus = m_Status;
-    bool satisfied = true;
-    for ( ; temStatus < m_RequiredStatus && satisfied; ++temStatus )
-    {
-        switch ( m_Status )
-        {
-        case eEmpty: satisfied = CanRunStructureStart( ); break;
-        case eStructureStart: satisfied = CanRunStructureReference( ); break;
-        case eStructureReference: satisfied = CanRunNoise( ); break;
-        case eNoise: satisfied = CanRunFeature( ); break;
-        case eFeature: return true;   // ???
-        }
-    }
-
-    return satisfied;
-}
-
-bool
-ChunkCache::NextStatusUpgradeSatisfied( ) const
-{
-    assert( m_RequiredStatus <= ChunkStatus::eFull );
-
-    // already fulfilled
-    if ( m_RequiredStatus <= m_Status ) return true;
-
-    switch ( m_Status )
-    {
-    case eEmpty: return CanRunStructureStart( );
-    case eStructureStart: return CanRunStructureReference( );
-    case eStructureReference: return CanRunNoise( );
-    case eNoise: return CanRunFeature( );
-    case eFeature: return true;   // ???
-    }
-
-    return false;   // ???
 }

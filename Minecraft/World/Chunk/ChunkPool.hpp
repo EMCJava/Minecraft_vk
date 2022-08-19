@@ -7,13 +7,14 @@
 
 #include <mutex>
 
-#include "ChunkCache.hpp"
 #include "ChunkRenderBuffers.hpp"
+#include "WorldChunk.hpp"
 
 #include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
 
-class ChunkPool : public ThreadPool<ChunkCache>
+using ChunkTy = WorldChunk;
+class ChunkPool : public ThreadPool<ChunkTy>
 {
 private:
     class MinecraftWorld* m_World;
@@ -23,17 +24,17 @@ private:
     std::unique_ptr<std::jthread> m_UpdateThread;
 
     std::recursive_mutex                                             m_ChunkCacheLock;
-    std::unordered_map<BlockCoordinate, std::shared_ptr<ChunkCache>> m_ChunkCache;
+    std::unordered_map<BlockCoordinate, std::shared_ptr<ChunkTy>> m_ChunkCache;
 
     std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
 
-    void LoadChunk( ChunkPool* pool, ChunkCache* cache )
+    void LoadChunk( ChunkPool* pool, ChunkTy* cache )
     {
         // Logger::getInstance( ).LogLine( "Start loading", cache );
 
         cache->initialized  = false;
         cache->initializing = true;
-        cache->RegenerateChunk( );
+        cache->TryUpgradeChunk( );
 
         if ( !cache->IsAtLeastTargetStatus( ) )
         {
@@ -47,7 +48,7 @@ private:
 public:
     explicit ChunkPool( class MinecraftWorld* world, uint32_t maxThread )
         : m_World( world )
-        , ThreadPool<ChunkCache>( maxThread )
+        , ThreadPool<ChunkTy>( maxThread )
     { }
 
     ~ChunkPool( )
@@ -83,9 +84,9 @@ public:
         m_ChunkCache.clear( );
     }
 
-    ChunkCache* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
+    ChunkTy* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
     {
-        ChunkCache* newChunk = nullptr;
+        ChunkTy* newChunk = nullptr;
 
         {
             std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
@@ -111,11 +112,11 @@ public:
                 return find_it->second.get( );
             }
 
-            newChunk = new ChunkCache( m_World );
+            newChunk = new ChunkTy( m_World );
             newChunk->SetCoordinate( coordinate );
             newChunk->SetExpectedStatus( status );
 
-            m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkCache>( newChunk ) } );
+            m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkTy>( newChunk ) } );
         }
 
         AddJobContext( newChunk );
@@ -177,7 +178,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::shared_ptr<ChunkCache> GetChunkCache( const ChunkCoordinate& coordinate )
+    [[nodiscard]] std::shared_ptr<ChunkTy> GetChunkCache( const ChunkCoordinate& coordinate )
     {
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )

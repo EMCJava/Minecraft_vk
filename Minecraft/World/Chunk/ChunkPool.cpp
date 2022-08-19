@@ -49,7 +49,7 @@ constexpr std::array<ChunkCoordinate, DirHorizontalSize> NearChunkDirection { ge
 void
 ChunkPool::UpdateThread( const std::stop_token& st )
 {
-    std::vector<ChunkCache*> finished( m_maxThread );
+    std::vector<ChunkTy*> finished( m_maxThread );
 
     while ( !st.stop_requested( ) )
     {
@@ -82,8 +82,8 @@ ChunkPool::UpdateThread( const std::stop_token& st )
         {
             std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
             std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
-            UpdateSorted( [ this ]( ChunkCache* cache ) { ChunkPool::LoadChunk( this, cache ); },
-                          [ centre = m_PrioritizeCoordinate ]( const ChunkCache* a, const ChunkCache* b ) {
+            UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( this, cache ); },
+                          [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) {
                               const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
                               const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
                               if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
