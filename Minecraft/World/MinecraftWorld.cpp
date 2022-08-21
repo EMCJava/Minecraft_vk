@@ -135,8 +135,8 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
     return false;
 }
 
-ChunkTy*
+void
 MinecraftWorld::IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus )
 {
-    return m_ChunkPool->AddCoordinate( position, minimumStatus );
+    m_ChunkPool->AddCoordinateSafe( position, minimumStatus );
 }

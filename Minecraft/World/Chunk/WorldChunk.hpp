@@ -137,6 +137,13 @@ public:
     inline const auto& GetTargetStatus( ) const { return m_RequiredStatus; }
     inline const bool  IsAtLeastTargetStatus( ) const { return GetTargetStatus( ) <= m_Status; }
     inline bool        IsChunkStatusAtLeast( ChunkStatus status ) const { return m_Status >= status; }
+
+    inline auto ExtractMissingEssentialChunks( )
+    {
+        auto backup = m_MissingEssentialChunks;
+        m_MissingEssentialChunks.clear( );
+        return backup;
+    }
 };
 
 

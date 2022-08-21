@@ -641,8 +641,8 @@ MainApplication::renderImgui( uint32_t renderIndex )
             GetMinecraftY( playerPosition ) = 0;
 
             {
-                std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
-                int                                   index = 0;
+                // std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
+                int index = 0;
                 for ( int i = -span; i <= span; ++i )
                 {
                     for ( int j = -span; j <= span; ++j, ++index )

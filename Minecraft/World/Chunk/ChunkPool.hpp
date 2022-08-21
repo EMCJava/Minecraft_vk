@@ -23,10 +23,13 @@ private:
     BlockCoordinate               m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread> m_UpdateThread;
 
-    std::recursive_mutex                                             m_ChunkCacheLock;
+    std::recursive_mutex                                          m_ChunkCacheLock;
     std::unordered_map<BlockCoordinate, std::shared_ptr<ChunkTy>> m_ChunkCache;
 
     std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
+
+    std::mutex                                         m_SafeAddedChunksLock;
+    std::unordered_map<ChunkCoordinate, ChunkStatusTy> m_SafeAddedChunks;
 
     void LoadChunk( ChunkPool* pool, ChunkTy* cache )
     {
@@ -35,15 +38,20 @@ private:
         cache->initialized  = false;
         cache->initializing = true;
         cache->TryUpgradeChunk( );
-
-        if ( !cache->IsAtLeastTargetStatus( ) )
-        {
-            // Logger::getInstance( ).LogLine( "Load not complete, re-appending chunk", cache );
-            pool->AddJobContext( cache );
-        }
     }
 
+    void CleanUpJobs( );
+    void RemoveChunkOutsizeRange( );
     void UpdateThread( const std::stop_token& st );
+
+    /*
+     *
+     * This Function should only be called in the main thread to avoid te use of mutex
+     * Namely m_ChunkCache and m_PendingThreads
+     *
+     * */
+    ChunkTy* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull );
+    void     FlushSafeAddedChunks( );
 
 public:
     explicit ChunkPool( class MinecraftWorld* world, uint32_t maxThread )
@@ -84,43 +92,10 @@ public:
         m_ChunkCache.clear( );
     }
 
-    ChunkTy* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
+    void AddCoordinateSafe( const ChunkCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
     {
-        ChunkTy* newChunk = nullptr;
-
-        {
-            std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-            std::lock_guard<std::recursive_mutex> threadLock( m_PendingThreadsMutex );
-            if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
-            {
-                // need upgrade
-                if ( find_it->second->GetTargetStatus( ) < status )
-                {
-                    find_it->second->SetExpectedStatus( status );
-
-                    // still in queue, just modify the target status
-                    // if ( !find_it->second->initializing && !find_it->second->initialized )
-                    // {
-                    // } else
-
-                    if ( find_it->second->initialized || find_it->second->initializing )   //  previous job already started or ended, need to add job for upgrading
-                    {
-                        AddJobContext( find_it->second.get( ) );
-                    }
-                }
-
-                return find_it->second.get( );
-            }
-
-            newChunk = new ChunkTy( m_World );
-            newChunk->SetCoordinate( coordinate );
-            newChunk->SetExpectedStatus( status );
-
-            m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkTy>( newChunk ) } );
-        }
-
-        AddJobContext( newChunk );
-        return newChunk;
+        std::lock_guard lock( m_SafeAddedChunksLock );
+        m_SafeAddedChunks[ coordinate ] = std::max( m_SafeAddedChunks[ coordinate ], (ChunkStatusTy) status );
     }
 
     bool IsChunkLoading( const BlockCoordinate& coordinate ) const
@@ -178,9 +153,11 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::shared_ptr<ChunkTy> GetChunkCache( const ChunkCoordinate& coordinate )
+
+    [[nodiscard]] std::shared_ptr<ChunkTy> GetChunkCache( const ChunkCoordinate& coordinate ) const
     {
-        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+        // This function should only be called when ChunkCache can be confirmed not changing
+        // std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
         {
             return it->second;
