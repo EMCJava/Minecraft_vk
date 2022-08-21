@@ -111,10 +111,25 @@ protected:
         }
     }
 
-    void UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp, std::vector<Context*>* finishedJob = nullptr )
+    inline bool HasThreadRunning( )
     {
-        if ( finishedJob ) finishedJob->clear( );
-        CleanRunningThread( finishedJob );
+        return std::any_of( m_RunningThreads.begin( ), m_RunningThreads.end( ), []( const ThreadInstanceWrapper& wrapper ) { return wrapper.threadInstance != nullptr && wrapper.occupied; } );
+    }
+
+    void UpdateSortedFull( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp )
+    {
+        // only run when all ready
+        if ( !HasThreadRunning( ) )
+        {
+            UpdateSorted( Job, Comp );
+        }
+    }
+
+    void UpdateSorted( const std::function<void( Context* )>& Job, const std::function<bool( const Context*, const Context* )>& Comp )
+    {
+        // Let child class clean themselves for more control
+        // if ( finishedJob ) finishedJob->clear( );
+        // CleanRunningThread( finishedJob );
 
         if ( m_PendingThreads.empty( ) ) return;
 
