@@ -37,7 +37,7 @@ private:
     }
 
     bool UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range );
-    bool IsStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const;
+    bool IsSavedChunksStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const;
 
     void UpgradeChunk( ChunkStatus targetStatus );
 
