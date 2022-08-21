@@ -7,7 +7,7 @@
 #include <Minecraft/World/Chunk/Chunk.hpp>
 
 bool
-Structure::SetBlock( Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block )
+Structure::SetBlock( Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block, bool replace )
 {
-    return chunk.SetBlockAtWorldCoordinate( worldCoordinate, block );
+    return chunk.SetBlockAtWorldCoordinate( worldCoordinate, block, replace );
 }

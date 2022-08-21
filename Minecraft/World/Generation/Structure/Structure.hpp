@@ -20,7 +20,7 @@ public:
     virtual ~Structure( )                       = default;
     virtual void Generate( class WorldChunk& chunk ) = 0;
 
-    bool SetBlock( class Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block );
+    bool SetBlock( class Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block, bool replace = true );
 };
 
 #endif   // MINECRAFT_VK_STRUCTURE_HPP

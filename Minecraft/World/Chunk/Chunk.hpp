@@ -56,7 +56,12 @@ public:
     [[nodiscard]] const Block* CheckBlock( const BlockCoordinate& blockCoordinate ) const;
     [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
 
-    bool SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block );
+    static inline int GetBlockIndex( const BlockCoordinate& blockCoordinate )
+    {
+        return ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
+    }
+
+    bool SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block, bool replace = true );
     bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
     bool SetBlock( const uint32_t& blockIndex, const Block& block );
 

@@ -33,7 +33,7 @@ bool
 Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 {
     assert( m_Blocks != nullptr );
-    const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
+    const auto& blockIndex = GetBlockIndex( blockCoordinate );
     return SetBlock( blockIndex, block );
 }
 
@@ -93,9 +93,13 @@ Chunk::SetCoordinate( const ChunkCoordinate& coordinate )
 }
 
 bool
-Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block )
+Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block, bool replace )
 {
     if ( !IsPointInside( blockCoordinate ) ) return false;
 
-    return SetBlock( blockCoordinate - m_WorldCoordinate, block );
+    const auto index = GetBlockIndex( blockCoordinate - m_WorldCoordinate );
+    if ( replace || m_Blocks[ index ] == Air )
+        return SetBlock( index, block );
+
+    return false;
 }
