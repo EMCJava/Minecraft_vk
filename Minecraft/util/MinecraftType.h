@@ -20,25 +20,117 @@ using EntityCoordinate = std::tuple<float, float, float>;
 using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
 using ChunkCoordinate  = BlockCoordinate;
 
-template <typename Ty, typename Num>
-inline std::tuple<Ty, Ty, Ty>
-operator>>( const std::tuple<Ty, Ty, Ty>& a, const Num& b )
+namespace
 {
-    return { get<0>( a ) >> b, get<1>( a ) >> b, get<2>( a ) >> b };
+enum OperatorIndexTy : uint8_t {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    RShift,
+    LShift
+};
+
+template <uint8_t OperatorIndex>
+struct Operator {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { }
+};
+template <>
+struct Operator<Add> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a + b; }
+};
+template <>
+struct Operator<Sub> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a - b; }
+};
+template <>
+struct Operator<Mul> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a * b; }
+};
+template <>
+struct Operator<Div> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a / b; }
+};
+template <>
+struct Operator<RShift> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a >> b; }
+};
+template <>
+struct Operator<LShift> {
+    static inline constexpr auto Apply( const auto& a, const auto& b ) { return a << b; }
+};
+template <uint8_t OperatorIndex, typename... T1, typename... T2, std::size_t... I>
+inline constexpr auto
+OperatorApplyToTuple( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
+                      std::index_sequence<I...> )
+{
+    return std::tuple { Operator<OperatorIndex>::Apply( std::get<I>( t1 ), std::get<I>( t2 ) )... };
 }
 
-template <typename Ty>
-inline std::tuple<Ty, Ty, Ty>
-operator+( const std::tuple<Ty, Ty, Ty>& a, const std::tuple<Ty, Ty, Ty>& b )
+template <uint8_t OperatorIndex, typename... T1, typename... T2>
+inline constexpr auto
+OperatorApplyToTuple( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
 {
-    return { get<0>( a ) + get<0>( b ), get<1>( a ) + get<1>( b ), get<2>( a ) + get<2>( b ) };
+    // make sure both tuples have the same size
+    static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
+    return OperatorApplyToTuple<OperatorIndex>( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
+}
+template <uint8_t OperatorIndex, typename... T1, typename T2, std::size_t... I>
+inline constexpr auto
+OperatorApplyToTuple( const std::tuple<T1...>& t1, const T2& t2,
+                      std::index_sequence<I...> )
+{
+    return std::tuple { Operator<OperatorIndex>::Apply( std::get<I>( t1 ), t2 )... };
 }
 
-template <typename Ty>
-inline std::tuple<Ty, Ty, Ty>
-operator-( const std::tuple<Ty, Ty, Ty>& a, const std::tuple<Ty, Ty, Ty>& b )
+template <uint8_t OperatorIndex, typename... T1, typename T2>
+inline constexpr auto
+OperatorApplyToTuple( const std::tuple<T1...>& t1, const T2& t2 )
 {
-    return { get<0>( a ) - get<0>( b ), get<1>( a ) - get<1>( b ), get<2>( a ) - get<2>( b ) };
+    return OperatorApplyToTuple<OperatorIndex>( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
+}
+}   // namespace
+
+template <typename... T1, typename... T2>
+inline constexpr auto
+operator+( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+{
+    return OperatorApplyToTuple<Add>( t1, t2 );
+}
+
+template <typename... T1, typename... T2>
+inline constexpr auto
+operator-( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+{
+    return OperatorApplyToTuple<Sub>( t1, t2 );
+}
+
+template <typename... T1, typename... T2>
+inline constexpr auto
+operator*( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+{
+    return OperatorApplyToTuple<Mul>( t1, t2 );
+}
+
+template <typename... T1, typename... T2>
+inline constexpr auto
+operator/( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+{
+    return OperatorApplyToTuple<Div>( t1, t2 );
+}
+
+template <typename... T1, typename T2>
+inline constexpr auto
+operator>>( const std::tuple<T1...>& t1, const T2& t2 )
+{
+    return OperatorApplyToTuple<RShift>( t1, t2 );
+}
+
+template <typename... T1, typename T2>
+inline constexpr auto
+operator<<( const std::tuple<T1...>& t1, const T2& t2 )
+{
+    return OperatorApplyToTuple<LShift>( t1, t2 );
 }
 
 template <typename Ty>
