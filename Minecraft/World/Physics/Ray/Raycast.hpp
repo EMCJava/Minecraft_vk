@@ -34,7 +34,8 @@ class RaycastTemp
 {
 
     template <bool _LogPath = false>
-    struct RaycastPathLogger { };
+    struct RaycastPathLogger {
+    };
 
     template <>
     struct RaycastPathLogger<true> {
@@ -118,11 +119,11 @@ public:
         else
             tMaxZ = tDeltaZ * ( GetMinecraftZ( std::as_const( startingPosition ) ) - std::floor( GetMinecraftZ( std::as_const( startingPosition ) ) ) );
 
-        std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
+        // std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
 
-        auto                        chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate ) + ChunkCoordinate { 1, 0, 0 };
+        auto                     chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate ) + ChunkCoordinate { 1, 0, 0 };
         std::shared_ptr<ChunkTy> currentChunk;
-        Block*                      blockPtr;
+        Block*                   blockPtr;
         while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
         {
             if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );
