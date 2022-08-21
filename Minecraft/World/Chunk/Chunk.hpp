@@ -62,11 +62,11 @@ public:
 
     void SetCoordinate( const ChunkCoordinate& coordinate );
 
-    inline auto&                  GetWorld( ) { return m_World; }
-    inline BlockCoordinate        WorldToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) { return blockCoordinate - m_WorldCoordinate; }
-    inline const ChunkCoordinate& GetChunkCoordinate( ) { return m_Coordinate; }
-    inline const ChunkCoordinate& GetWorldCoordinate( ) { return m_WorldCoordinate; }
-    inline bool                   IsPointInside( const BlockCoordinate& blockCoordinate ) { return IsPointInsideVertically( blockCoordinate ) && IsPointInsideHorizontally( blockCoordinate ); }
+    inline auto&                  GetWorld( ) const { return m_World; }
+    inline BlockCoordinate        WorldToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) const { return blockCoordinate - m_WorldCoordinate; }
+    inline const ChunkCoordinate& GetChunkCoordinate( ) const { return m_Coordinate; }
+    inline const ChunkCoordinate& GetWorldCoordinate( ) const { return m_WorldCoordinate; }
+    inline bool                   IsPointInside( const BlockCoordinate& blockCoordinate ) const { return IsPointInsideVertically( blockCoordinate ) && IsPointInsideHorizontally( blockCoordinate ); }
     inline bool                   IsPointInsideVertically( const BlockCoordinate& blockCoordinate ) const { return GetMinecraftY( blockCoordinate ) < ChunkMaxHeight && GetMinecraftY( blockCoordinate ) >= 0; }
     inline bool                   IsPointInsideHorizontally( const BlockCoordinate& blockCoordinate ) const
     {
