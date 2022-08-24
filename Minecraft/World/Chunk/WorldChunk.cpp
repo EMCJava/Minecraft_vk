@@ -216,7 +216,7 @@ WorldChunk::SetCoordinate( const ChunkCoordinate& coordinate )
 {
     Chunk::SetCoordinate( coordinate );
 
-    m_ChunkNoise = GetChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+    m_ChunkNoise = GenerateChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
 }
 
 bool
@@ -331,7 +331,7 @@ WorldChunk::GetChunkRefInRange( int range )
 }
 
 CoordinateType
-WorldChunk::GetHeight( uint32_t index, HeightMapStatus status )
+WorldChunk::GetHeight( uint32_t index, HeightMapStatus status ) const
 {
     return m_StatusHeightMap[ status ][ index ];
 }

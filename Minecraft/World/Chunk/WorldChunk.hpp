@@ -97,7 +97,7 @@ public:
 
     void SetCoordinate( const ChunkCoordinate& coordinate );
 
-    CoordinateType GetHeight( uint32_t index, HeightMapStatus status = eFullHeight );
+    CoordinateType GetHeight( uint32_t index, HeightMapStatus status = eFullHeight ) const;
 
     inline void SetExpectedStatus( ChunkStatus status ) { m_RequiredStatus = status; }
     inline void SetEmergencyLevel( uint32_t newEmergencyLevel ) { m_EmergencyLevel = newEmergencyLevel; }
@@ -120,12 +120,16 @@ public:
 
     inline const auto& GetStructureStarts( ) const { return m_StructureStarts; }
 
-    inline auto CopyChunkNoise( ) { return m_ChunkNoise; }
-    inline auto GetChunkNoise( const MinecraftNoise& terrainGenerator ) const
+    inline auto CopyChunkNoise( ) const { return m_ChunkNoise; }
+    inline auto GenerateChunkNoise( const MinecraftNoise& terrainGenerator ) const
     {
         auto noiseSeed = terrainGenerator.CopySeed( );
-        noiseSeed.first ^= GetMinecraftX( m_WorldCoordinate ) << 13;
-        noiseSeed.second ^= GetMinecraftZ( m_WorldCoordinate ) << 7;
+
+        const auto coordinateNoiseX = MinecraftNoise::FromUint64( GetMinecraftX( m_WorldCoordinate ) << 2 );
+        const auto coordinateNoiseZ = MinecraftNoise::FromUint64( GetMinecraftZ( m_WorldCoordinate ) );
+
+        noiseSeed.first ^= coordinateNoiseX.GetSeed( ).seed.first + coordinateNoiseZ.GetSeed( ).seed.second;
+        noiseSeed.second ^= coordinateNoiseX.GetSeed( ).seed.second + coordinateNoiseZ.GetSeed( ).seed.first;
 
         return MinecraftNoise { noiseSeed };
     }
