@@ -7,8 +7,8 @@
 
 #include "StructurePieces.hpp"
 
-#include <Minecraft/util/MinecraftType.h>
 #include <Minecraft/Block/Block.hpp>
+#include <Minecraft/util/MinecraftType.h>
 
 class Structure : public StructurePieces
 {
@@ -17,8 +17,10 @@ protected:
     BlockCoordinate m_StartingPosition;
 
 public:
-    virtual ~Structure( )                       = default;
+    virtual ~Structure( )                            = default;
     virtual void Generate( class WorldChunk& chunk ) = 0;
+
+    class WorldChunk& GetStartingChunk( class WorldChunk& generatingChunk );
 
     bool SetBlock( class Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block, bool replace = true );
 };
