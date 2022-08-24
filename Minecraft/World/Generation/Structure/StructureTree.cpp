@@ -21,36 +21,23 @@ ToHorizontalIndex( const auto& coordinate )
 void
 StructureTree::Generate( WorldChunk& chunk )
 {
-    auto           startingCoordinate = chunk.WorldToChunkRelativeCoordinate( m_StartingPosition );
-    auto           startingIndex      = ToHorizontalIndex( startingCoordinate );
-    CoordinateType heightAtPoint, treeHeight;
-    MinecraftNoise chunkNoise;
+    static constexpr auto MIN_HEIGHT = 6;
+    static constexpr auto MAX_HEIGHT = 20;
+    static_assert( MAX_HEIGHT >= MIN_HEIGHT );
 
-    assert( GetMinecraftY( m_StartingPosition ) == 0 );
-    if ( chunk.IsPointInsideHorizontally( m_StartingPosition ) )
-    {
-        heightAtPoint = chunk.GetHeight( startingIndex, eNoiseHeight ) + 1;
-        treeHeight    = std::min( ChunkMaxHeight - heightAtPoint, 7 );
-        chunkNoise    = chunk.CopyChunkNoise( );
+    const WorldChunk& startingChunk      = GetStartingChunk( chunk );
+    const auto        startingCoordinate = startingChunk.WorldToChunkRelativeCoordinate( m_StartingPosition );
+    const auto        startingIndex      = ToHorizontalIndex( startingCoordinate );
 
-    } else
-    {
-        const auto originalChunkCoordinate = m_StartingPosition >> SectionUnitLengthBinaryOffset;
-        // const
-        auto       originalChunk      = chunk.GetWorld( )->GetChunkCache( originalChunkCoordinate );
-        const auto relativeCoordinate = originalChunk->WorldToChunkRelativeCoordinate( m_StartingPosition );
-        if ( GetMinecraftX( relativeCoordinate ) < 0 || GetMinecraftX( relativeCoordinate ) >= SectionUnitLength || GetMinecraftZ( relativeCoordinate ) < 0 || GetMinecraftZ( relativeCoordinate ) >= SectionUnitLength )
-            originalChunk = chunk.GetWorld( )->GetChunkCache( originalChunkCoordinate );
-        const auto horizontalIndex = ToHorizontalIndex( relativeCoordinate );
-        heightAtPoint              = originalChunk->GetHeight( horizontalIndex, eNoiseHeight ) + 1;
-        treeHeight                 = std::min( ChunkMaxHeight - heightAtPoint, 7 );
-        chunkNoise                 = originalChunk->CopyChunkNoise( );
-    }
+    const auto heightAtPoint = startingChunk.GetHeight( startingIndex, eNoiseHeight ) + 1;
+    auto       treeHeight    = std::min( ChunkMaxHeight - heightAtPoint, MAX_HEIGHT - MIN_HEIGHT );
+    auto       chunkNoise    = startingChunk.CopyChunkNoise( );
+
+    treeHeight = chunkNoise.NextUint64( ) % treeHeight + MIN_HEIGHT;
 
     // trunk
     if ( chunk.IsPointInsideHorizontally( m_StartingPosition ) )
     {
-
         for ( int i = 0; i < treeHeight; ++i )
         {
             chunk.SetBlock( startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), BlockID::AcaciaLog );
