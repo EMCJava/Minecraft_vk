@@ -108,7 +108,7 @@ public:
     /// <summary>
     /// Create new FastNoise object with optional seed
     /// </summary>
-    FastNoiseLite( int seed = 1337 )
+    constexpr FastNoiseLite( int seed = 1337 )
     {
         mSeed            = seed;
         mFrequency       = 0.01f;
