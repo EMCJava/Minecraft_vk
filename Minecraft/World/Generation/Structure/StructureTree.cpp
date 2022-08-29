@@ -8,16 +8,6 @@
 #include "Minecraft/World/MinecraftWorld.hpp"
 #include "Utility/Logger.hpp"
 
-namespace
-{
-
-auto
-ToHorizontalIndex( const auto& coordinate )
-{
-    return ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( coordinate ) ) + GetMinecraftX( coordinate );
-}
-};   // namespace
-
 void
 StructureTree::Generate( WorldChunk& chunk )
 {
@@ -54,7 +44,7 @@ StructureTree::Generate( WorldChunk& chunk )
                 const auto leafDensity = std::abs( x ) + std::abs( y ) + std::abs( z );
                 if ( chunkNoise.NextUint64( ) % 8 >= leafDensity )
                 {
-                    SetBlock( chunk, leafOrigin + MakeMinecraftCoordinate( x, y, z ), BlockID::AzaleaLeaves, false );
+                    SetBlockWorld( chunk, leafOrigin + MakeMinecraftCoordinate( x, y, z ), BlockID::AzaleaLeaves, false );
                 }
             }
 }
