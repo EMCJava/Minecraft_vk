@@ -18,6 +18,9 @@ enum BlockID : uint8_t {
     BedRock,
     AcaciaLog,
     AzaleaLeaves,
+    BirchPlanks,
+    Barrel,
+    CraftingTable,
     BlockIDSize
 };
 
@@ -33,6 +36,9 @@ toString( const BlockID& id )
         SWITCH_TOSTRING( BedRock )
         SWITCH_TOSTRING( AcaciaLog )
         SWITCH_TOSTRING( AzaleaLeaves )
+        SWITCH_TOSTRING( BirchPlanks )
+        SWITCH_TOSTRING( Barrel )
+        SWITCH_TOSTRING( CraftingTable )
     case BlockIDSize: break;
     }
 
