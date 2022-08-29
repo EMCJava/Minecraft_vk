@@ -3,6 +3,7 @@
 //
 
 #include "WorldChunk.hpp"
+#include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
@@ -148,6 +149,7 @@ bool
 WorldChunk::AttemptRunStructureStart( )
 {
     StructureTree::TryGenerate( *this, m_StructureStarts );
+    StructureAbandonedHouse::TryGenerate( *this, m_StructureStarts );
     return true;
 }
 

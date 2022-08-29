@@ -49,6 +49,30 @@
       "flowering_azalea_leaves.png",
       "flowering_azalea_leaves.png",
       "flowering_azalea_leaves.png"
+    ],
+    "BirchPlanks": [
+      "birch_planks.png",
+      "birch_planks.png",
+      "birch_planks.png",
+      "birch_planks.png",
+      "birch_planks.png",
+      "birch_planks.png"
+    ],
+    "Barrel": [
+      "barrel_side.png",
+      "barrel_side.png",
+      "barrel_side.png",
+      "barrel_side.png",
+      "barrel_top.png",
+      "barrel_bottom.png"
+    ],
+    "CraftingTable": [
+      "crafting_table_front.png",
+      "crafting_table_side.png",
+      "crafting_table_side.png",
+      "crafting_table_side.png",
+      "crafting_table_top.png",
+      "birch_planks.png"
     ]
   }
 }
