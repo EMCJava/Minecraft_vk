@@ -51,6 +51,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
                 auto noiseValue = generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
                 noiseValue += noiseOffset[ i ];
 
+                assert( blocksPtr + horizontalMapIndex - m_Blocks.get( ) < ChunkVolume );
                 blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
                 if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_HeightMap[ horizontalMapIndex ] = i;
 
@@ -68,6 +69,8 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
         for ( int k = 0; k < SectionUnitLength; ++k )
             for ( int j = 0; j < SectionUnitLength; ++j )
             {
+                assert( blocksPtr + horizontalMapIndex - m_Blocks.get( ) < ChunkVolume );
+
                 if ( i > m_HeightMap[ horizontalMapIndex ] - 3 )
                 {
                     if ( i == m_HeightMap[ horizontalMapIndex ] )
@@ -108,7 +111,7 @@ WorldChunk::FillBedRock( const MinecraftNoise& generator )
             blackRockHeightMap[ horizontalMapIndex ] = noiseValue * 2 + 1;
 
             for ( int i = 0; i < blackRockHeightMap[ horizontalMapIndex ]; ++i )
-                m_Blocks[ horizontalMapIndex + SectionSurfaceSize * i ] = BlockID ::BedRock;
+                At( horizontalMapIndex + SectionSurfaceSize * i ) = BlockID ::BedRock;
 
             ++horizontalMapIndex;
         }
@@ -167,10 +170,10 @@ WorldChunk::AttemptRunStructureReference( )
             {
                 const auto                  worldCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
                 const auto                  weakChunkCache  = GetChunkReference( index, worldCoordinate );
-                std::shared_ptr<WorldChunk> chunkCache = weakChunkCache.lock( );
+                std::shared_ptr<WorldChunk> chunkCache      = weakChunkCache.lock( );
 
                 const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
-                m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
+                // m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
                 for ( const auto& chunkReferenceStart : chunkReferenceStarts )
                 {
                     if ( chunkReferenceStart->IsOverlappingAny( *this ) )
@@ -253,7 +256,7 @@ WorldChunk::GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoord
         return chunkPtr;
     }
 
-    return m_ChunkReferencesSaves[ index ] = m_World->GetChunkCache( worldCoordinate );
+    return m_ChunkReferencesSaves[ index ] = m_World->GetChunkCacheUnsafe( worldCoordinate );
 }
 
 std::weak_ptr<WorldChunk>

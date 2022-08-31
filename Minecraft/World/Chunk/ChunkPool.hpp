@@ -154,10 +154,20 @@ public:
     }
 
 
-    [[nodiscard]] std::shared_ptr<ChunkTy> GetChunkCache( const ChunkCoordinate& coordinate ) const
+    [[nodiscard]] inline std::shared_ptr<ChunkTy> GetChunkCacheSafe( const ChunkCoordinate& coordinate )
     {
-        // This function should only be called when ChunkCache can be confirmed not changing
-        // std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
+        {
+            return it->second;
+        }
+
+        return { };
+    }
+
+    // This function should only be called when ChunkCache can be confirmed not changing
+    [[nodiscard]] inline std::shared_ptr<ChunkTy> GetChunkCacheUnsafe( const ChunkCoordinate& coordinate ) const
+    {
         if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
         {
             return it->second;

@@ -47,7 +47,7 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void RegenerateVisibleFacesAt( uint32_t index );
+    void RegenerateVisibleFacesAt( const uint32_t index );
     void RegenerateVisibleFaces( );
 
 public:

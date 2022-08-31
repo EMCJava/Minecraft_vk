@@ -131,7 +131,7 @@ public:
             auto newChunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate );
             if ( chunkCoordinate != newChunkCoordinate )
             {
-                currentChunk = world.GetChunkCache( newChunkCoordinate );
+                currentChunk = world.GetChunkCacheSafe( newChunkCoordinate );
                 if ( currentChunk != nullptr && !currentChunk->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
                     currentChunk = nullptr;
             }

@@ -18,7 +18,7 @@ private:
 
     // TODO: to not use shared & weak ptr
     std::vector<std::shared_ptr<Structure>> m_StructureStarts;
-    std::vector<std::weak_ptr<Structure>>   m_StructureReferences;
+    std::list<std::weak_ptr<Structure>>     m_StructureReferences;
 
     ChunkStatus                                             m_Status = ChunkStatus::eEmpty;
     std::array<std::unique_ptr<int32_t[]>, eFullHeight + 1> m_StatusHeightMap { };

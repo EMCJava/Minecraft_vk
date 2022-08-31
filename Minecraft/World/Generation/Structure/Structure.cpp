@@ -30,7 +30,7 @@ Structure::GetStartingChunk( WorldChunk& generatingChunk )
     if ( generatingChunk.IsPointInsideHorizontally( m_StartingPosition ) ) return generatingChunk;
 
     const auto originalChunkCoordinate = m_StartingPosition >> SectionUnitLengthBinaryOffset;
-    const auto originalChunk           = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkCache( originalChunkCoordinate );
+    const auto originalChunk           = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkCacheUnsafe( originalChunkCoordinate );
     const auto relativeCoordinate      = originalChunk->WorldToChunkRelativeCoordinate( m_StartingPosition );
     assert( !( GetMinecraftX( relativeCoordinate ) < 0 || GetMinecraftX( relativeCoordinate ) >= SectionUnitLength || GetMinecraftZ( relativeCoordinate ) < 0 || GetMinecraftZ( relativeCoordinate ) >= SectionUnitLength ) );
 

@@ -158,7 +158,7 @@ ChunkPool::CleanUpJobs( )
         {
             for ( int i = 0; i < DirHorizontalSize; ++i )
             {
-                auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCache( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
+                auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
                 if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
                 {
                     // this is fast, I guess? (nope)
@@ -219,6 +219,7 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
         newChunk->SetCoordinate( coordinate );
         newChunk->SetExpectedStatus( status );
 
+        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkTy>( newChunk ) } );
     }
 

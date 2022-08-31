@@ -12,21 +12,17 @@
 const Block*
 Chunk::CheckBlock( const BlockCoordinate& blockCoordinate ) const
 {
-    assert( m_Blocks != nullptr );
     if ( GetMinecraftY( blockCoordinate ) >= ChunkMaxHeight || GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
     const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
-    assert( blockIndex >= 0 && blockIndex < ChunkVolume );
-    return &m_Blocks[ blockIndex ];
+    return &At( blockIndex );
 }
 
 Block*
 Chunk::GetBlock( const BlockCoordinate& blockCoordinate )
 {
-    assert( m_Blocks != nullptr );
     if ( GetMinecraftY( blockCoordinate ) >= ChunkMaxHeight || GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
     const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
-    assert( blockIndex >= 0 && blockIndex < ChunkVolume );
-    return &m_Blocks[ blockIndex ];
+    return &At( blockIndex );
 }
 
 bool
@@ -45,7 +41,7 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
 
-    if ( m_Blocks[ blockIndex ] == block ) return false;
+    if ( At( blockIndex ) == block ) return false;
 
     // update height map
     if ( block != Air )
@@ -63,13 +59,12 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
         if ( originalHeight == height )
         {
             int i = originalHeight - 1;
-            while ( m_Blocks[ blockIndex - ScaleToSecond<1, SectionSurfaceSize>( i ) ] != Air && --i >= 0 )
-            { }
+            while ( At( blockIndex - ScaleToSecond<1, SectionSurfaceSize>( i ) ) != Air && --i >= 0 ) { }
             originalHeight = i;
         }
     }
 
-    m_Blocks[ blockIndex ] = block;
+    At( blockIndex ) = block;
     return true;
 }
 
@@ -98,7 +93,7 @@ Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const 
     if ( !IsPointInside( blockCoordinate ) ) return false;
 
     const auto index = GetBlockIndex( blockCoordinate - m_WorldCoordinate );
-    if ( replace || m_Blocks[ index ] == Air )
+    if ( replace || At( index ) == Air )
         return SetBlock( index, block );
 
     return false;

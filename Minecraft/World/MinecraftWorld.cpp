@@ -98,7 +98,7 @@ MinecraftWorld::GetBlock( const BlockCoordinate& blockCoordinate )
 std::shared_ptr<ChunkTy>
 MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 {
-    if ( auto chunkCache = GetChunkCache( chunkCoordinate ); chunkCache != nullptr )
+    if ( auto chunkCache = GetChunkCacheUnsafe( chunkCoordinate ); chunkCache != nullptr )
     {
         if ( chunkCache->initialized && chunkCache->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
         {
@@ -110,9 +110,15 @@ MinecraftWorld::GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate )
 }
 
 std::shared_ptr<ChunkTy>
-MinecraftWorld::GetChunkCache( const ChunkCoordinate& chunkCoordinate )
+MinecraftWorld::GetChunkCacheSafe( const ChunkCoordinate& chunkCoordinate )
 {
-    return m_ChunkPool->GetChunkCache( chunkCoordinate );
+    return m_ChunkPool->GetChunkCacheSafe( chunkCoordinate );
+}
+
+std::shared_ptr<ChunkTy>
+MinecraftWorld::GetChunkCacheUnsafe( const ChunkCoordinate& chunkCoordinate )
+{
+    return m_ChunkPool->GetChunkCacheUnsafe( chunkCoordinate );
 }
 
 bool
@@ -120,7 +126,7 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
 {
     if ( GetMinecraftY( blockCoordinate ) < 0 ) return false;
 
-    if ( auto chunkCache = GetChunkCache( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+    if ( auto chunkCache = GetChunkCacheUnsafe( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
                                                                    0,
                                                                    ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
          chunkCache != nullptr )

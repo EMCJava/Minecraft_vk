@@ -62,7 +62,8 @@ public:
     static inline ChunkCoordinate BlockToChunkWorldCoordinate( const BlockCoordinate& blockCoordinate ) { return MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ), 0, ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ); }
     static inline ChunkCoordinate BlockToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) { return MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ), GetMinecraftY( blockCoordinate ), GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ); }
     std::shared_ptr<ChunkTy>      GetCompleteChunkCache( const ChunkCoordinate& chunkCoordinate );
-    std::shared_ptr<ChunkTy>      GetChunkCache( const ChunkCoordinate& chunkCoordinate );
+    std::shared_ptr<ChunkTy>      GetChunkCacheSafe( const ChunkCoordinate& chunkCoordinate );
+    std::shared_ptr<ChunkTy>      GetChunkCacheUnsafe( const ChunkCoordinate& chunkCoordinate );
     Block*                        GetBlock( const BlockCoordinate& blockCoordinate );
     bool                          SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
