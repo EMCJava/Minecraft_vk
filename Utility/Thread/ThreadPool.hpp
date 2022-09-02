@@ -52,9 +52,7 @@ public:
         std::unique_ptr<ThreadInstance> threadInstance { };
         bool                            occupied = false;
 
-        ThreadInstanceWrapper( ) = default;
-
-        ThreadInstanceWrapper( ThreadInstance* threadInstancePtr )
+        ThreadInstanceWrapper( ThreadInstance* threadInstancePtr = nullptr )
             : threadInstance( threadInstancePtr )
         { }
 
