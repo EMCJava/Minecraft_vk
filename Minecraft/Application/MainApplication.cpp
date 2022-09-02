@@ -756,23 +756,23 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  cellularDistanceFunctionIndex = 1;
                 const char* cellularDistanceFunction[]    = {
-                    "CellularDistanceFunction_Euclidean",
-                    "CellularDistanceFunction_EuclideanSq",
-                    "CellularDistanceFunction_Manhattan",
-                    "CellularDistanceFunction_Hybrid" };
+                       "CellularDistanceFunction_Euclidean",
+                       "CellularDistanceFunction_EuclideanSq",
+                       "CellularDistanceFunction_Manhattan",
+                       "CellularDistanceFunction_Hybrid" };
 
                 if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
                     terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
 
                 static int  cellularReturnTypeIndex = 1;
                 const char* cellularReturnType[]    = {
-                    "CellularReturnType_CellValue",
-                    "CellularReturnType_Distance",
-                    "CellularReturnType_Distance2",
-                    "CellularReturnType_Distance2Add",
-                    "CellularReturnType_Distance2Sub",
-                    "CellularReturnType_Distance2Mul",
-                    "CellularReturnType_Distance2Div" };
+                       "CellularReturnType_CellValue",
+                       "CellularReturnType_Distance",
+                       "CellularReturnType_Distance2",
+                       "CellularReturnType_Distance2Add",
+                       "CellularReturnType_Distance2Sub",
+                       "CellularReturnType_Distance2Mul",
+                       "CellularReturnType_Distance2Div" };
 
                 if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
                     terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
@@ -787,9 +787,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  rotationTypeIndex = 0;
                 const char* rotationType[]    = {
-                    "RotationType3D_None",
-                    "RotationType3D_ImproveXYPlanes",
-                    "RotationType3D_ImproveXZPlanes" };
+                       "RotationType3D_None",
+                       "RotationType3D_ImproveXYPlanes",
+                       "RotationType3D_ImproveXZPlanes" };
 
                 if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
                     terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
@@ -798,12 +798,12 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  fractalTypeIndex = 0;
                 const char* fractalType[]    = {
-                    "FractalType_None",
-                    "FractalType_FBm",
-                    "FractalType_Ridged",
-                    "FractalType_PingPong",
-                    "FractalType_DomainWarpProgressive",
-                    "FractalType_DomainWarpIndependent" };
+                       "FractalType_None",
+                       "FractalType_FBm",
+                       "FractalType_Ridged",
+                       "FractalType_PingPong",
+                       "FractalType_DomainWarpProgressive",
+                       "FractalType_DomainWarpIndependent" };
 
                 if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
                     terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
