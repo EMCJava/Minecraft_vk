@@ -95,10 +95,10 @@ ChunkPool::RemoveChunkOutsizeRange( )
 {
     if ( m_RemoveJobAfterRange > 0 )
     {
-//        std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
-//        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
+        //        std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+        //        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
         const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                                       [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
+                                            [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
 
         const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
 
@@ -135,6 +135,7 @@ ChunkPool::CleanUpJobs( )
         if ( !cache->IsAtLeastTargetStatus( ) )
         {
             // Logger::getInstance( ).LogLine( "Load not complete, re-appending chunk", cache );
+            cache->initialized = false;
             AddJobContext( cache );
             continue;
         }
@@ -179,6 +180,7 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
     ChunkTy* newChunk = nullptr;
 
     {
+        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
         {
             // need upgrade
@@ -191,10 +193,8 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
                 // {
                 // } else
 
-                if ( find_it->second->initialized || find_it->second->initializing )   //  previous job already started or ended, need to add job for upgrading
-                {
+                if ( find_it->second->initialized )   //  previous job already ended, need to add job for upgrading
                     AddJobContext( find_it->second.get( ) );
-                }
             }
 
             return find_it->second.get( );
@@ -204,7 +204,6 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
         newChunk->SetCoordinate( coordinate );
         newChunk->SetExpectedStatus( status );
 
-        std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         m_ChunkCache.insert( { coordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
     }
 
@@ -224,8 +223,8 @@ ChunkPool::FlushSafeAddedChunks( )
         m_SafeAddedChunks.clear( );
     }
 
-//    std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-//    std::lock_guard<std::recursive_mutex> threadLock( m_PendingThreadsMutex );
+    //    std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+    //    std::lock_guard<std::recursive_mutex> threadLock( m_PendingThreadsMutex );
     for ( const auto& chunk : chunks )
         AddCoordinate( chunk.first, static_cast<ChunkStatus>( chunk.second ) );
 }
