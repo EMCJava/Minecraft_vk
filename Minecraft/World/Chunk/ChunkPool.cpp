@@ -58,27 +58,12 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             FlushSafeAddedChunks( );
             // RemoveChunkOutsizeRange( );
 
-            // std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
-            // std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
             if ( m_PendingThreads.empty( ) )
             {
                 // std::this_thread::yield();
                 std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
                 continue;
             }
-
-            //            {
-            //                Logger::getInstance( ).LogLine( "m_PendingThreads", m_PendingThreads.size( ) );
-            //                std::unordered_map<ChunkCoordinate, int> coordinateMap;
-            //                for ( const auto* context : m_PendingThreads )
-            //                    coordinateMap[ context->GetChunkCoordinate( ) ]++;
-            //                Logger::getInstance( ).LogLine( "coordinateSet", coordinateMap.size( ) );
-            //
-            //                std::vector<std::pair<ChunkCoordinate, int>> coordinateMapVec( coordinateMap.begin( ), coordinateMap.end( ) );
-            //                std::sort( coordinateMapVec.begin( ), coordinateMapVec.end( ), []( const auto& a, const auto& b ) { return a.second > b.second; } );
-            //                for ( int i = 0; i < std::min( coordinateMapVec.size( ), (size_t) 5 ); ++i )
-            //                    Logger::getInstance( ).LogLine( coordinateMapVec[ i ].first, coordinateMapVec[ i ].second );
-            //            }
 
             UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( this, cache ); },
                           [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) {
@@ -112,7 +97,7 @@ ChunkPool::RemoveChunkOutsizeRange( )
     {
 //        std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
 //        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
-        const auto                            lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
+        const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
                                                                        [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
 
         const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
