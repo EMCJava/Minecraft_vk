@@ -68,8 +68,8 @@ public:
     }
 
     bool SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block, bool replace = true );
-    bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
-    bool SetBlock( const uint32_t& blockIndex, const Block& block );
+    bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block, bool replace = true );
+    bool SetBlock( const uint32_t& blockIndex, const Block& block, bool replace = true );
 
     void SetCoordinate( const ChunkCoordinate& coordinate );
 

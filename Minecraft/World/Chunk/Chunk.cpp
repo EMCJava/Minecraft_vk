@@ -26,22 +26,23 @@ Chunk::GetBlock( const BlockCoordinate& blockCoordinate )
 }
 
 bool
-Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
+Chunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block, bool replace )
 {
     assert( m_Blocks != nullptr );
     const auto& blockIndex = GetBlockIndex( blockCoordinate );
-    return SetBlock( blockIndex, block );
+    return SetBlock( blockIndex, block, replace );
 }
 
 bool
-Chunk::SetBlock( const uint32_t& blockIndex, const Block& block )
+Chunk::SetBlock( const uint32_t& blockIndex, const Block& block, bool replace )
 {
     assert( m_Blocks != nullptr && m_HeightMap != nullptr );
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
 
-    if ( At( blockIndex ) == block ) return false;
+    if ( At( blockIndex ) == block ) return false;             // same block
+    if ( !replace && At( blockIndex ) != Air ) return false;   // not replacing
 
     // update height map
     if ( block != Air )
@@ -91,10 +92,5 @@ bool
 Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const Block& block, bool replace )
 {
     if ( !IsPointInside( blockCoordinate ) ) return false;
-
-    const auto index = GetBlockIndex( blockCoordinate - m_WorldCoordinate );
-    if ( replace || At( index ) == Air )
-        return SetBlock( index, block );
-
-    return false;
+    return SetBlock( GetBlockIndex( blockCoordinate - m_WorldCoordinate ), block, replace );
 }
