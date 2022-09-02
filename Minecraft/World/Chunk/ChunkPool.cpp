@@ -220,7 +220,7 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
         newChunk->SetExpectedStatus( status );
 
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-        m_ChunkCache.insert( { coordinate, std::unique_ptr<ChunkTy>( newChunk ) } );
+        m_ChunkCache.insert( { coordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
     }
 
     AddJobContext( newChunk );
