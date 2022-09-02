@@ -290,7 +290,10 @@ WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
     }
 
     for ( const auto& chunkCoordinate : missingChunk )
-        m_MissingEssentialChunks[ chunkCoordinate ] = std::max( m_MissingEssentialChunks[ chunkCoordinate ], (ChunkStatusTy) targetStatus );
+    {
+        auto& oldTarget = m_MissingEssentialChunks[ chunkCoordinate ];
+        oldTarget       = std::max( oldTarget, (ChunkStatusTy) targetStatus );
+    }
 
     return !missingChunk.empty( );
 }
