@@ -127,7 +127,7 @@ ChunkPool::CleanUpJobs( )
     finished.reserve( m_maxThread );
 
     CleanRunningThread( &finished );
-    for ( auto& cache : finished )
+    for ( auto* cache : finished )
     {
         cache->initializing = false;
         cache->initialized  = true;
