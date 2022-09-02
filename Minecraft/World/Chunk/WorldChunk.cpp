@@ -46,7 +46,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
     {
         horizontalMapIndex = 0;
         for ( int k = 0; k < SectionUnitLength; ++k )
-            for ( int j = 0; j < SectionUnitLength; ++j )
+            for ( int j = 0; j < SectionUnitLength; ++j, ++horizontalMapIndex )
             {
                 auto noiseValue = generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
                 noiseValue += noiseOffset[ i ];
@@ -54,8 +54,6 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
                 assert( blocksPtr + horizontalMapIndex - m_Blocks.get( ) < ChunkVolume );
                 blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
                 if ( !blocksPtr[ horizontalMapIndex ].Transparent( ) ) m_HeightMap[ horizontalMapIndex ] = i;
-
-                ++horizontalMapIndex;
             }
 
         blocksPtr += SectionSurfaceSize;
@@ -67,7 +65,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
     {
         horizontalMapIndex = 0;
         for ( int k = 0; k < SectionUnitLength; ++k )
-            for ( int j = 0; j < SectionUnitLength; ++j )
+            for ( int j = 0; j < SectionUnitLength; ++j, ++horizontalMapIndex )
             {
                 assert( blocksPtr + horizontalMapIndex - m_Blocks.get( ) < ChunkVolume );
 
@@ -87,8 +85,6 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
                         blocksPtr[ horizontalMapIndex ] = BlockID::Dart;
                     }
                 }
-
-                ++horizontalMapIndex;
             }
 
         blocksPtr += SectionSurfaceSize;
