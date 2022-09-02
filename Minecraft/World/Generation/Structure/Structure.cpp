@@ -23,6 +23,12 @@ Structure::SetBlockWorld( Chunk& chunk, const BlockCoordinate& worldCoordinate, 
     return chunk.SetBlockAtWorldCoordinate( worldCoordinate, block, replace );
 }
 
+bool
+Structure::SetBlock( Chunk& chunk, const BlockCoordinate& inChunkCoordinate, const Block& block, bool replace )
+{
+    return chunk.SetBlock( inChunkCoordinate, block, replace );
+}
+
 WorldChunk&
 Structure::GetStartingChunk( WorldChunk& generatingChunk )
 {

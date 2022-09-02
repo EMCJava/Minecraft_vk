@@ -30,7 +30,7 @@ StructureTree::Generate( WorldChunk& chunk )
     {
         for ( int i = 0; i < treeHeight; ++i )
         {
-            chunk.SetBlock( startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), BlockID::AcaciaLog );
+            SetBlock( chunk, startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), BlockID::AcaciaLog, false );
         }
     }
 
