@@ -88,6 +88,7 @@ public:
 
     void Clean( )
     {
+        CleanRunningThread( );
         m_PendingThreads.clear( );
         m_ChunkCache.clear( );
     }
