@@ -40,7 +40,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
 
     m_Blocks = std::make_unique<Block[]>( ChunkVolume );
 
-    auto     blocksPtr          = m_Blocks.get( );
+    auto*    blocksPtr          = m_Blocks.get( );
     uint32_t horizontalMapIndex = 0;
     for ( int i = 0; i < ChunkMaxHeight; ++i )
     {
