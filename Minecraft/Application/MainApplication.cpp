@@ -425,6 +425,7 @@ MainApplication::renderThread( const std::stop_token& st )
             MinecraftServer::GetInstance( ).GetWorld( ).StopChunkGeneration( );
             MinecraftServer::GetInstance( ).GetWorld( ).CleanChunk( );
             MinecraftServer::GetInstance( ).GetWorld( ).StartChunkGeneration( );
+            SetGenerationOffsetByCurve( );
             m_ShouldReset = false;
         }
 
@@ -599,7 +600,6 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
         if ( ImGui::Button( "Reset" ) )
         {
-            SetGenerationOffsetByCurve( );
             m_ShouldReset = true;
         }
 
