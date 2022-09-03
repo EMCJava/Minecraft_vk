@@ -63,7 +63,10 @@ private:
 
         explicit BufferChunk( )
             : allocator( VulkanAPI::GetInstance( ).getMemoryAllocator( ) )
-        { }
+        {
+            stagingBuffer.SetAllocator( );
+            indirectDrawBuffers.SetAllocator( );
+        }
 
         ~BufferChunk( )
         {

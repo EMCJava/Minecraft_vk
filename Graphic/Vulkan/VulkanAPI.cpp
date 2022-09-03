@@ -119,6 +119,13 @@ VulkanAPI::setupAPI( const std::string& applicationName )
     selectPhysicalDevice( );
     setupLogicalDevice( );
 
+    /*
+     *
+     * Setup Vulkan memory allocator
+     *
+     * */
+    setupVulkanMemoryAllocator( );
+
     /**
      *
      * Setup render detail
@@ -140,18 +147,6 @@ VulkanAPI::setupAPI( const std::string& applicationName )
      *
      * */
     setupSyncs( );
-
-    /*
-     *
-     * Setup Vulkan memory allocator
-     *
-     * */
-    VmaAllocatorCreateInfo allocatorInfo = { };
-    allocatorInfo.physicalDevice         = m_vkPhysicalDevice;
-    allocatorInfo.device                 = m_vkLogicalDevice.get( );
-    allocatorInfo.instance               = m_vkInstance.get( );
-
-    vmaCreateAllocator( &allocatorInfo, &m_vkmAllocator );
 }
 
 void
@@ -508,16 +503,11 @@ VulkanAPI::setupSwapChain( )
                                 return std::move( m_vkLogicalDevice->createImageViewUnique( createInfo ) );
                             } );
 
-    m_vkSwap_chain_depth_image = createImage( display_extent.width, display_extent.height, m_vkSwap_chain_depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_vkSwap_chain_depth_memory );
+    m_vkSwap_chain_depth_image.SetAllocator( m_vkmAllocator );
+    m_vkSwap_chain_depth_image.Create( display_extent.width, display_extent.height, m_vkSwap_chain_depth_format, vk::ImageTiling::eOptimal,
+                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, VMA_MEMORY_USAGE_GPU_ONLY );
 
-    vk::ImageViewCreateInfo depthViewCreateInfo;
-    depthViewCreateInfo.setImage( m_vkSwap_chain_depth_image.get( ) )
-        .setViewType( vk::ImageViewType::e2D )
-        .setFormat( m_vkSwap_chain_depth_format )
-        .setComponents( { vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity } )
-        .setSubresourceRange( { vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1 } );
-
-    m_vkSwap_chain_depth_view = m_vkLogicalDevice->createImageViewUnique( depthViewCreateInfo );
+    m_vkSwap_chain_depth_image.CreateImageView( m_vkSwap_chain_depth_format, vk::ImageAspectFlagBits::eDepth );
 }
 
 std::string
@@ -583,7 +573,7 @@ VulkanAPI::setupPipeline( )
     m_vkFrameBuffers.clear( );
     m_vkFrameBuffers.reserve( m_vkSwap_chain_image_views.size( ) );
     std::ranges::transform( m_vkSwap_chain_image_views, std::back_inserter( m_vkFrameBuffers ), [ this ]( const auto& image_view ) {
-        std::vector<vk::ImageView> attachments { image_view.get( ), m_vkSwap_chain_depth_view.get( ) };
+        std::vector<vk::ImageView> attachments { image_view.get( ), m_vkSwap_chain_depth_image.GetImageView( ) };
         vk::FramebufferCreateInfo  framebufferInfo { };
         framebufferInfo.setRenderPass( m_vkPipeline->getRenderPass( ) );
         framebufferInfo.setAttachments( attachments );
@@ -746,32 +736,18 @@ VulkanAPI::setupGraphicCommandBuffers( )
     m_vkGraphicCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
 }
 
-vk::UniqueImage
-VulkanAPI::createImage( uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueDeviceMemory& imageMemory )
-{
-    vk::ImageCreateInfo imageInfo;
-    imageInfo
-        .setImageType( vk::ImageType::e2D )
-        .setExtent( { width, height, 1 } )
-        .setMipLevels( 1 )
-        .setArrayLayers( 1 )
-        .setFormat( format )
-        .setTiling( tiling )
-        .setInitialLayout( vk::ImageLayout::eUndefined )
-        .setUsage( usage )
-        .setSamples( vk::SampleCountFlagBits::e1 )
-        .setSharingMode( vk::SharingMode::eExclusive );
-
-    auto result          = m_vkLogicalDevice->createImageUnique( imageInfo );
-    auto memRequirements = m_vkLogicalDevice->getImageMemoryRequirements( result.get( ) );
-
-    imageMemory = m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, VulkanAPI::VKBufferMeta::FindMemoryType( m_vkPhysicalDevice.getMemoryProperties( ), memRequirements.memoryTypeBits, properties ) } );
-    m_vkLogicalDevice->bindImageMemory( result.get( ), m_vkSwap_chain_depth_memory.get( ), 0 );
-
-    return result;
-}
-
 VulkanAPI::~VulkanAPI( )
 {
     vmaDestroyAllocator( m_vkmAllocator );
+}
+
+void
+VulkanAPI::setupVulkanMemoryAllocator( )
+{
+    VmaAllocatorCreateInfo allocatorInfo = { };
+    allocatorInfo.physicalDevice         = m_vkPhysicalDevice;
+    allocatorInfo.device                 = m_vkLogicalDevice.get( );
+    allocatorInfo.instance               = m_vkInstance.get( );
+
+    vmaCreateAllocator( &allocatorInfo, &m_vkmAllocator );
 }

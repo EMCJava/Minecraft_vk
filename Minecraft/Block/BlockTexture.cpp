@@ -128,6 +128,7 @@ BlockTexture::BlockTexture( const std::string& folder )
 
     const auto textureResolution = textureSpec[ "resolution" ].get<uint32_t>( );
 
+    textureImage.SetAllocator( );
     textureImage.Create( textureAtlasesWidth * textureResolution, textureAtlasesHeight * textureResolution, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, VMA_MEMORY_USAGE_GPU_ONLY, VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT );
 
     uint32_t index = 0;

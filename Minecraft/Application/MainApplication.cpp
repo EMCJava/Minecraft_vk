@@ -66,13 +66,13 @@ MainApplication::~MainApplication( )
 void
 MainApplication::run( )
 {
-    const auto                           swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
-    std::vector<VulkanAPI::VKBufferMeta> uniformBuffers( swapChainImagesCount );
-    const auto                           updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers, &blockTextures = std::as_const( m_MinecraftInstance->GetBlockTextures( ) ) ]( ) {
+    const auto              swapChainImagesCount = m_graphics_api->getSwapChainImagesCount( );
+    std::vector<BufferMeta> uniformBuffers( swapChainImagesCount );
+    const auto              updateDescriptorSet = [ this, swapChainImagesCount, &uniformBuffers, &blockTextures = std::as_const( m_MinecraftInstance->GetBlockTextures( ) ) ]( ) {
         for ( size_t i = 0; i < swapChainImagesCount; i++ )
         {
             vk::DescriptorBufferInfo bufferInfo;
-            bufferInfo.setBuffer( *uniformBuffers[ i ].buffer )
+            bufferInfo.setBuffer( uniformBuffers[ i ].GetBuffer( ) )
                 .setOffset( 0 )
                 .setRange( sizeof( BlockTransformUBO ) );
 
@@ -91,7 +91,10 @@ MainApplication::run( )
 
     {
         for ( auto& buffer : uniformBuffers )
-            buffer.Create( sizeof( BlockTransformUBO ), vk::BufferUsageFlagBits::eUniformBuffer, *m_graphics_api );
+        {
+            buffer.SetAllocator();
+            buffer.Create( sizeof( BlockTransformUBO ), vk::BufferUsageFlagBits::eUniformBuffer );
+        }
 
         renderUBOs         = std::make_unique<UBOData[]>( swapChainImagesCount );
         const auto& player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
@@ -120,7 +123,7 @@ MainApplication::run( )
         else
             renderUBOs[ index ].ubo.highlightCoordinate = { -1, -1, -1 };
 
-        uniformBuffers[ index ].writeBuffer( &renderUBOs[ index ].ubo, sizeof( BlockTransformUBO ), *m_graphics_api );
+        uniformBuffers[ index ].writeBuffer( &renderUBOs[ index ].ubo, sizeof( BlockTransformUBO ) );
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
         auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 

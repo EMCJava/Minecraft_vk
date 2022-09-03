@@ -5,7 +5,8 @@
 #ifndef MINECRAFT_VK_BUFFERMETA_HPP
 #define MINECRAFT_VK_BUFFERMETA_HPP
 
-#include <Graphic/Vulkan/VulkanAPI.hpp>
+#include <Include/GraphicAPI.hpp>
+#include <Include/vk_mem_alloc.h>
 
 class BufferMeta
 {
@@ -15,9 +16,7 @@ class BufferMeta
     VmaAllocation allocation { };
 
 public:
-    BufferMeta( )
-        : allocator( VulkanAPI::GetInstance( ).getMemoryAllocator( ) )
-    { }
+    BufferMeta( ) = default;
 
     ~BufferMeta( )
     {
@@ -72,32 +71,9 @@ public:
         vmaUnmapMemory( allocator, allocation );
     }
 
-    void CopyFromBuffer( const BufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, VulkanAPI& api )
-    {
-        static std::mutex           copy_buffer_lock;
-        std::lock_guard<std::mutex> guard( copy_buffer_lock );
+    void CopyFromBuffer( const BufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, class VulkanAPI& api );
 
-        // this will lock the transfer queue
-        const auto& transferFamilyIndicesResources = api.GetTransferFamilyIndices( );
-        auto        transferQueue                  = api.getLogicalDevice( ).getQueue( transferFamilyIndicesResources.resources.first, transferFamilyIndicesResources.resources.second );
-
-        vk::CommandBufferAllocateInfo allocInfo { };
-        allocInfo.setCommandPool( *api.GetTransferCommandPool( ) );
-        allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
-        allocInfo.setCommandBufferCount( 1 );
-
-        auto  commandBuffers = api.getLogicalDevice( ).allocateCommandBuffersUnique( allocInfo );
-        auto& commandBuffer  = commandBuffers.begin( )->get( );
-
-        commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
-        commandBuffer.copyBuffer( bufferData.buffer, buffer, dataRegion );
-        commandBuffer.end( );
-
-        vk::SubmitInfo submitInfo;
-        submitInfo.setCommandBuffers( commandBuffer );
-        transferQueue.submit( submitInfo, nullptr );
-        transferQueue.waitIdle( );
-    }
+    void SetAllocator( VmaAllocator newAllocator = nullptr );
 
     friend std::ostream& operator<<( std::ostream& o, const BufferMeta& bm )
     {

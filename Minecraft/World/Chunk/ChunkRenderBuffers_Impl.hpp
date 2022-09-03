@@ -216,6 +216,7 @@ ClassName( void )::CopyBuffer( ChunkRenderBuffers::SuitableAllocation allocation
     using Usage = vk::BufferUsageFlagBits;
 
     BufferMeta stagingBuffer;
+    stagingBuffer.SetAllocator( );
 
     const vk::DeviceSize stagingSize = allocation.region.GetTotalSize( );
     stagingBuffer.Create( stagingSize, Usage::eVertexBuffer | Usage::eIndexBuffer | Usage::eTransferSrc );

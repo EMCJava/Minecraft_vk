@@ -6,7 +6,6 @@
 #define MINECRAFT_VK_IMAGEMETA_HPP
 
 
-#include <Graphic/Vulkan/VulkanAPI.hpp>
 #include <Include/stb_image.h>
 #include <Include/vk_mem_alloc.h>
 
@@ -26,10 +25,7 @@ class ImageMeta
     VmaAllocation       allocation { };
 
 public:
-    ImageMeta( )
-        : allocator( VulkanAPI::GetInstance( ).getMemoryAllocator( ) )
-    { }
-
+    ImageMeta( ) = default;
     ~ImageMeta( )
     {
         DestroyBuffer( );
@@ -44,13 +40,15 @@ public:
 
     void CreateFromFile( const std::string& path );
 
-    void CreateImageView( vk::Format format );
+    void CreateImageView( vk::Format format, vk::ImageAspectFlags imageAspectFlags = vk::ImageAspectFlagBits::eColor );
 
     void CreateSampler( bool normalizeCoordinates = false, float anisotropy = -1 );
 
     void Create( uint32_t imageWidth, uint32_t imageHeight, vk::Format imageFormat, vk::ImageTiling imageTiling, vk::ImageUsageFlags imageUsage, const VmaMemoryUsage& memoryUsage = VMA_MEMORY_USAGE_CPU_ONLY, const VmaAllocationCreateFlags& memoryFlag = 0 );
 
     void CopyToImage( vk::DeviceSize imageSize, std::pair<int, int> imageOffset, std::pair<uint32_t, uint32_t> imageDimension, void* pixels );
+
+    void SetAllocator( VmaAllocator newAllocator = nullptr );
 
     [[nodiscard]] inline auto& GetSampler( ) const
     {

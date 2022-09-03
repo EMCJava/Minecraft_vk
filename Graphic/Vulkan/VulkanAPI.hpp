@@ -13,6 +13,7 @@
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
 
+#include "ImageMeta.hpp"
 #include "QueueFamilyManager.hpp"
 #include "Utility/Singleton.hpp"
 
@@ -82,75 +83,6 @@ struct TexturedVertex : VertexDetail {
 
 class VulkanAPI : public Singleton<VulkanAPI>
 {
-public:
-    struct VKBufferMeta {
-
-        vk::UniqueBuffer                   buffer;
-        vk::MemoryRequirements             memRequirements;
-        vk::PhysicalDeviceMemoryProperties memProperties;
-        vk::UniqueDeviceMemory             deviceMemory;
-
-        inline auto& GetBuffer( ) const
-        {
-            return *buffer;
-        }
-
-        static uint32_t FindMemoryType( const vk::PhysicalDeviceMemoryProperties& memProperties, uint32_t typeFilter, vk::MemoryPropertyFlags properties )
-        {
-            for ( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
-                if ( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[ i ].propertyFlags & properties ) == properties ) return i;
-            throw std::runtime_error( "failed to find suitable memory type!" );
-        }
-
-        void Create( const vk::DeviceSize size, const vk::BufferUsageFlags usage, const VulkanAPI& api, const vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-                     const vk::SharingMode sharingMode = vk::SharingMode::eExclusive )
-        {
-            buffer          = api.m_vkLogicalDevice->createBufferUnique( { { }, size, usage, sharingMode } );
-            memRequirements = api.m_vkLogicalDevice->getBufferMemoryRequirements( buffer.get( ) );
-            memProperties   = api.m_vkPhysicalDevice.getMemoryProperties( );
-
-            deviceMemory = api.m_vkLogicalDevice->allocateMemoryUnique( { memRequirements.size, FindMemoryType( memProperties, memRequirements.memoryTypeBits, memoryProperties ) } );
-            api.m_vkLogicalDevice->bindBufferMemory( buffer.get( ), deviceMemory.get( ), 0 );
-        }
-
-        void writeBuffer( const void* writingData, size_t dataSize, const VulkanAPI& api )
-        {
-            writeBufferOffseted( writingData, dataSize, 0, api );
-        }
-
-        void writeBufferOffseted( const void* writingData, size_t dataSize, size_t offset, const VulkanAPI& api )
-        {
-            auto* bindingPoint = api.m_vkLogicalDevice->mapMemory( deviceMemory.get( ), offset, dataSize );
-            memcpy( bindingPoint, writingData, dataSize );
-            api.m_vkLogicalDevice->unmapMemory( deviceMemory.get( ) );
-        }
-
-        void CopyFromBuffer( const VKBufferMeta& bufferData, const vk::ArrayProxy<const vk::BufferCopy>& dataRegion, const VulkanAPI& api )
-        {
-            static std::mutex           copy_buffer_lock;
-            std::lock_guard<std::mutex> guard( copy_buffer_lock );
-
-            vk::CommandBufferAllocateInfo allocInfo { };
-            allocInfo.setCommandPool( *api.m_vkTransferCommandPool );
-            allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
-            allocInfo.setCommandBufferCount( 1 );
-
-            auto  commandBuffers = api.m_vkLogicalDevice->allocateCommandBuffersUnique( allocInfo );
-            auto& commandBuffer  = commandBuffers.begin( )->get( );
-
-            commandBuffer.begin( { vk::CommandBufferUsageFlagBits::eOneTimeSubmit } );
-            commandBuffer.copyBuffer( *bufferData.buffer, *buffer, dataRegion );
-            commandBuffer.end( );
-
-            const auto& transferFamilyIndices = api.m_vkTransfer_family_indices;
-            auto        transferQueue         = api.m_vkLogicalDevice->getQueue( transferFamilyIndices.first, transferFamilyIndices.second );
-
-            vk::SubmitInfo submitInfo;
-            submitInfo.setCommandBuffers( commandBuffer );
-            transferQueue.submit( submitInfo, nullptr );
-            transferQueue.waitIdle( );
-        }
-    };
 
 private:
     struct QueueFamilyIndices {
@@ -193,7 +125,7 @@ private:
     void setupSwapChain( );
     void setupPipeline( );
 
-    vk::UniqueImage createImage( uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::UniqueDeviceMemory& imageMemory );
+    void setupVulkanMemoryAllocator();
 
     /**
      *
@@ -269,10 +201,10 @@ public:
         m_requested_queue[ key ] = { 0, type };
     }
 
-    auto                          GetTransferFamilyIndices( ) { return MakeMutexResources( m_vkTransfer_family_indices_mutex, m_vkTransfer_family_indices ); }
-    auto&                         GetTransferCommandPool( ) { return m_vkTransferCommandPool; }
-    auto&                         getMemoryAllocator( ) { return m_vkmAllocator; }
-    inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.get( ); }
+    inline auto                   GetTransferFamilyIndices( ) { return MakeMutexResources( m_vkTransfer_family_indices_mutex, m_vkTransfer_family_indices ); }
+    inline auto&                  GetTransferCommandPool( ) { return m_vkTransferCommandPool; }
+    inline auto&                  getMemoryAllocator( ) { return m_vkmAllocator; }
+    inline auto&                  getDepthBufferImage( ) { return m_vkSwap_chain_depth_image.GetImage( ); }
     inline const auto&            getPipelineLayout( ) { return *m_vkPipeline->m_vkPipelineLayout; }
     inline auto&                  getRenderPass( ) { return *m_vkPipeline->m_vkRenderPass; }
     inline auto&                  getDescriptorPool( ) { return *m_vkPipeline->createInfo.descriptorPool; }
@@ -371,9 +303,8 @@ private:
     std::vector<vk::Image>           m_vkSwap_chain_images;
     std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
     vk::Format                       m_vkSwap_chain_depth_format;
-    vk::UniqueImage                  m_vkSwap_chain_depth_image;
-    vk::UniqueDeviceMemory           m_vkSwap_chain_depth_memory;
-    vk::UniqueImageView              m_vkSwap_chain_depth_view;
+
+    ImageMeta m_vkSwap_chain_depth_image;
 
     /**
      *

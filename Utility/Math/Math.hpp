@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_UTILITY_MATH_MATH_HPP
 #define MINECRAFT_VK_UTILITY_MATH_MATH_HPP
 
+#include <utility>
 #include <concepts>
 #include <initializer_list>
 

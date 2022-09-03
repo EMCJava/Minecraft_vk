@@ -4,13 +4,14 @@
 
 #include "ImageMeta.hpp"
 
+#include <Graphic/Vulkan/VulkanAPI.hpp>
 #include <Include/stb_image_Impl.cpp>
 
 void
 ImageMeta::CreateFromFile( const std::string& path )
 {
     static constexpr int ColorTy = STBI_rgb_alpha;
-    int           texWidth, texHeight, texChannels;
+    int                  texWidth, texHeight, texChannels;
     stbi_set_flip_vertically_on_load( true );
     stbi_uc*       pixels    = stbi_load( path.c_str( ), &texWidth, &texHeight, &texChannels, ColorTy );
     vk::DeviceSize imageSize = ScaleToSecond<1, ColorTy>( texWidth * texHeight );
@@ -28,7 +29,7 @@ ImageMeta::CreateFromFile( const std::string& path )
 }
 
 void
-ImageMeta::CreateImageView( vk::Format format )
+ImageMeta::CreateImageView( vk::Format format, vk::ImageAspectFlags imageAspectFlags )
 {
 
     vk::ImageViewCreateInfo imageViewCreateInfo;
@@ -36,7 +37,7 @@ ImageMeta::CreateImageView( vk::Format format )
     imageViewCreateInfo.setImage( image );
     imageViewCreateInfo.setViewType( vk::ImageViewType::e2D );
     imageViewCreateInfo.setFormat( format );
-    imageViewCreateInfo.setSubresourceRange( { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+    imageViewCreateInfo.setSubresourceRange( { imageAspectFlags, 0, 1, 0, 1 } );
 
     imageView = VulkanAPI::GetInstance( ).getLogicalDevice( ).createImageViewUnique( imageViewCreateInfo );
 }
@@ -103,6 +104,7 @@ ImageMeta::CopyToImage( vk::DeviceSize imageSize, std::pair<int, int> imageOffse
     using Usage = vk::BufferUsageFlagBits;
 
     BufferMeta stagingBuffer;
+    stagingBuffer.SetAllocator( );
     stagingBuffer.Create( imageSize, Usage::eTransferSrc );
     stagingBuffer.writeBuffer( pixels, imageSize );
 
@@ -172,4 +174,10 @@ ImageMeta::CopyToImage( vk::DeviceSize imageSize, std::pair<int, int> imageOffse
     submitInfo.setCommandBuffers( commandBuffer );
     transferQueue.submit( submitInfo, nullptr );
     transferQueue.waitIdle( );
+}
+
+void
+ImageMeta::SetAllocator( VmaAllocator newAllocator )
+{
+    allocator = newAllocator ? newAllocator : VulkanAPI::GetInstance( ).getMemoryAllocator( );
 }
