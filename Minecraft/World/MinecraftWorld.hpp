@@ -13,11 +13,11 @@
 
 class MinecraftWorld : public Tickable
 {
-    std::unique_ptr<ChunkPool> m_ChunkPool;
-
     std::unique_ptr<float[]>        m_TerrainNoiseOffsetPerLevel;
     std::unique_ptr<MinecraftNoise> m_WorldTerrainNoise;
     std::unique_ptr<MinecraftNoise> m_BedRockNoise;
+
+    std::unique_ptr<ChunkPool> m_ChunkPool;
 
     /*
      *

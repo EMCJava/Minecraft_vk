@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_WORLDCHUNK_HPP
 #define MINECRAFT_VK_WORLDCHUNK_HPP
 
+#include <list>
 #include <vector>
 
 #include "RenderableChunk.hpp"
