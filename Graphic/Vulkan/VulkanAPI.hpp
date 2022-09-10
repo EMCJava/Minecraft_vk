@@ -125,7 +125,7 @@ private:
     void setupSwapChain( );
     void setupPipeline( );
 
-    void setupVulkanMemoryAllocator();
+    void setupVulkanMemoryAllocator( );
 
     /**
      *
@@ -273,10 +273,17 @@ private:
      *
      * */
     vk::Extent2D                 m_vkDisplayExtent;
+    vk::PhysicalDeviceProperties m_vkPhysicalDeviceProperties;
+    vk::PhysicalDevice           m_vkPhysicalDevice;
     vk::UniqueSurfaceKHR         m_vkSurface;
     vk::UniqueDevice             m_vkLogicalDevice;
-    vk::PhysicalDevice           m_vkPhysicalDevice;
-    vk::PhysicalDeviceProperties m_vkPhysicalDeviceProperties;
+
+    /*
+     *
+     * Vulkan memory allocator
+     *
+     * */
+    VmaAllocator m_vkmAllocator;
 
     /**
      *
@@ -290,29 +297,29 @@ private:
     std::pair<uint32_t, uint32_t>              m_vkTransfer_family_indices;
     vk::Queue                                  m_vkGraphicQueue;
     vk::Queue                                  m_vkPresentQueue;
+    
+    /**
+     *
+     * Pipelines
+     *
+     * */
+    std::unique_ptr<VulkanPipeline> m_vkPipeline;
 
     /**
      *
      * Swap chains
      *
      * */
-    std::atomic_flag                 m_swap_chain_not_valid;
-    std::atomic_flag                 m_should_create_swap_chain;
-    SwapChainSupportDetails          m_vkSwap_chain_detail;
-    vk::UniqueSwapchainKHR           m_vkSwap_chain;
-    std::vector<vk::Image>           m_vkSwap_chain_images;
-    std::vector<vk::UniqueImageView> m_vkSwap_chain_image_views;
-    vk::Format                       m_vkSwap_chain_depth_format;
+    std::atomic_flag                   m_swap_chain_not_valid;
+    std::atomic_flag                   m_should_create_swap_chain;
+    SwapChainSupportDetails            m_vkSwap_chain_detail;
+    vk::UniqueSwapchainKHR             m_vkSwap_chain;
+    std::vector<vk::UniqueFramebuffer> m_vkFrameBuffers;
+    std::vector<vk::Image>             m_vkSwap_chain_images;
+    std::vector<vk::UniqueImageView>   m_vkSwap_chain_image_views;
+    vk::Format                         m_vkSwap_chain_depth_format;
 
     ImageMeta m_vkSwap_chain_depth_image;
-
-    /**
-     *
-     * Pipelines
-     *
-     * */
-    std::unique_ptr<VulkanPipeline>    m_vkPipeline;
-    std::vector<vk::UniqueFramebuffer> m_vkFrameBuffers;
 
     /**
      *
@@ -333,13 +340,6 @@ private:
     std::vector<vk::UniqueSemaphore> m_vkRender_syncs;
     std::vector<vk::UniqueFence>     m_vkRender_fence_syncs;
     std::vector<vk::Fence>           m_vkSwap_chain_image_fence_syncs;
-
-    /*
-     *
-     * Vulkan memory allocator
-     *
-     * */
-    VmaAllocator m_vkmAllocator;
 
     /**
      *

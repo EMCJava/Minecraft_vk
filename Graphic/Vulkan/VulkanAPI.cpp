@@ -738,6 +738,7 @@ VulkanAPI::setupGraphicCommandBuffers( )
 
 VulkanAPI::~VulkanAPI( )
 {
+    m_vkSwap_chain_depth_image.DestroyBuffer();
     vmaDestroyAllocator( m_vkmAllocator );
 }
 
