@@ -68,6 +68,8 @@ MainApplication::~MainApplication( )
     m_imguiDescriptorPool.reset( );
 
     m_MinecraftInstance.reset( );
+    m_ChunkSolidBuffers->Clean( );
+
     m_graphics_api.reset( );
     cleanUp( );
 }
@@ -435,7 +437,10 @@ MainApplication::renderThread( const std::stop_token& st )
             m_graphics_api->FlushFence( );
             // m_graphics_api->waitPresent( );
             MinecraftServer::GetInstance( ).GetWorld( ).StopChunkGeneration( );
+
             MinecraftServer::GetInstance( ).GetWorld( ).CleanChunk( );
+            m_ChunkSolidBuffers->Clean( );
+
             MinecraftServer::GetInstance( ).GetWorld( ).StartChunkGeneration( );
             SetGenerationOffsetByCurve( );
             m_ShouldReset = false;

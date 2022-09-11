@@ -70,6 +70,7 @@ private:
 
         ~BufferChunk( )
         {
+            assert( allocator != nullptr );
             vmaDestroyBuffer( allocator, buffer, bufferAllocation );
         }
 
@@ -132,22 +133,26 @@ public:
 
     void Clean( )
     {
+        m_PendingErases.clear( );
         m_Buffers.clear( );
     }
 
     inline auto& GetPendingErasesLock( ) { return m_PendingErasesLock; }
+    inline bool  IsPendingErasesEmpty( )
+    {
+        std::lock_guard<std::mutex> lock( m_PendingErasesLock );
+        return m_PendingErases.empty( );
+    }
 
     inline void Tick( float deltaTime )
     {
         std::lock_guard<std::mutex> lock( m_PendingErasesLock );
-        while ( m_PendingErases.size( ) > 0 )
+        for ( int i = 0; i < m_PendingErases.size( ); ++i )
         {
-            auto& front = m_PendingErases.front( );
-
-            if ( front.second-- > 0 )
+            if ( m_PendingErases[ i ].second-- > 0 )
             {
-                DeleteBuffer( front.first );
-                m_PendingErases.pop_front( );
+                DeleteBuffer( m_PendingErases[ i ].first );
+                m_PendingErases.erase( m_PendingErases.begin( ) + i-- );
             }
         }
     }
