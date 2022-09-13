@@ -18,13 +18,13 @@ ToHorizontalIndex( const auto& coordinate )
 };   // namespace
 
 bool
-Structure::SetBlockWorld( Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block, bool replace )
+Structure::SetBlockWorld( Chunk& chunk, const Block& block, const BlockCoordinate& worldCoordinate, bool replace )
 {
     return chunk.SetBlockAtWorldCoordinate( worldCoordinate, block, replace );
 }
 
 bool
-Structure::SetBlock( Chunk& chunk, const BlockCoordinate& inChunkCoordinate, const Block& block, bool replace )
+Structure::SetBlock( Chunk& chunk, const Block& block, const BlockCoordinate& inChunkCoordinate, bool replace )
 {
     return chunk.SetBlock( inChunkCoordinate, block, replace );
 }
@@ -75,7 +75,7 @@ Structure::FillCube( Chunk& chunk, const Block& block, CoordinateType minX, Coor
             for ( int k = minZ; k <= maxZ; k++ )
             {
                 std::get<MinecraftCoordinateZIndex>( currentCoordinate ) = k;
-                SetBlockWorld( chunk, currentCoordinate, block, replace );
+                SetBlockWorld( chunk, block, currentCoordinate, replace );
             }
         }
     }

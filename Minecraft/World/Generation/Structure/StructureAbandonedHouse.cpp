@@ -23,9 +23,9 @@ StructureAbandonedHouse::Generate( struct WorldChunk& chunk )
                     GetMinecraftX( m_StartingPosition ), GetMinecraftX( m_StartingPosition ) + houseWidth,
                     heightAtPoint, heightAtPoint + houseDepth,
                     GetMinecraftZ( m_StartingPosition ), GetMinecraftZ( m_StartingPosition ) + houseDepth, true, true );
-    SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 1 ), BlockID::Barrel );
-    SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 2 ), BlockID::Barrel );
-    SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 2, 1 ), BlockID::CraftingTable );
+    SetBlockWorld( chunk, BlockID::Barrel, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 1 ) );
+    SetBlockWorld( chunk, BlockID::Barrel, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 2 ) );
+    SetBlockWorld( chunk, BlockID::CraftingTable, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 2, 1 ) );
 
     FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, BlockID::Air,
                                                                     GetMinecraftX( m_StartingPosition ) + houseWidth / 2, GetMinecraftX( m_StartingPosition ) + houseWidth / 2 + 1,
@@ -42,7 +42,7 @@ StructureAbandonedHouse::Generate( struct WorldChunk& chunk )
             const auto cornerIndex              = Structure::ToHorizontalIndex( relativeCornerCoordinate );
             const auto heightAtCorner           = chunk.GetHeight( cornerIndex, eNoiseHeight ) + 1;
             for ( int i = heightAtCorner; i < heightAtPoint; ++i )
-                SetBlock( chunk, relativeCornerCoordinate + MakeMinecraftCoordinate( 0, i, 0 ), BlockID::AcaciaLog, true );
+                SetBlock( chunk, BlockID::AcaciaLog, relativeCornerCoordinate + MakeMinecraftCoordinate( 0, i, 0 ), true );
         }
     }
 }

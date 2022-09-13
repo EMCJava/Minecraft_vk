@@ -30,7 +30,7 @@ StructureTree::Generate( WorldChunk& chunk )
     {
         for ( int i = 0; i < treeHeight; ++i )
         {
-            SetBlock( chunk, startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), BlockID::AcaciaLog, false );
+            SetBlock( chunk, BlockID::AcaciaLog, startingCoordinate + MakeMinecraftCoordinate( 0, heightAtPoint + i, 0 ), false );
         }
     }
 
@@ -44,7 +44,7 @@ StructureTree::Generate( WorldChunk& chunk )
                 const auto leafDensity = std::abs( x ) + std::abs( y ) + std::abs( z );
                 if ( chunkNoise.NextUint64( ) % 8 >= leafDensity )
                 {
-                    SetBlockWorld( chunk, leafOrigin + MakeMinecraftCoordinate( x, y, z ), BlockID::AzaleaLeaves, false );
+                    SetBlockWorld( chunk, BlockID::AzaleaLeaves, leafOrigin + MakeMinecraftCoordinate( x, y, z ), false );
                 }
             }
 }
