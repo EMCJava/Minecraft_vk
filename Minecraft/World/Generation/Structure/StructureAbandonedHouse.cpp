@@ -16,17 +16,35 @@ StructureAbandonedHouse::Generate( struct WorldChunk& chunk )
     const auto        startingIndex      = Structure::ToHorizontalIndex( startingCoordinate );
     const auto        heightAtPoint      = startingChunk.GetHeight( startingIndex, eNoiseHeight ) + 2;
 
+    static constexpr auto houseWidth = 7;
+    static constexpr auto houseDepth = 5;
+
     FillCubeHollow( chunk, BlockID::BirchPlanks,
-                    GetMinecraftX( m_StartingPosition ), GetMinecraftX( m_StartingPosition ) + 7,
-                    heightAtPoint, heightAtPoint + 5,
-                    GetMinecraftZ( m_StartingPosition ), GetMinecraftZ( m_StartingPosition ) + 5, true );
+                    GetMinecraftX( m_StartingPosition ), GetMinecraftX( m_StartingPosition ) + houseWidth,
+                    heightAtPoint, heightAtPoint + houseDepth,
+                    GetMinecraftZ( m_StartingPosition ), GetMinecraftZ( m_StartingPosition ) + houseDepth, true );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 1 ), BlockID::Barrel );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 2 ), BlockID::Barrel );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 2, 1 ), BlockID::CraftingTable );
 
     FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, BlockID::Air,
-                                                                    GetMinecraftX( m_StartingPosition ) + 3, GetMinecraftX( m_StartingPosition ) + 4,
-                                                                    heightAtPoint + 1, heightAtPoint + 3, GetMinecraftZ( m_StartingPosition ) + 5 );
+                                                                    GetMinecraftX( m_StartingPosition ) + houseWidth / 2, GetMinecraftX( m_StartingPosition ) + houseWidth / 2 + 1,
+                                                                    heightAtPoint + 1, heightAtPoint + 3, GetMinecraftZ( m_StartingPosition ) + houseDepth );
+
+    for ( const auto& cornerCoordinate : { m_StartingPosition,
+                                           m_StartingPosition + MakeMinecraftCoordinate( houseWidth, 0, 0 ),
+                                           m_StartingPosition + MakeMinecraftCoordinate( 0, 0, houseDepth ),
+                                           m_StartingPosition + MakeMinecraftCoordinate( houseWidth, 0, houseDepth ) } )
+    {
+        if ( chunk.IsPointInsideHorizontally( cornerCoordinate ) )
+        {
+            const auto relativeCornerCoordinate = chunk.WorldToChunkRelativeCoordinate( cornerCoordinate );
+            const auto cornerIndex              = Structure::ToHorizontalIndex( relativeCornerCoordinate );
+            const auto heightAtCorner           = chunk.GetHeight( cornerIndex, eNoiseHeight ) + 1;
+            for ( int i = heightAtCorner; i < heightAtPoint; ++i )
+                SetBlock( chunk, relativeCornerCoordinate + MakeMinecraftCoordinate( 0, i, 0 ), BlockID::AcaciaLog, true );
+        }
+    }
 }
 
 bool
