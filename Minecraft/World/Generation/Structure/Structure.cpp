@@ -44,16 +44,21 @@ Structure::GetStartingChunk( WorldChunk& generatingChunk )
 }
 
 void
-Structure::FillCubeHollow( Chunk& chunk, const Block& block, CoordinateType minX, CoordinateType maxX, CoordinateType minY, CoordinateType maxY, CoordinateType minZ, CoordinateType maxZ, bool replace )
+Structure::FillCubeHollow( Chunk& chunk, const Block& block, CoordinateType minX, CoordinateType maxX, CoordinateType minY, CoordinateType maxY, CoordinateType minZ, CoordinateType maxZ, bool replaceInside, bool replaceOutside )
 {
-    FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, block, minX, maxX, minY, maxY, minZ, replace );
-    FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateZIndex>( chunk, block, minX, maxX, minZ + 1, maxZ, minY, replace );
-    FillFace<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( chunk, block, minY + 1, maxY, minZ + 1, maxZ, minX, replace );
-    FillFace<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( chunk, block, minY + 1, maxY, minZ + 1, maxZ, maxX, replace );
+    FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, block, minX, maxX, minY, maxY, minZ, replaceOutside );
+    FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateZIndex>( chunk, block, minX, maxX, minZ + 1, maxZ, minY, replaceOutside );
+    FillFace<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( chunk, block, minY + 1, maxY, minZ + 1, maxZ, minX, replaceOutside );
+    FillFace<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( chunk, block, minY + 1, maxY, minZ + 1, maxZ, maxX, replaceOutside );
     if ( maxX - minX > 1 )
     {
-        FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, block, minX + 1, maxX - 1, minY + 1, maxY, maxZ, replace );
-        if ( maxZ - minZ > 1 ) FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateZIndex>( chunk, block, minX + 1, maxX - 1, minZ + 1, maxZ - 1, maxY, replace );
+        FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateYIndex>( chunk, block, minX + 1, maxX - 1, minY + 1, maxY, maxZ, replaceOutside );
+        if ( maxZ - minZ > 1 ) FillFace<MinecraftCoordinateXIndex, MinecraftCoordinateZIndex>( chunk, block, minX + 1, maxX - 1, minZ + 1, maxZ - 1, maxY, replaceOutside );
+    }
+
+    if ( replaceInside )
+    {
+        FillCube( chunk, BlockID::Air, minX + 1, maxX - 1, minY + 1, maxY - 1, minZ + 1, maxZ - 1, true );
     }
 }
 

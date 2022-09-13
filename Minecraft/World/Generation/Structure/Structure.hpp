@@ -86,7 +86,7 @@ public:
 
     void FillCube( class Chunk& chunk, const Block& block, CoordinateType minX, CoordinateType maxX, CoordinateType minY, CoordinateType maxY, CoordinateType minZ, CoordinateType maxZ, bool replace = true );
 
-    void FillCubeHollow( class Chunk& chunk, const Block& block, CoordinateType minX, CoordinateType maxX, CoordinateType minY, CoordinateType maxY, CoordinateType minZ, CoordinateType maxZ, bool replace = true );
+    void FillCubeHollow( class Chunk& chunk, const Block& block, CoordinateType minX, CoordinateType maxX, CoordinateType minY, CoordinateType maxY, CoordinateType minZ, CoordinateType maxZ, bool replaceInside = true, bool replaceOutside = true );
 
     bool SetBlockWorld( class Chunk& chunk, const BlockCoordinate& worldCoordinate, const Block& block, bool replace = true );
     bool SetBlock( class Chunk& chunk, const BlockCoordinate& inChunkCoordinate, const Block& block, bool replace = true );

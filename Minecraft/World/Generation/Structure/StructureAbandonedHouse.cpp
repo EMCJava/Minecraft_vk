@@ -22,7 +22,7 @@ StructureAbandonedHouse::Generate( struct WorldChunk& chunk )
     FillCubeHollow( chunk, BlockID::BirchPlanks,
                     GetMinecraftX( m_StartingPosition ), GetMinecraftX( m_StartingPosition ) + houseWidth,
                     heightAtPoint, heightAtPoint + houseDepth,
-                    GetMinecraftZ( m_StartingPosition ), GetMinecraftZ( m_StartingPosition ) + houseDepth, true );
+                    GetMinecraftZ( m_StartingPosition ), GetMinecraftZ( m_StartingPosition ) + houseDepth, true, true );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 1 ), BlockID::Barrel );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 1, 2 ), BlockID::Barrel );
     SetBlockWorld( chunk, m_StartingPosition + MakeMinecraftCoordinate( 1, heightAtPoint + 2, 1 ), BlockID::CraftingTable );
