@@ -1,3 +1,4 @@
+add_subdirectory(Biome)
 add_subdirectory(Generation)
 add_subdirectory(Chunk)
 add_subdirectory(Physics)

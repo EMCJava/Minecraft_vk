@@ -3,6 +3,7 @@
 //
 
 #include "WorldChunk.hpp"
+#include <Minecraft/World/Biome/BiomeSettings.hpp>
 #include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 
@@ -147,8 +148,8 @@ WorldChunk::UpgradeChunk( ChunkStatus targetStatus )
 bool
 WorldChunk::AttemptRunStructureStart( )
 {
-    StructureTree::TryGenerate( *this, m_StructureStarts );
-    StructureAbandonedHouse::TryGenerate( *this, m_StructureStarts );
+    DefaultBiomeStructures::TryGenerate( *this, m_StructureStarts );
+
     return true;
 }
 
