@@ -30,7 +30,7 @@ void
 RenderableChunk::ResetRenderBuffer( )
 {
     DeleteCache( );
-    m_BlockFaces = new uint8_t[ ChunkVolume ];
+    m_NeighborTransparency = new uint32_t[ ChunkVolume ];
 }
 
 void
@@ -39,22 +39,23 @@ RenderableChunk::RegenerateVisibleFaces( )
     std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
 
     for ( int i = 0; i < ChunkVolume; ++i )
-        RegenerateVisibleFacesAt( i );
+        UpdateNeighborAt( i );
 
     m_VisibleFacesCount = 0;
     for ( int i = 0; i < ChunkVolume; ++i )
-        m_VisibleFacesCount += std::popcount( m_BlockFaces[ i ] );
+        // only count faces directed covered
+        m_VisibleFacesCount += std::popcount( m_NeighborTransparency[ i ] & 0b111111 );
 }
 
 void
-RenderableChunk::RegenerateVisibleFacesAt( const uint32_t index )
+RenderableChunk::UpdateNeighborAt( const uint32_t index )
 {
     assert( m_EmptySlot == 0 );
     assert( std::all_of( m_NearChunks.begin( ), m_NearChunks.end( ), []( const auto& chunk ) { return chunk != nullptr; } ) );
     assert( index >= 0 && index < ChunkVolume );
-    assert( m_BlockFaces != nullptr );
+    assert( m_NeighborTransparency != nullptr );
 
-    auto& blockFace = m_BlockFaces[ index ] = 0;
+    auto& blockFace = m_NeighborTransparency[ index ] = 0;
     if ( At( index ).Transparent( ) ) return;
 
     if ( ( index >> SectionSurfaceSizeBinaryOffset ) == ChunkMaxHeight - 1 || At( index + dirUpFaceOffset ).Transparent( ) ) [[unlikely]]
@@ -162,7 +163,7 @@ RenderableChunk::GenerateRenderBuffer( )
         {
             for ( int x = 0; x < SectionUnitLength; ++x, ++blockIndex )
             {
-                if ( const auto visibleFace = m_BlockFaces[ blockIndex ] )
+                if ( const auto visibleFace = m_NeighborTransparency[ blockIndex ] )
                 {
                     const auto& textures = blockTextures.GetTextureLocation( m_Blocks[ blockIndex ] );
                     const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
@@ -206,13 +207,13 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         static constexpr auto dirFrontFaceOffset = 1;
         static constexpr auto dirBackFaceOffset  = -1;
 
-        const auto originalFaceCount = std::popcount( m_BlockFaces[ blockIndex ] );
-        RegenerateVisibleFacesAt( blockIndex );
-        const auto newFaceCount = std::popcount( m_BlockFaces[ blockIndex ] );
+        const auto originalFaceCount = std::popcount( m_NeighborTransparency[ blockIndex ] );
+        UpdateNeighborAt( blockIndex );
+        const auto newFaceCount = std::popcount( m_NeighborTransparency[ blockIndex ] );
 
         int         faceDiff     = 0;
         const auto* blockPtr     = m_Blocks.get( ) + blockIndex;
-        auto* const blockFacePtr = m_BlockFaces + blockIndex;
+        auto* const blockFacePtr = m_NeighborTransparency + blockIndex;
         if ( GetMinecraftY( blockCoordinate ) != ChunkMaxHeight - 1 )
             if ( !blockPtr[ dirUpFaceOffset ].Transparent( ) )
             {
@@ -239,7 +240,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
             if ( !m_NearChunks[ DirRight ]->At( blockIndex + dirRightChunkFaceOffset ).Transparent( ) )
             {
-                m_NearChunks[ DirRight ]->m_BlockFaces[ blockIndex + dirRightChunkFaceOffset ] ^= DirLeftBit;
+                m_NearChunks[ DirRight ]->m_NeighborTransparency[ blockIndex + dirRightChunkFaceOffset ] ^= DirLeftBit;
                 m_NearChunks[ DirRight ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirRight ]->SyncChunkFromDirection( this, DirLeft, true );
             }
@@ -257,7 +258,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
             if ( !m_NearChunks[ DirLeft ]->At( blockIndex + dirLeftChunkFaceOffset ).Transparent( ) )
             {
-                m_NearChunks[ DirLeft ]->m_BlockFaces[ blockIndex + dirLeftChunkFaceOffset ] ^= DirRightBit;
+                m_NearChunks[ DirLeft ]->m_NeighborTransparency[ blockIndex + dirLeftChunkFaceOffset ] ^= DirRightBit;
                 m_NearChunks[ DirLeft ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirLeft ]->SyncChunkFromDirection( this, DirRight, true );
             }
@@ -275,7 +276,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
             if ( !m_NearChunks[ DirFront ]->At( blockIndex + dirFrontChunkFaceOffset ).Transparent( ) )
             {
-                m_NearChunks[ DirFront ]->m_BlockFaces[ blockIndex + dirFrontChunkFaceOffset ] ^= DirBackBit;
+                m_NearChunks[ DirFront ]->m_NeighborTransparency[ blockIndex + dirFrontChunkFaceOffset ] ^= DirBackBit;
                 m_NearChunks[ DirFront ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirFront ]->SyncChunkFromDirection( this, DirBack, true );
             }
@@ -293,7 +294,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
             if ( !m_NearChunks[ DirBack ]->At( blockIndex + dirBackChunkFaceOffset ).Transparent( ) )
             {
-                m_NearChunks[ DirBack ]->m_BlockFaces[ blockIndex + dirBackChunkFaceOffset ] ^= DirFrontBit;
+                m_NearChunks[ DirBack ]->m_NeighborTransparency[ blockIndex + dirBackChunkFaceOffset ] ^= DirFrontBit;
                 m_NearChunks[ DirBack ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
                 m_NearChunks[ DirBack ]->SyncChunkFromDirection( this, DirFront, true );
             }
@@ -311,7 +312,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
         int checkingFaceCount = 0;
         for ( int i = 0; i < ChunkVolume; ++i )
-            checkingFaceCount += std::popcount( m_BlockFaces[ i ] );
+            checkingFaceCount += std::popcount( m_NeighborTransparency[ i ] );
         assert( m_VisibleFacesCount == checkingFaceCount );
 #endif
     }

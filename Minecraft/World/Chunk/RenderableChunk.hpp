@@ -27,8 +27,10 @@ protected:
      * Chunk detail
      *
      * */
-    uint8_t* m_BlockFaces { };
-    int      m_VisibleFacesCount = 0;
+    uint32_t* m_NeighborTransparency { };
+    static_assert( IntLog<DirBitSize - 1, 2>::value < ( sizeof( std::remove_pointer_t<decltype( m_NeighborTransparency )> ) << 3 ) );
+
+    int m_VisibleFacesCount = 0;
 
     std::array<RenderableChunk*, DirHorizontalSize> m_NearChunks { };
     uint8_t                                         m_EmptySlot = ( 1 << DirHorizontalSize ) - 1;
@@ -47,7 +49,7 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void RegenerateVisibleFacesAt( const uint32_t index );
+    void UpdateNeighborAt( const uint32_t index );
     void RegenerateVisibleFaces( );
 
 public:
@@ -86,8 +88,8 @@ public:
 
     inline void DeleteCache( )
     {
-        delete[] m_BlockFaces;
-        m_BlockFaces = nullptr;
+        delete[] m_NeighborTransparency;
+        m_NeighborTransparency = nullptr;
 
         m_VisibleFacesCount = 0;
     }
