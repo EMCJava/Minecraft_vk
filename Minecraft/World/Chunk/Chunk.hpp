@@ -37,7 +37,7 @@ public:
     Chunk( Chunk&& )      = delete;
 
     Chunk operator=( const Chunk& ) = delete;
-    Chunk operator=( Chunk&& ) = delete;
+    Chunk operator=( Chunk&& )      = delete;
 
     void SetWorld( class MinecraftWorld* world ) { m_World = world; }
 
@@ -56,9 +56,9 @@ public:
     [[nodiscard]] const Block* CheckBlock( const BlockCoordinate& blockCoordinate ) const;
     [[nodiscard]] Block*       GetBlock( const BlockCoordinate& blockCoordinate );
 
-    Block& At( const int32_t index ) const
+    [[nodiscard]] inline Block& At( const uint32_t index ) const
     {
-        assert( m_Blocks != nullptr && index >= 0 && index < ChunkVolume );
+        assert( m_Blocks != nullptr && index < ChunkVolume );
         return m_Blocks[ index ];
     }
 
