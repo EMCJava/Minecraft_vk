@@ -19,14 +19,39 @@ enum Direction : uint8_t {
     DirSize
 };
 
-enum DirectionBit : uint8_t {
+enum DirectionBit : uint32_t {
     DirFrontBit = 1 << DirFront,
     DirBackBit  = 1 << DirBack,
     DirRightBit = 1 << DirRight,
     DirLeftBit  = 1 << DirLeft,
     DirUpBit    = 1 << DirUp,
     DirDownBit  = 1 << DirDown,
-    DirBitSize  = 6
+
+    DirFrontRightBit = 1 << 6,
+    DirBackRightBit  = 1 << 7,
+    DirFrontLeftBit  = 1 << 8,
+    DirBackLeftBit   = 1 << 9,
+
+    DirFrontUpBit = 1 << 10,
+    DirBackUpBit  = 1 << 11,
+    DirRightUpBit = 1 << 12,
+    DirLeftUpBit  = 1 << 13,
+
+    DirFrontDownBit = 1 << 14,
+    DirBackDownBit  = 1 << 15,
+    DirRightDownBit = 1 << 16,
+    DirLeftDownBit  = 1 << 17,
+
+    DirFrontRightUpBit   = 1 << 18,
+    DirBackRightUpBit    = 1 << 19,
+    DirFrontLeftUpBit    = 1 << 20,
+    DirBackLeftUpBit     = 1 << 21,
+    DirFrontRightDownBit = 1 << 22,
+    DirBackRightDownBit  = 1 << 23,
+    DirFrontLeftDownBit  = 1 << 24,
+    DirBackLeftDownBit   = 1 << 25,
+
+    DirBitSize
 };
 
 /*
