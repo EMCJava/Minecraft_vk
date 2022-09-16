@@ -40,51 +40,55 @@ CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> vertice
     return vertices;
 }
 
+#define TEXTURED_VERTEX( A, B, C, D, E, \
+                         F, I, J, K, L, \
+                         M, N, O, P, Q, \
+                         R, S, T, U, V )\
+    DataType::TexturedVertex { { A, B, C }, { D, E } },\
+    DataType::TexturedVertex { { F, I, J }, { K, L } },\
+    DataType::TexturedVertex { { M, N, O }, { P, Q } },\
+    DataType::TexturedVertex { { R, S, T }, { U, V } }
+
 inline const BlockTexture::TextureLocation defaultBlockVertices {
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 0.0f, 0.f } }, // D
- DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 1.0f, 0.f } }, // B
- DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 1.0f, 1.f } }, // F
- DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 0.0f, 1.f } },  // H
-    }
+        TEXTURED_VERTEX( 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,      // D
+                         1.0f, 0.0f, 0.0f, 1.0f, 0.0f,      // B
+                         1.0f, 1.0f, 0.0f, 1.0f, 1.0f,      // F
+                         1.0f, 1.0f, 1.0f, 0.0f, 1.0f ) }   // H
        ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                                              DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 0.0f, 0.f } }, // A
- DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 1.0f, 0.f } }, // C
- DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 1.0f, 1.f } },      // G
-      DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 0.0f, 1.f } },  // E
-    }
+        TEXTURED_VERTEX( 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // A
+                         0.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // C
+                         0.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // G
+                         0.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // E
        ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                                              DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 0.f, 0.f } },  // C
-  DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 1.f, 0.f } },  // D
-  DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 1.f, 1.f } },      // H
-      DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 0.f, 1.f } },  // G
-    }
+        TEXTURED_VERTEX( 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,      // C
+                         1.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // D
+                         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // H
+                         0.0f, 1.0f, 1.0f, 0.0f, 1.0f ) }   // G
        ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 0.f, 0.f } },  // B
-  DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 1.f, 0.f } },  // A
-  DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 1.f, 1.f } },      // E
-      DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 0.f, 1.f } },  // F
-    }
+        TEXTURED_VERTEX( 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // B
+                         0.0f, 0.0f, 0.0f, 1.0f, 0.0f,      // A
+                         0.0f, 1.0f, 0.0f, 1.0f, 1.0f,      // E
+                         1.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // F
        ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-                                                                              DataType::TexturedVertex { { 0.f, 1.f, 0.f }, { 0.f, 0.f } },   // E
-   DataType::TexturedVertex { { 0.f, 1.f, 1.f }, { 1.f, 0.f } },  // G
-  DataType::TexturedVertex { { 1.f, 1.f, 1.f }, { 1.f, 1.f } },      // H
-      DataType::TexturedVertex { { 1.f, 1.f, 0.f }, { 0.f, 1.f } }, // F
-    }
+        TEXTURED_VERTEX( 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,      // E
+                         0.0f, 1.0f, 1.0f, 1.0f, 0.0f,      // G
+                         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // H
+                         1.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // F
        ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
-
-                                                                              DataType::TexturedVertex { { 1.f, 0.0f, 0.f }, { 1.f, 0.f } },  // B
-  DataType::TexturedVertex { { 1.f, 0.0f, 1.f }, { 0.f, 0.f } }, // D
- DataType::TexturedVertex { { 0.f, 0.0f, 1.f }, { 0.f, 1.f } },      // C
-      DataType::TexturedVertex { { 0.f, 0.0f, 0.f }, { 1.f, 1.f } }, // A
-    }
+        TEXTURED_VERTEX( 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // B
+                         1.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // D
+                         0.0f, 0.0f, 1.0f, 1.0f, 1.0f,      // C
+                         0.0f, 0.0f, 0.0f, 0.0f, 1.0f ) }   // A
        )
 };
+
+#undef TEXTURED_VERTEX
 
 }   // namespace
 
