@@ -8,6 +8,19 @@
 #include "MinecraftType.h"
 #include <Utility/Math/Math.hpp>
 
+
+enum EightWayDirection : uint8_t {
+    EWDirFront,
+    EWDirBack,
+    EWDirRight,
+    EWDirLeft,
+    EWDirFrontRight,
+    EWDirBackLeft,
+    EWDirFrontLeft,
+    EWDirBackRight,
+
+    EightWayDirectionSize
+};
 enum Direction : uint8_t {
     DirFront,
     DirBack,
@@ -105,5 +118,11 @@ static constexpr uint32_t OptimalBufferGap    = 1024 * 1024;
 
 static constexpr uint32_t IndirectDrawBufferSizeStep = 20 * 1024;
 
+/*
+ *
+ * Game configuration
+ *
+ * */
+#define SHOW_CHUNK_BARRIER false
 
 #endif   // MINECRAFT_VK_MINECRAFTCONSTANTS_HPP

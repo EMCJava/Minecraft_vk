@@ -16,33 +16,61 @@ getNearChunkDirection( );
 
 template <>
 constexpr ChunkCoordinate
-getNearChunkDirection<DirFront>( )
+getNearChunkDirection<EWDirFront>( )
 {
     return MakeMinecraftCoordinate( 1, 0, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
-getNearChunkDirection<DirBack>( )
+getNearChunkDirection<EWDirBack>( )
 {
     return MakeMinecraftCoordinate( -1, 0, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
-getNearChunkDirection<DirRight>( )
+getNearChunkDirection<EWDirRight>( )
 {
     return MakeMinecraftCoordinate( 0, 0, 1 );
 }
 
 template <>
 constexpr ChunkCoordinate
-getNearChunkDirection<DirLeft>( )
+getNearChunkDirection<EWDirLeft>( )
 {
     return MakeMinecraftCoordinate( 0, 0, -1 );
 }
 
-constexpr std::array<ChunkCoordinate, DirHorizontalSize> NearChunkDirection { getNearChunkDirection<0>( ), getNearChunkDirection<1>( ), getNearChunkDirection<2>( ), getNearChunkDirection<3>( ) };
+template <>
+constexpr ChunkCoordinate
+getNearChunkDirection<EWDirFrontRight>( )
+{
+    return getNearChunkDirection<EWDirFront>( ) + getNearChunkDirection<EWDirRight>( );
+}
+
+template <>
+constexpr ChunkCoordinate
+getNearChunkDirection<EWDirBackLeft>( )
+{
+    return getNearChunkDirection<EWDirBack>( ) + getNearChunkDirection<EWDirLeft>( );
+}
+
+template <>
+constexpr ChunkCoordinate
+getNearChunkDirection<EWDirFrontLeft>( )
+{
+    return getNearChunkDirection<EWDirFront>( ) + getNearChunkDirection<EWDirLeft>( );
+}
+
+template <>
+constexpr ChunkCoordinate
+getNearChunkDirection<EWDirBackRight>( )
+{
+    return getNearChunkDirection<EWDirBack>( ) + getNearChunkDirection<EWDirRight>( );
+}
+
+constexpr std::array<ChunkCoordinate, EightWayDirectionSize> NearChunkDirection { getNearChunkDirection<0>( ), getNearChunkDirection<1>( ), getNearChunkDirection<2>( ), getNearChunkDirection<3>( ), getNearChunkDirection<4>( ), getNearChunkDirection<5>( ), getNearChunkDirection<6>( ), getNearChunkDirection<7>( ) };
 }   // namespace
 
 
@@ -142,7 +170,7 @@ ChunkPool::CleanUpJobs( )
 
         if ( cache->GetStatus( ) == ChunkStatus::eFull )
         {
-            for ( int i = 0; i < DirHorizontalSize; ++i )
+            for ( int i = 0; i < EightWayDirectionSize; ++i )
             {
                 auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
                 if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
@@ -151,8 +179,8 @@ ChunkPool::CleanUpJobs( )
 
                     // this is ok, I guess
                     // std::lock_guard<std::mutex> lock( m_RenderBufferLock );
-                    if ( cache->SyncChunkFromDirection( chunkPtr.get( ), static_cast<Direction>( i ) ) ) cache->GenerateRenderBuffer( );
-                    if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<Direction>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
+                    if ( cache->SyncChunkFromDirection( chunkPtr.get( ), static_cast<EightWayDirection>( i ) ) ) cache->GenerateRenderBuffer( );
+                    if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<EightWayDirection>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
                 }
             }
         }
