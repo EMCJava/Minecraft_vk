@@ -13,16 +13,14 @@ const Block*
 Chunk::CheckBlock( const BlockCoordinate& blockCoordinate ) const
 {
     if ( GetMinecraftY( blockCoordinate ) >= ChunkMaxHeight || GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
-    const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
-    return &At( blockIndex );
+    return &At( GetBlockIndex( blockCoordinate ) );
 }
 
 Block*
 Chunk::GetBlock( const BlockCoordinate& blockCoordinate )
 {
     if ( GetMinecraftY( blockCoordinate ) >= ChunkMaxHeight || GetMinecraftY( blockCoordinate ) < 0 ) return nullptr;
-    const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
-    return &At( blockIndex );
+    return &At( GetBlockIndex( blockCoordinate ) );
 }
 
 bool

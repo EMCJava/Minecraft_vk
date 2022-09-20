@@ -62,7 +62,8 @@ public:
         return m_Blocks[ index ];
     }
 
-    static inline int GetBlockIndex( const BlockCoordinate& blockCoordinate )
+    static inline auto indexToHeight( const auto& index ) { return index >> SectionSurfaceSizeBinaryOffset; }
+    static inline int  GetBlockIndex( const BlockCoordinate& blockCoordinate )
     {
         return ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
     }
