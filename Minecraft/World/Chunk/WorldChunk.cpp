@@ -76,10 +76,14 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
                     {
                         blocksPtr[ horizontalMapIndex ] = BlockID::Grass;
 
+#if SHOW_CHUNK_BARRIER
+
                         if ( k == 0 || j == 0 )
                         {
                             blocksPtr[ horizontalMapIndex ] = BlockID::BedRock;
                         }
+
+#endif
 
                     } else if ( i <= m_HeightMap[ horizontalMapIndex ] )
                     {

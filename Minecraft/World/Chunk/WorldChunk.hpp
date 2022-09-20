@@ -87,12 +87,6 @@ public:
         : RenderableChunk( world )
     { }
 
-    ~WorldChunk( )
-    {
-        for ( int i = 0; i < DirHorizontalSize; ++i )
-            if ( m_NearChunks[ i ] != nullptr ) m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<Direction>( i ^ 0b1 ) );
-    }
-
     void        RegenerateChunk( ChunkStatus status );
     inline void TryUpgradeChunk( ) { UpgradeChunk( m_RequiredStatus ); }
 
