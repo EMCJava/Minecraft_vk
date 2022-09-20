@@ -47,24 +47,25 @@ RenderableChunk::RegenerateVisibleFaces( )
         m_VisibleFacesCount += std::popcount( m_NeighborTransparency[ i ] & DirFaceMask );
 }
 
+namespace
+{
+inline auto&
+BlockAt( const std::pair<RenderableChunk*, uint32_t>& chunkIndexPair, uint32_t indexOffset )
+{
+    return chunkIndexPair.first->At( chunkIndexPair.second + indexOffset );
+}
+}   // namespace
+
 void
-RenderableChunk::UpdateNeighborAt( const uint32_t index )
+RenderableChunk::UpdateNeighborAt( uint32_t index )
 {
     assert( m_EmptySlot == 0 );
     assert( std::all_of( m_NearChunks.begin( ), m_NearChunks.end( ), []( const auto& chunk ) { return chunk != nullptr; } ) );
-    assert( index >= 0 && index < ChunkVolume );
+    assert( index < ChunkVolume );
     assert( m_NeighborTransparency != nullptr );
 
     // TODO: use zero to reset
-    auto& blockNeighborTransparency = m_NeighborTransparency[ index ] = DirFrontRightBit | DirBackRightBit | DirFrontLeftBit | DirBackLeftBit
-        | DirFrontRightUpBit
-        | DirBackRightUpBit
-        | DirFrontLeftUpBit
-        | DirBackLeftUpBit
-        | DirFrontRightDownBit
-        | DirBackRightDownBit
-        | DirFrontLeftDownBit
-        | DirBackLeftDownBit;
+    auto& blockNeighborTransparency = m_NeighborTransparency[ index ] = 0;
 
     if ( At( index ).Transparent( ) ) return;
 
@@ -88,112 +89,133 @@ RenderableChunk::UpdateNeighborAt( const uint32_t index )
     else if ( At( index + dirDownFaceOffset ).Transparent( ) )
         blockNeighborTransparency |= DirDownBit;
 
-    std::array<std::pair<RenderableChunk*, uint32_t>, DirHorizontalSize> m_HorizontalIndexChunkAfterPointMoved;
+#define CHUNK_DIR( dir ) \
+    if ( BlockAt( m_HorizontalIndexChunkAfterPointMoved[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
+
+#define CHUNK_DIR_OFFSET( dir, offset, DirKeyword ) \
+    if ( BlockAt( m_HorizontalIndexChunkAfterPointMoved[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
+
+#define SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET( dir, chunkPtrDir, offset ) m_HorizontalIndexChunkAfterPointMoved[ ( dir ) ] = { m_NearChunks[ ( chunkPtrDir ) ], \
+                                                                                                                          index + ( offset ) }
+#define SAVE_CHUNK_INDEX_OFFSET( dir, offset )      m_HorizontalIndexChunkAfterPointMoved[ ( dir ) ] = { m_NearChunks[ ( dir ) ], index + ( offset ) }
+#define SAVE_THIS_CHUNK_INDEX_OFFSET( dir, offset ) m_HorizontalIndexChunkAfterPointMoved[ ( dir ) ] = { this, index + ( offset ) }
+
+#define DIAGONAL_CHECK( X, Y )                                                                                       \
+    if ( blockAtMost##X ) [[unlikely]]                                                                               \
+    {                                                                                                                \
+        if ( blockAtMost##Y ) [[unlikely]]                                                                           \
+        {                                                                                                            \
+            SAVE_CHUNK_INDEX_OFFSET( EWDir##Y##X, dir##Y##ChunkFaceOffset + dir##X##ChunkFaceOffset );               \
+        } else                                                                                                       \
+        {                                                                                                            \
+            SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET( EWDir##Y##X, EWDir##X, dir##Y##FaceOffset + dir##X##ChunkFaceOffset ); \
+        }                                                                                                            \
+    } else                                                                                                           \
+    {                                                                                                                \
+        if ( blockAtMost##Y ) [[unlikely]]                                                                           \
+        {                                                                                                            \
+            SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET( EWDir##Y##X, EWDir##Y, dir##Y##ChunkFaceOffset + dir##X##FaceOffset ); \
+        } else                                                                                                       \
+        {                                                                                                            \
+            SAVE_THIS_CHUNK_INDEX_OFFSET( EWDir##Y##X, dir##Y##FaceOffset + dir##X##FaceOffset );                    \
+        }                                                                                                            \
+    }                                                                                                                \
+    if ( BlockAt( m_HorizontalIndexChunkAfterPointMoved[ EWDir##Y##X ], 0 ).Transparent( ) )                         \
+    {                                                                                                                \
+        blockNeighborTransparency |= Dir##Y##X##Bit;                                                                 \
+    }
+
+    /*********/
+    /* Right */
+    /*********/
+    std::array<std::pair<RenderableChunk*, uint32_t>, EightWayDirectionSize> m_HorizontalIndexChunkAfterPointMoved;
     if ( blockAtMostRight ) [[unlikely]]
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirRight ] = { m_NearChunks[ DirRight ], index + dirRightChunkFaceOffset };
-        if ( m_NearChunks[ DirRight ]->At( index + dirRightChunkFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirRightBit;
-        }
+        SAVE_CHUNK_INDEX_OFFSET( EWDirRight, dirRightChunkFaceOffset );
+    else
+        SAVE_THIS_CHUNK_INDEX_OFFSET( EWDirRight, dirRightFaceOffset );
+    CHUNK_DIR( DirRight );
 
-    } else
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirRight ] = { this, index + dirRightFaceOffset };
-        if ( At( index + dirRightFaceOffset ).Transparent( ) )
-            blockNeighborTransparency |= DirRightBit;
-    }
-
+    /*********/
+    /* Left */
+    /*********/
     if ( blockAtMostLeft ) [[unlikely]]
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirLeft ] = { m_NearChunks[ DirLeft ], index + dirLeftChunkFaceOffset };
-        if ( m_NearChunks[ DirLeft ]->At( index + dirLeftChunkFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirLeftBit;
-        }
+        SAVE_CHUNK_INDEX_OFFSET( EWDirLeft, dirLeftChunkFaceOffset );
+    else
+        SAVE_THIS_CHUNK_INDEX_OFFSET( EWDirLeft, dirLeftFaceOffset );
+    CHUNK_DIR( DirLeft );
 
-    } else
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirLeft ] = { this, index + dirLeftFaceOffset };
-        if ( At( index + dirLeftFaceOffset ).Transparent( ) )
-            blockNeighborTransparency |= DirLeftBit;
-    }
-
+    /*********/
+    /* Front */
+    /*********/
     if ( blockAtMostFront ) [[unlikely]]
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirFront ] = { m_NearChunks[ DirFront ], index + dirFrontChunkFaceOffset };
-        if ( m_NearChunks[ DirFront ]->At( index + dirFrontChunkFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirFrontBit;
-        }
+        SAVE_CHUNK_INDEX_OFFSET( EWDirFront, dirFrontChunkFaceOffset );
+    else
+        SAVE_THIS_CHUNK_INDEX_OFFSET( EWDirFront, dirFrontFaceOffset );
+    CHUNK_DIR( DirFront );
 
-    } else
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirFront ] = { this, index + dirFrontFaceOffset };
-        if ( At( index + dirFrontFaceOffset ).Transparent( ) )
-            blockNeighborTransparency |= DirFrontBit;
-    }
-
+    /*********/
+    /* Back */
+    /*********/
     if ( blockAtMostBack ) [[unlikely]]
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirBack ] = { m_NearChunks[ DirBack ], index + dirBackChunkFaceOffset };
-        if ( m_NearChunks[ DirBack ]->At( index + dirBackChunkFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirBackBit;
-        }
+        SAVE_CHUNK_INDEX_OFFSET( EWDirBack, dirBackChunkFaceOffset );
+    else
+        SAVE_THIS_CHUNK_INDEX_OFFSET( EWDirBack, dirBackFaceOffset );
+    CHUNK_DIR( DirBack );
 
-    } else
-    {
-        m_HorizontalIndexChunkAfterPointMoved[ DirBack ] = { this, index + dirBackFaceOffset };
-        if ( At( index + dirBackFaceOffset ).Transparent( ) )
-            blockNeighborTransparency |= DirBackBit;
-    }
+    /***************/
+    /* Front Right */
+    /***************/
+    DIAGONAL_CHECK( Right, Front );
 
+    /**************/
+    /* Front Left */
+    /**************/
+    DIAGONAL_CHECK( Left, Front );
+
+    /***************/
+    /* Back Right */
+    /***************/
+    DIAGONAL_CHECK( Right, Back );
+
+    /*************/
+    /* Back Left */
+    /*************/
+    DIAGONAL_CHECK( Left, Back );
+
+    /***********/
+    /* All top */
+    /***********/
     if ( !blockOnTop )
     {
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirFront ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirFront ].second + dirUpFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirFrontUpBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirBack ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirBack ].second + dirUpFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirBackUpBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirRight ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirRight ].second + dirUpFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirRightUpBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirLeft ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirLeft ].second + dirUpFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirLeftUpBit;
-        }
+        CHUNK_DIR_OFFSET( DirFront, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirBack, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirRight, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirLeft, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirFrontRight, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirFrontLeft, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirBackRight, dirUpFaceOffset, Up );
+        CHUNK_DIR_OFFSET( DirBackLeft, dirUpFaceOffset, Up );
     }
 
+    /**************/
+    /* All bottom */
+    /**************/
     if ( !blockOnBottom )
     {
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirFront ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirFront ].second + dirDownFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirFrontDownBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirBack ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirBack ].second + dirDownFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirBackDownBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirRight ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirRight ].second + dirDownFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirRightDownBit;
-        }
-
-        if ( m_HorizontalIndexChunkAfterPointMoved[ DirLeft ].first->At( m_HorizontalIndexChunkAfterPointMoved[ DirLeft ].second + dirDownFaceOffset ).Transparent( ) )
-        {
-            blockNeighborTransparency |= DirLeftDownBit;
-        }
+        CHUNK_DIR_OFFSET( DirFront, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirBack, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirRight, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirLeft, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirFrontRight, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirFrontLeft, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirBackRight, dirDownFaceOffset, Down );
+        CHUNK_DIR_OFFSET( DirBackLeft, dirDownFaceOffset, Down );
     }
+
+#undef SAVE_CHUNK_INDEX_OFFSET
+#undef SAVE_THIS_CHUNK_INDEX_OFFSET
+#undef SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET
+#undef DIAGONAL_CHECK
 }
 
 
@@ -226,22 +248,23 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
     auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, std::array<bool, 8> sideTransparency ) mutable {
+        static constexpr auto faceShaderMultiplier = 1.0f / 3;
+
         chunkVerticesPtr[ 0 ] = vertexArray[ 0 ];
         chunkVerticesPtr[ 0 ].pos += offset;
-        chunkVerticesPtr[ 0 ].textureCoor_ColorIntensity.z *= sideTransparency[ 0 ] && sideTransparency[ 2 ] ? 0.2f : ( 3 - (int) sideTransparency[ 0 ] - (int) sideTransparency[ 1 ] - (int) sideTransparency[ 2 ] ) * 0.333333f;
+        chunkVerticesPtr[ 0 ].textureCoor_ColorIntensity.z *= sideTransparency[ 0 ] && sideTransparency[ 2 ] ? 0.2f : ( 2 - (int) sideTransparency[ 0 ] - (int) sideTransparency[ 1 ] - (int) sideTransparency[ 2 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr[ 1 ] = vertexArray[ 1 ];
         chunkVerticesPtr[ 1 ].pos += offset;
-        chunkVerticesPtr[ 1 ].textureCoor_ColorIntensity.z *= sideTransparency[ 2 ] && sideTransparency[ 4 ] ? 0.2f : ( 3 - (int) sideTransparency[ 2 ] - (int) sideTransparency[ 3 ] - (int) sideTransparency[ 4 ] ) * 0.333333f;
+        chunkVerticesPtr[ 1 ].textureCoor_ColorIntensity.z *= sideTransparency[ 2 ] && sideTransparency[ 4 ] ? 0.2f : ( 2 - (int) sideTransparency[ 2 ] - (int) sideTransparency[ 3 ] - (int) sideTransparency[ 4 ] ) * faceShaderMultiplier;
 
-        // TODO: front up dir seems to be not working
         chunkVerticesPtr[ 2 ] = vertexArray[ 2 ];
         chunkVerticesPtr[ 2 ].pos += offset;
-        chunkVerticesPtr[ 2 ].textureCoor_ColorIntensity.z *= sideTransparency[ 4 ] && sideTransparency[ 6 ] ? 0.2f : ( 3 - (int) sideTransparency[ 4 ] - (int) sideTransparency[ 5 ] - (int) sideTransparency[ 6 ] ) * 0.333333f;
+        chunkVerticesPtr[ 2 ].textureCoor_ColorIntensity.z *= sideTransparency[ 4 ] && sideTransparency[ 6 ] ? 0.2f : ( 2 - (int) sideTransparency[ 4 ] - (int) sideTransparency[ 5 ] - (int) sideTransparency[ 6 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr[ 3 ] = vertexArray[ 3 ];
         chunkVerticesPtr[ 3 ].pos += offset;
-        chunkVerticesPtr[ 3 ].textureCoor_ColorIntensity.z *= sideTransparency[ 6 ] && sideTransparency[ 0 ] ? 0.2f : ( 3 - (int) sideTransparency[ 6 ] - (int) sideTransparency[ 7 ] - (int) sideTransparency[ 0 ] ) * 0.333333f;
+        chunkVerticesPtr[ 3 ].textureCoor_ColorIntensity.z *= sideTransparency[ 6 ] && sideTransparency[ 0 ] ? 0.2f : ( 2 - (int) sideTransparency[ 6 ] - (int) sideTransparency[ 7 ] - (int) sideTransparency[ 0 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr += FaceVerticesCount;
 
@@ -265,23 +288,24 @@ RenderableChunk::GenerateRenderBuffer( )
                     const auto& textures = blockTextures.GetTextureLocation( m_Blocks[ blockIndex ] );
                     const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
 
+                    // for ambient occlusion
 #define ToNotBoolArray( A, B, C, D, E, F, G, H )                                                       \
     {                                                                                                  \
-        !bool( A ), !bool( B ), !bool( C ), !bool( D ), !bool( E ), !bool( F ), !bool( F ), !bool( H ) \
+        !bool( A ), !bool( B ), !bool( C ), !bool( D ), !bool( E ), !bool( F ), !bool( G ), !bool( H ) \
     }
 
                     if ( neighborTransparency & DirFrontBit )
                         AddFace( textures[ DirFront ], offset, ToNotBoolArray( neighborTransparency & DirFrontRightBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirFrontDownBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirFrontLeftBit, neighborTransparency & DirFrontLeftUpBit, neighborTransparency & DirFrontUpBit, neighborTransparency & DirFrontRightUpBit ) );
                     if ( neighborTransparency & DirBackBit )
-                        AddFace( textures[ DirBack ], offset, ToNotBoolArray( true, true, true, true, true, true, true, true ) );
+                        AddFace( textures[ DirBack ], offset, ToNotBoolArray( neighborTransparency & DirBackLeftBit, neighborTransparency & DirBackLeftDownBit, neighborTransparency & DirBackDownBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirBackRightBit, neighborTransparency & DirBackRightUpBit, neighborTransparency & DirBackUpBit, neighborTransparency & DirBackLeftUpBit ) );
                     if ( neighborTransparency & DirRightBit )
-                        AddFace( textures[ DirRight ], offset, ToNotBoolArray( true, true, true, true, true, true, true, true ) );
+                        AddFace( textures[ DirRight ], offset, ToNotBoolArray( neighborTransparency & DirBackRightBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirRightDownBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirFrontRightBit, neighborTransparency & DirFrontRightUpBit, neighborTransparency & DirRightUpBit, neighborTransparency & DirBackRightUpBit ) );
                     if ( neighborTransparency & DirLeftBit )
-                        AddFace( textures[ DirLeft ], offset, ToNotBoolArray( true, true, true, true, true, true, true, true ) );
+                        AddFace( textures[ DirLeft ], offset, ToNotBoolArray( neighborTransparency & DirFrontLeftBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirLeftDownBit, neighborTransparency & DirBackLeftDownBit, neighborTransparency & DirBackLeftBit, neighborTransparency & DirBackLeftUpBit, neighborTransparency & DirLeftUpBit, neighborTransparency & DirFrontLeftUpBit ) );
                     if ( neighborTransparency & DirUpBit )
-                        AddFace( textures[ DirUp ], offset, ToNotBoolArray( true, true, true, true, true, true, true, true ) );
+                        AddFace( textures[ DirUp ], offset, ToNotBoolArray( neighborTransparency & DirLeftUpBit, neighborTransparency & DirBackLeftUpBit, neighborTransparency & DirBackUpBit, neighborTransparency & DirBackRightUpBit, neighborTransparency & DirRightUpBit, neighborTransparency & DirFrontRightUpBit, neighborTransparency & DirFrontUpBit, neighborTransparency & DirFrontLeftUpBit ) );
                     if ( neighborTransparency & DirDownBit )
-                        AddFace( textures[ DirDown ], offset, ToNotBoolArray( true, true, true, true, true, true, true, true ) );
+                        AddFace( textures[ DirDown ], offset, ToNotBoolArray( neighborTransparency & DirLeftDownBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirFrontDownBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirRightDownBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirBackDownBit, neighborTransparency & DirBackLeftDownBit ) );
                 }
 
 #undef ToBoolArray
@@ -316,6 +340,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         UpdateNeighborAt( blockIndex );
         const auto newFaceCount = std::popcount( m_NeighborTransparency[ blockIndex ] & DirFaceMask );
 
+        // TODO: modify nearby blocks including diagonal
         int         faceDiff     = 0;
         const auto* blockPtr     = m_Blocks.get( ) + blockIndex;
         auto* const blockFacePtr = m_NeighborTransparency + blockIndex;
@@ -347,7 +372,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             {
                 m_NearChunks[ DirRight ]->m_NeighborTransparency[ blockIndex + dirRightChunkFaceOffset ] ^= DirLeftBit;
                 m_NearChunks[ DirRight ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
-                m_NearChunks[ DirRight ]->SyncChunkFromDirection( this, DirLeft, true );
+                m_NearChunks[ DirRight ]->SyncChunkFromDirection( this, EWDirLeft, true );
             }
         }
 
@@ -365,7 +390,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             {
                 m_NearChunks[ DirLeft ]->m_NeighborTransparency[ blockIndex + dirLeftChunkFaceOffset ] ^= DirRightBit;
                 m_NearChunks[ DirLeft ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
-                m_NearChunks[ DirLeft ]->SyncChunkFromDirection( this, DirRight, true );
+                m_NearChunks[ DirLeft ]->SyncChunkFromDirection( this, EWDirRight, true );
             }
         }
 
@@ -383,7 +408,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             {
                 m_NearChunks[ DirFront ]->m_NeighborTransparency[ blockIndex + dirFrontChunkFaceOffset ] ^= DirBackBit;
                 m_NearChunks[ DirFront ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
-                m_NearChunks[ DirFront ]->SyncChunkFromDirection( this, DirBack, true );
+                m_NearChunks[ DirFront ]->SyncChunkFromDirection( this, EWDirBack, true );
             }
         }
 
@@ -401,7 +426,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             {
                 m_NearChunks[ DirBack ]->m_NeighborTransparency[ blockIndex + dirBackChunkFaceOffset ] ^= DirFrontBit;
                 m_NearChunks[ DirBack ]->m_VisibleFacesCount += block.Transparent( ) ? 1 : -1;
-                m_NearChunks[ DirBack ]->SyncChunkFromDirection( this, DirFront, true );
+                m_NearChunks[ DirBack ]->SyncChunkFromDirection( this, EWDirFront, true );
             }
         }
 
@@ -426,7 +451,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 }
 
 bool
-RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, Direction fromDir, bool changes )
+RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, EightWayDirection fromDir, bool changes )
 {
     std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
     if ( m_EmptySlot == 0 )

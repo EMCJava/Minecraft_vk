@@ -32,8 +32,8 @@ protected:
 
     int m_VisibleFacesCount = 0;
 
-    std::array<RenderableChunk*, DirHorizontalSize> m_NearChunks { };
-    uint8_t                                         m_EmptySlot = ( 1 << DirHorizontalSize ) - 1;
+    std::array<RenderableChunk*, EightWayDirectionSize> m_NearChunks { };
+    uint8_t                                             m_EmptySlot = ( 1 << EightWayDirectionSize ) - 1;
 
     /*
      *
@@ -49,7 +49,7 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void UpdateNeighborAt( const uint32_t index );
+    void UpdateNeighborAt( uint32_t index );
     void RegenerateVisibleFaces( );
 
 public:
@@ -65,8 +65,8 @@ public:
             ChunkSolidBuffer::GetInstance( ).DelayedDeleteBuffer( m_BufferAllocation );
         }
 
-        for ( int i = 0; i < DirHorizontalSize; ++i )
-            if ( m_NearChunks[ i ] != nullptr ) m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<Direction>( i ^ 0b1 ) );
+        for ( int i = 0; i < EightWayDirectionSize; ++i )
+            if ( m_NearChunks[ i ] != nullptr ) m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<EightWayDirection>( i ^ 0b1 ) );
     }
 
     bool initialized  = false;
@@ -77,7 +77,7 @@ public:
 
     // return true if target chunk become complete
     std::recursive_mutex m_SyncMutex { };
-    bool                 SyncChunkFromDirection( RenderableChunk* other, Direction fromDir, bool changes = false );
+    bool                 SyncChunkFromDirection( RenderableChunk* other, EightWayDirection fromDir, bool changes = false );
 
     /*
      *
