@@ -86,6 +86,12 @@ public:
      * */
     bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
+    inline auto GetNeighborTransparency( uint32_t index )
+    {
+        assert( m_NeighborTransparency != nullptr );
+        return m_NeighborTransparency[ index ];
+    }
+
     inline void DeleteCache( )
     {
         delete[] m_NeighborTransparency;
@@ -94,6 +100,7 @@ public:
         m_VisibleFacesCount = 0;
     }
 
+    inline bool     NeighborCompleted( ) const { return m_EmptySlot == 0; }
     inline uint32_t GetIndexBufferSize( ) const { return m_IndexBufferSize; }
 };
 
