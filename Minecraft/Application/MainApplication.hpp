@@ -77,6 +77,9 @@ class MainApplication : public Singleton<MainApplication>
     std::unique_ptr<Minecraft> m_MinecraftInstance;
     bool                       m_ShouldReset = false;
 
+    std::mutex                                       m_BlockDetailLock;
+    std::vector<std::pair<std::string, std::string>> m_BlockDetailMap;
+
     /*
      *
      * Statistics
@@ -92,6 +95,8 @@ class MainApplication : public Singleton<MainApplication>
     void renderThread( const std::stop_token& st );
     void renderImgui( uint32_t renderIndex );
     void renderImguiCursor( uint32_t renderIndex ) const;
+
+    void RenderThreadMouseHandle( );
 
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );

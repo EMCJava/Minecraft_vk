@@ -379,29 +379,7 @@ MainApplication::renderThread( const std::stop_token& st )
 
         m_deltaMouseHoldUpdate.test_and_set( );
 
-        static int oldMouseLeftState = GLFW_RELEASE;
-        int        mouseLeftState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_LEFT );
-        if ( mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
-        {
-            const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
-            if ( raycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
-
-            Logger::getInstance( ).LogLine( "Mouse left button pressed" );
-        }
-
-        oldMouseLeftState = mouseLeftState;
-
-        static int oldMouseRightState = GLFW_RELEASE;
-        int        mouseRightState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_RIGHT );
-        if ( mouseRightState == GLFW_PRESS && oldMouseRightState == GLFW_RELEASE )
-        {
-            const auto raycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
-            if ( raycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( raycastResult.beforeSolidHit, BlockID::Stone ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
-
-            Logger::getInstance( ).LogLine( "Mouse right button pressed" );
-        }
-
-        oldMouseRightState = mouseRightState;
+        RenderThreadMouseHandle( );
 
         /*
          *
@@ -585,6 +563,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
     static bool   show_demo_window    = false;
     static bool   show_another_window = false;
     static ImVec4 clear_color         = ImVec4( 0.0515186f, 0.504163f, 0.656863f, 1.0f );
+    const float   TEXT_BASE_HEIGHT    = ImGui::GetTextLineHeightWithSpacing( );
 
     renderImguiCursor( renderIndex );
 
@@ -690,6 +669,42 @@ MainApplication::renderImgui( uint32_t renderIndex )
             ImPlot::PopColormap( );
         }
 
+        if ( ImGui::CollapsingHeader( "Block Detail" ) )
+        {
+            static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+
+            ImGui::CheckboxFlags( "Scrollable", &flags, ImGuiTableFlags_ScrollY );
+
+            // When using ScrollX or ScrollY we need to specify a size for our table container!
+            // Otherwise by default the table will fit all available space, like a BeginChild() call.
+            ImVec2 outer_size = ImVec2( 0.0f, TEXT_BASE_HEIGHT * 8 );
+            if ( ImGui::BeginTable( "Block looking at detail", 2, flags, outer_size ) )
+            {
+                std::lock_guard lock( m_BlockDetailLock );
+
+                ImGui::TableSetupScrollFreeze( 0, 1 );   // Make top row always visible
+                ImGui::TableSetupColumn( "Key", ImGuiTableColumnFlags_None );
+                ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_None );
+                ImGui::TableHeadersRow( );
+
+                // Demonstrate using clipper for large vertical lists
+                ImGuiListClipper clipper;
+                clipper.Begin( m_BlockDetailMap.size( ) );
+                while ( clipper.Step( ) )
+                {
+                    for ( int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
+                    {
+                        ImGui::TableNextRow( );
+                        ImGui::TableSetColumnIndex( 0 );
+                        ImGui::Text( "%s", m_BlockDetailMap[ row ].first.c_str( ) );
+                        ImGui::TableSetColumnIndex( 1 );
+                        ImGui::Text( "%s", m_BlockDetailMap[ row ].second.c_str( ) );
+                    }
+                }
+                ImGui::EndTable( );
+            }
+        }
+
         if ( ImGui::CollapsingHeader( "Performance" ) )
         {
             static float            t         = 0;
@@ -774,23 +789,23 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  cellularDistanceFunctionIndex = 1;
                 const char* cellularDistanceFunction[]    = {
-                       "CellularDistanceFunction_Euclidean",
-                       "CellularDistanceFunction_EuclideanSq",
-                       "CellularDistanceFunction_Manhattan",
-                       "CellularDistanceFunction_Hybrid" };
+                    "CellularDistanceFunction_Euclidean",
+                    "CellularDistanceFunction_EuclideanSq",
+                    "CellularDistanceFunction_Manhattan",
+                    "CellularDistanceFunction_Hybrid" };
 
                 if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
                     terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
 
                 static int  cellularReturnTypeIndex = 1;
                 const char* cellularReturnType[]    = {
-                       "CellularReturnType_CellValue",
-                       "CellularReturnType_Distance",
-                       "CellularReturnType_Distance2",
-                       "CellularReturnType_Distance2Add",
-                       "CellularReturnType_Distance2Sub",
-                       "CellularReturnType_Distance2Mul",
-                       "CellularReturnType_Distance2Div" };
+                    "CellularReturnType_CellValue",
+                    "CellularReturnType_Distance",
+                    "CellularReturnType_Distance2",
+                    "CellularReturnType_Distance2Add",
+                    "CellularReturnType_Distance2Sub",
+                    "CellularReturnType_Distance2Mul",
+                    "CellularReturnType_Distance2Div" };
 
                 if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
                     terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
@@ -805,9 +820,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  rotationTypeIndex = 0;
                 const char* rotationType[]    = {
-                       "RotationType3D_None",
-                       "RotationType3D_ImproveXYPlanes",
-                       "RotationType3D_ImproveXZPlanes" };
+                    "RotationType3D_None",
+                    "RotationType3D_ImproveXYPlanes",
+                    "RotationType3D_ImproveXZPlanes" };
 
                 if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
                     terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
@@ -816,12 +831,12 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  fractalTypeIndex = 0;
                 const char* fractalType[]    = {
-                       "FractalType_None",
-                       "FractalType_FBm",
-                       "FractalType_Ridged",
-                       "FractalType_PingPong",
-                       "FractalType_DomainWarpProgressive",
-                       "FractalType_DomainWarpIndependent" };
+                    "FractalType_None",
+                    "FractalType_FBm",
+                    "FractalType_Ridged",
+                    "FractalType_PingPong",
+                    "FractalType_DomainWarpProgressive",
+                    "FractalType_DomainWarpIndependent" };
 
                 if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
                     terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
@@ -901,4 +916,85 @@ MainApplication::SetGenerationOffsetByCurve( )
         offsets[ i ] = m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
 
     MinecraftServer::GetInstance( ).GetWorld( ).SetTerrainNoiseOffset( std::move( offsets ) );
+}
+
+void
+MainApplication::RenderThreadMouseHandle( )
+{
+    const auto playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
+    static int oldMouseLeftState   = GLFW_RELEASE;
+    int        mouseLeftState      = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_LEFT );
+    if ( m_is_mouse_locked && mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
+    {
+
+        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+
+        Logger::getInstance( ).LogLine( "Mouse left button pressed" );
+    }
+
+    oldMouseLeftState = mouseLeftState;
+
+    static int oldMouseRightState = GLFW_RELEASE;
+    int        mouseRightState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_RIGHT );
+    if ( m_is_mouse_locked && mouseRightState == GLFW_PRESS && oldMouseRightState == GLFW_RELEASE )
+    {
+        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.beforeSolidHit, BlockID::Stone ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+
+        Logger::getInstance( ).LogLine( "Mouse right button pressed" );
+    }
+
+    oldMouseRightState = mouseRightState;
+
+    if ( playerRaycastResult.hasSolidHit )
+    {
+
+        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkCacheUnsafe( GetHorizontalMinecraftCoordinate( playerRaycastResult.solidHit ) >> 4 );
+             chunkCache != nullptr )
+        {
+            const auto inChunkBlockCoordinate = MakeMinecraftCoordinate( GetMinecraftX( playerRaycastResult.solidHit ) & ( SectionUnitLength - 1 ), GetMinecraftY( playerRaycastResult.solidHit ), GetMinecraftZ( playerRaycastResult.solidHit ) & ( SectionUnitLength - 1 ) );
+            const auto blockCoordinate        = Chunk::GetBlockIndex( inChunkBlockCoordinate );
+            if ( chunkCache->initialized )
+            {
+                std::lock_guard lock( m_BlockDetailLock );
+                m_BlockDetailMap.clear( );
+
+                m_BlockDetailMap.emplace_back( "Name", toString( chunkCache->At( blockCoordinate ) ) );
+                if ( chunkCache->NeighborCompleted( ) )
+                {
+                    const auto transparency = chunkCache->GetNeighborTransparency( blockCoordinate );
+
+#define BoolToString( b ) b ? "True" : "false"
+
+                    m_BlockDetailMap.emplace_back( "DirFrontBit", BoolToString( transparency & DirFrontBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackBit", BoolToString( transparency & DirBackBit ) );
+                    m_BlockDetailMap.emplace_back( "DirRightBit", BoolToString( transparency & DirRightBit ) );
+                    m_BlockDetailMap.emplace_back( "DirLeftBit", BoolToString( transparency & DirLeftBit ) );
+                    m_BlockDetailMap.emplace_back( "DirUpBit", BoolToString( transparency & DirUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirDownBit", BoolToString( transparency & DirDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontRightBit", BoolToString( transparency & DirFrontRightBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackRightBit", BoolToString( transparency & DirBackRightBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontLeftBit", BoolToString( transparency & DirFrontLeftBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackLeftBit", BoolToString( transparency & DirBackLeftBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontUpBit", BoolToString( transparency & DirFrontUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackUpBit", BoolToString( transparency & DirBackUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirRightUpBit", BoolToString( transparency & DirRightUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirLeftUpBit", BoolToString( transparency & DirLeftUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontDownBit", BoolToString( transparency & DirFrontDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackDownBit", BoolToString( transparency & DirBackDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirRightDownBit", BoolToString( transparency & DirRightDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirLeftDownBit", BoolToString( transparency & DirLeftDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontRightUpBit", BoolToString( transparency & DirFrontRightUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackRightUpBit", BoolToString( transparency & DirBackRightUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontLeftUpBit", BoolToString( transparency & DirFrontLeftUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackLeftUpBit", BoolToString( transparency & DirBackLeftUpBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontRightDownBit", BoolToString( transparency & DirFrontRightDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackRightDownBit", BoolToString( transparency & DirBackRightDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirFrontLeftDownBit", BoolToString( transparency & DirFrontLeftDownBit ) );
+                    m_BlockDetailMap.emplace_back( "DirBackLeftDownBit", BoolToString( transparency & DirBackLeftDownBit ) );
+
+#undef BoolToString
+                }
+            }
+        }
+    }
 }
