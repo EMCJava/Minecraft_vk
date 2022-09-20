@@ -121,6 +121,14 @@ operator/( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
 
 template <typename... T1, typename T2>
 inline constexpr auto
+operator/( const std::tuple<T1...>& t1, const T2& t2 )
+{
+    return OperatorApplyToTuple<Div>( t1, t2 );
+}
+
+
+template <typename... T1, typename T2>
+inline constexpr auto
 operator>>( const std::tuple<T1...>& t1, const T2& t2 )
 {
     return OperatorApplyToTuple<RShift>( t1, t2 );
@@ -166,6 +174,13 @@ inline constexpr Ty
 MakeMinecraftCoordinate( auto x, auto y, auto z )
 {
     return { x, z, y };
+}
+
+template <typename Ty>
+inline auto
+GetHorizontalMinecraftCoordinate( Ty&& a )
+{
+    return MakeMinecraftCoordinate( std::get<MinecraftCoordinateXIndex>( a ), 0, std::get<MinecraftCoordinateZIndex>( a ) );
 }
 
 template <typename Ty = BlockCoordinate>
