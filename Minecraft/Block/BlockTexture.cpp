@@ -33,23 +33,8 @@ CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> vertice
     const glm::vec3 normal = glm::normalize( glm::cross( edge1, edge2 ) );
 
     const auto cosTheta = std::clamp( glm::dot( glm::normalize( sun_dir ), normal ), 0.1f, 1.f );
-
-    static bool first = true;
-
-    if ( first )
-    {
-
-        //        for ( auto& vertex : vertices )
-        //            vertex.textureCoor_ColorIntensity.z = cosTheta * vertex.textureCoor_ColorIntensity.z;
-
-
-        first = false;
-    } else
-    {
-        for ( auto& vertex : vertices )
-            vertex.textureCoor_ColorIntensity.z = 0.1f;
-    }
-
+    for ( auto& vertex : vertices )
+        vertex.textureCoor_ColorIntensity.z = cosTheta * vertex.textureCoor_ColorIntensity.z;
     return vertices;
 }
 
