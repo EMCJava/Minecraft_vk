@@ -26,6 +26,7 @@ enum DirectionBit : uint32_t {
     DirLeftBit  = 1 << DirLeft,
     DirUpBit    = 1 << DirUp,
     DirDownBit  = 1 << DirDown,
+    DirFaceMask = ( DirDownBit << 1 ) - 1,
 
     DirFrontRightBit = 1 << 6,
     DirBackRightBit  = 1 << 7,
