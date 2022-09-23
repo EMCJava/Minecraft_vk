@@ -252,19 +252,19 @@ RenderableChunk::GenerateRenderBuffer( )
 
         chunkVerticesPtr[ 0 ] = vertexArray[ 0 ];
         chunkVerticesPtr[ 0 ].pos += offset;
-        chunkVerticesPtr[ 0 ].textureCoor_ColorIntensity.z *= sideTransparency[ 0 ] && sideTransparency[ 2 ] ? 0.2f : ( 2 - (int) sideTransparency[ 0 ] - (int) sideTransparency[ 1 ] - (int) sideTransparency[ 2 ] ) * faceShaderMultiplier;
+        chunkVerticesPtr[ 0 ].textureCoor_ColorIntensity.z *= sideTransparency[ 0 ] && sideTransparency[ 2 ] ? 0.2f : ( 3 - (int) sideTransparency[ 0 ] - (int) sideTransparency[ 1 ] - (int) sideTransparency[ 2 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr[ 1 ] = vertexArray[ 1 ];
         chunkVerticesPtr[ 1 ].pos += offset;
-        chunkVerticesPtr[ 1 ].textureCoor_ColorIntensity.z *= sideTransparency[ 2 ] && sideTransparency[ 4 ] ? 0.2f : ( 2 - (int) sideTransparency[ 2 ] - (int) sideTransparency[ 3 ] - (int) sideTransparency[ 4 ] ) * faceShaderMultiplier;
+        chunkVerticesPtr[ 1 ].textureCoor_ColorIntensity.z *= sideTransparency[ 2 ] && sideTransparency[ 4 ] ? 0.2f : ( 3 - (int) sideTransparency[ 2 ] - (int) sideTransparency[ 3 ] - (int) sideTransparency[ 4 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr[ 2 ] = vertexArray[ 2 ];
         chunkVerticesPtr[ 2 ].pos += offset;
-        chunkVerticesPtr[ 2 ].textureCoor_ColorIntensity.z *= sideTransparency[ 4 ] && sideTransparency[ 6 ] ? 0.2f : ( 2 - (int) sideTransparency[ 4 ] - (int) sideTransparency[ 5 ] - (int) sideTransparency[ 6 ] ) * faceShaderMultiplier;
+        chunkVerticesPtr[ 2 ].textureCoor_ColorIntensity.z *= sideTransparency[ 4 ] && sideTransparency[ 6 ] ? 0.2f : ( 3 - (int) sideTransparency[ 4 ] - (int) sideTransparency[ 5 ] - (int) sideTransparency[ 6 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr[ 3 ] = vertexArray[ 3 ];
         chunkVerticesPtr[ 3 ].pos += offset;
-        chunkVerticesPtr[ 3 ].textureCoor_ColorIntensity.z *= sideTransparency[ 6 ] && sideTransparency[ 0 ] ? 0.2f : ( 2 - (int) sideTransparency[ 6 ] - (int) sideTransparency[ 7 ] - (int) sideTransparency[ 0 ] ) * faceShaderMultiplier;
+        chunkVerticesPtr[ 3 ].textureCoor_ColorIntensity.z *= sideTransparency[ 6 ] && sideTransparency[ 0 ] ? 0.2f : ( 3 - (int) sideTransparency[ 6 ] - (int) sideTransparency[ 7 ] - (int) sideTransparency[ 0 ] ) * faceShaderMultiplier;
 
         chunkVerticesPtr += FaceVerticesCount;
 
