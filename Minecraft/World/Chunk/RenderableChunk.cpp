@@ -231,7 +231,8 @@ RenderableChunk::GenerateRenderBuffer( )
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;
 
-    static const std::array<IndexBufferType, FaceIndicesCount> blockIndices = { 0, 1, 2, 2, 3, 0 };
+    static const std::array<IndexBufferType, FaceIndicesCount> blockIndices        = { 0, 1, 2, 2, 3, 0 };
+    static const std::array<IndexBufferType, FaceIndicesCount> blockIndicesFlipped = { 0, 1, 3, 1, 2, 3 };
 
     const auto verticesDataSize = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( m_VisibleFacesCount );
     const auto indicesDataSize  = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( m_VisibleFacesCount ) );
@@ -250,27 +251,33 @@ RenderableChunk::GenerateRenderBuffer( )
     auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, std::array<bool, 8> sideTransparency ) mutable {
         static constexpr auto faceShaderMultiplier = 1.0f / 3;
 
-        chunkVerticesPtr[ 0 ] = vertexArray[ 0 ];
-        chunkVerticesPtr[ 0 ].pos += offset;
-        chunkVerticesPtr[ 0 ].textureCoor_ColorIntensity.z *= sideTransparency[ 0 ] && sideTransparency[ 2 ] ? 0.2f : ( 3 - (int) sideTransparency[ 0 ] - (int) sideTransparency[ 1 ] - (int) sideTransparency[ 2 ] ) * faceShaderMultiplier;
+#define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
 
-        chunkVerticesPtr[ 1 ] = vertexArray[ 1 ];
-        chunkVerticesPtr[ 1 ].pos += offset;
-        chunkVerticesPtr[ 1 ].textureCoor_ColorIntensity.z *= sideTransparency[ 2 ] && sideTransparency[ 4 ] ? 0.2f : ( 3 - (int) sideTransparency[ 2 ] - (int) sideTransparency[ 3 ] - (int) sideTransparency[ 4 ] ) * faceShaderMultiplier;
+        std::array<int, FaceVerticesCount> faceAmbientOcclusionStrengths = { GET_STRENGTH( 0, 1, 2 ), GET_STRENGTH( 2, 3, 4 ), GET_STRENGTH( 4, 5, 6 ), GET_STRENGTH( 6, 7, 0 ) };
 
-        chunkVerticesPtr[ 2 ] = vertexArray[ 2 ];
-        chunkVerticesPtr[ 2 ].pos += offset;
-        chunkVerticesPtr[ 2 ].textureCoor_ColorIntensity.z *= sideTransparency[ 4 ] && sideTransparency[ 6 ] ? 0.2f : ( 3 - (int) sideTransparency[ 4 ] - (int) sideTransparency[ 5 ] - (int) sideTransparency[ 6 ] ) * faceShaderMultiplier;
+        for ( int i = 0; i < FaceVerticesCount; ++i )
+        {
+            chunkVerticesPtr[ i ] = vertexArray[ i ];
+            chunkVerticesPtr[ i ].pos += offset;
+            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + faceAmbientOcclusionStrengths[ i ] * faceShaderMultiplier;
+        }
 
-        chunkVerticesPtr[ 3 ] = vertexArray[ 3 ];
-        chunkVerticesPtr[ 3 ].pos += offset;
-        chunkVerticesPtr[ 3 ].textureCoor_ColorIntensity.z *= sideTransparency[ 6 ] && sideTransparency[ 0 ] ? 0.2f : ( 3 - (int) sideTransparency[ 6 ] - (int) sideTransparency[ 7 ] - (int) sideTransparency[ 0 ] ) * faceShaderMultiplier;
+#undef GET_STRENGTH
 
         chunkVerticesPtr += FaceVerticesCount;
 
-        for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+        if ( faceAmbientOcclusionStrengths[ 3 ] + faceAmbientOcclusionStrengths[ 1 ] > faceAmbientOcclusionStrengths[ 0 ] + faceAmbientOcclusionStrengths[ 2 ] )
         {
-            *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+            {
+                *chunkIndicesPtr = blockIndicesFlipped[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+            }
+        } else
+        {
+            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+            {
+                *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+            }
         }
 
         ++faceAdded;
@@ -294,20 +301,31 @@ RenderableChunk::GenerateRenderBuffer( )
         !bool( A ), !bool( B ), !bool( C ), !bool( D ), !bool( E ), !bool( F ), !bool( G ), !bool( H ) \
     }
 
+#define PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) \
+    ToNotBoolArray( neighborTransparency& Dir##D1##Bit,            \
+                    neighborTransparency& Dir##D2##Bit,            \
+                    neighborTransparency& Dir##D3##Bit,            \
+                    neighborTransparency& Dir##D4##Bit,            \
+                    neighborTransparency& Dir##D5##Bit,            \
+                    neighborTransparency& Dir##D6##Bit,            \
+                    neighborTransparency& Dir##D7##Bit,            \
+                    neighborTransparency& Dir##D8##Bit )
+
                     if ( neighborTransparency & DirFrontBit )
-                        AddFace( textures[ DirFront ], offset, ToNotBoolArray( neighborTransparency & DirFrontRightBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirFrontDownBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirFrontLeftBit, neighborTransparency & DirFrontLeftUpBit, neighborTransparency & DirFrontUpBit, neighborTransparency & DirFrontRightUpBit ) );
+                        AddFace( textures[ DirFront ], offset, PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
                     if ( neighborTransparency & DirBackBit )
-                        AddFace( textures[ DirBack ], offset, ToNotBoolArray( neighborTransparency & DirBackLeftBit, neighborTransparency & DirBackLeftDownBit, neighborTransparency & DirBackDownBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirBackRightBit, neighborTransparency & DirBackRightUpBit, neighborTransparency & DirBackUpBit, neighborTransparency & DirBackLeftUpBit ) );
+                        AddFace( textures[ DirBack ], offset, PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
                     if ( neighborTransparency & DirRightBit )
-                        AddFace( textures[ DirRight ], offset, ToNotBoolArray( neighborTransparency & DirBackRightBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirRightDownBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirFrontRightBit, neighborTransparency & DirFrontRightUpBit, neighborTransparency & DirRightUpBit, neighborTransparency & DirBackRightUpBit ) );
+                        AddFace( textures[ DirRight ], offset, PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
                     if ( neighborTransparency & DirLeftBit )
-                        AddFace( textures[ DirLeft ], offset, ToNotBoolArray( neighborTransparency & DirFrontLeftBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirLeftDownBit, neighborTransparency & DirBackLeftDownBit, neighborTransparency & DirBackLeftBit, neighborTransparency & DirBackLeftUpBit, neighborTransparency & DirLeftUpBit, neighborTransparency & DirFrontLeftUpBit ) );
+                        AddFace( textures[ DirLeft ], offset, PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
                     if ( neighborTransparency & DirUpBit )
-                        AddFace( textures[ DirUp ], offset, ToNotBoolArray( neighborTransparency & DirLeftUpBit, neighborTransparency & DirBackLeftUpBit, neighborTransparency & DirBackUpBit, neighborTransparency & DirBackRightUpBit, neighborTransparency & DirRightUpBit, neighborTransparency & DirFrontRightUpBit, neighborTransparency & DirFrontUpBit, neighborTransparency & DirFrontLeftUpBit ) );
+                        AddFace( textures[ DirUp ], offset, PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
                     if ( neighborTransparency & DirDownBit )
-                        AddFace( textures[ DirDown ], offset, ToNotBoolArray( neighborTransparency & DirLeftDownBit, neighborTransparency & DirFrontLeftDownBit, neighborTransparency & DirFrontDownBit, neighborTransparency & DirFrontRightDownBit, neighborTransparency & DirRightDownBit, neighborTransparency & DirBackRightDownBit, neighborTransparency & DirBackDownBit, neighborTransparency & DirBackLeftDownBit ) );
+                        AddFace( textures[ DirDown ], offset, PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
                 }
 
+#undef PassNeighborTransparency
 #undef ToBoolArray
             }
         }
