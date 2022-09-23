@@ -38,13 +38,13 @@ CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> vertice
     return vertices;
 }
 
-#define TEXTURED_VERTEX( A, B, C, D, E, \
-                         F, I, J, K, L, \
-                         M, N, O, P, Q, \
-                         R, S, T, U, V )\
-    DataType::TexturedVertex { { A, B, C }, { D, E } },\
-    DataType::TexturedVertex { { F, I, J }, { K, L } },\
-    DataType::TexturedVertex { { M, N, O }, { P, Q } },\
+#define TEXTURED_VERTEX( A, B, C, D, E,                 \
+                         F, I, J, K, L,                 \
+                         M, N, O, P, Q,                 \
+                         R, S, T, U, V )                \
+    DataType::TexturedVertex { { A, B, C }, { D, E } }, \
+    DataType::TexturedVertex { { F, I, J }, { K, L } }, \
+    DataType::TexturedVertex { { M, N, O }, { P, Q } }, \
     DataType::TexturedVertex { { R, S, T }, { U, V } }
 
 inline const BlockTexture::TextureLocation defaultBlockVertices {
