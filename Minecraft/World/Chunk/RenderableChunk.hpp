@@ -35,6 +35,9 @@ protected:
     std::array<RenderableChunk*, EightWayDirectionSize> m_NearChunks { };
     uint8_t                                             m_EmptySlot = ( 1 << EightWayDirectionSize ) - 1;
 
+    std::array<std::pair<RenderableChunk*, uint32_t>, EightWayDirectionSize>
+    GetHorizontalChunkAfterPointMoved( uint32_t index );
+
     /*
      *
      * Render buffer
@@ -77,7 +80,7 @@ public:
 
     // return true if target chunk become complete
     std::recursive_mutex m_SyncMutex { };
-    bool                 SyncChunkFromDirection( RenderableChunk* other, EightWayDirection fromDir, bool changes = false );
+    bool                 SyncChunkFromDirection( RenderableChunk* other, int fromDir, bool changes = false );
 
     /*
      *
