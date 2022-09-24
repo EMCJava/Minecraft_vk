@@ -41,6 +41,17 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
 
     m_Blocks = std::make_unique<Block[]>( ChunkVolume );
 
+    // the following code are for debug purpose
+    //    for ( int i = 0; i < ChunkVolume; ++i )
+    //        m_Blocks[ i ] = BlockID::Air;
+    //
+    //    if ( ManhattanDistance( { 0, 0, 0 } ) == 0 )
+    //    {
+    //        m_Blocks[ 200 * SectionSurfaceSize ] = BlockID::BedRock;
+    //    }
+    //
+    //    return;
+
     auto*    blocksPtr          = m_Blocks.get( );
     uint32_t horizontalMapIndex = 0;
     for ( int i = 0; i < ChunkMaxHeight; ++i )
