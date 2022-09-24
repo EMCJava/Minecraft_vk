@@ -3,12 +3,12 @@
   "resolution": 16,
   "blocks": {
     "BedRock": [
-    "bedrock.png",
-    "bedrock.png",
-    "bedrock.png",
-    "bedrock.png",
-    "bedrock.png",
-    "bedrock.png"
+      "bedrock.png",
+      "bedrock.png",
+      "bedrock.png",
+      "bedrock.png",
+      "bedrock.png",
+      "bedrock.png"
     ],
     "Stone": [
       "stone.png",
@@ -43,6 +43,14 @@
       "acacia_log_top.png"
     ],
     "AzaleaLeaves": [
+      "azalea_leaves.png",
+      "azalea_leaves.png",
+      "azalea_leaves.png",
+      "azalea_leaves.png",
+      "azalea_leaves.png",
+      "azalea_leaves.png"
+    ],
+    "FloweringAzaleaLeaves": [
       "flowering_azalea_leaves.png",
       "flowering_azalea_leaves.png",
       "flowering_azalea_leaves.png",
@@ -73,6 +81,22 @@
       "crafting_table_side.png",
       "crafting_table_top.png",
       "birch_planks.png"
+    ],
+    "BirchLog": [
+      "birch_log.png",
+      "birch_log.png",
+      "birch_log.png",
+      "birch_log.png",
+      "birch_log_top.png",
+      "birch_log_top.png"
+    ],
+    "StrippedBirchLog": [
+      "stripped_birch_log.png",
+      "stripped_birch_log.png",
+      "stripped_birch_log.png",
+      "stripped_birch_log.png",
+      "stripped_birch_log_top.png",
+      "stripped_birch_log_top.png"
     ]
   }
 }

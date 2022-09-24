@@ -42,7 +42,7 @@ StructureAbandonedHouse::Generate( struct WorldChunk& chunk )
             const auto cornerIndex              = Structure::ToHorizontalIndex( relativeCornerCoordinate );
             const auto heightAtCorner           = chunk.GetHeight( cornerIndex, eNoiseHeight ) + 1;
             for ( int i = heightAtCorner; i < heightAtPoint; ++i )
-                SetBlock( chunk, BlockID::AcaciaLog, relativeCornerCoordinate + MakeMinecraftCoordinate( 0, i, 0 ), true );
+                SetBlock( chunk, BlockID::StrippedBirchLog, relativeCornerCoordinate + MakeMinecraftCoordinate( 0, i, 0 ), true );
         }
     }
 }
