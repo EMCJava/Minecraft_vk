@@ -23,9 +23,9 @@ private:
 
     NoiseType m_Seed { };
 
-    [[nodiscard]] inline constexpr int GetIntSeed( ) const
+    [[nodiscard]] static inline constexpr int GetIntSeed( const NoiseType& seed )
     {
-        return std::get<0>( m_Seed.subSeed ) ^ std::get<1>( m_Seed.subSeed ) ^ std::get<2>( m_Seed.subSeed ) ^ std::get<3>( m_Seed.subSeed );
+        return std::get<0>( seed.subSeed ) ^ std::get<1>( seed.subSeed ) ^ std::get<2>( seed.subSeed ) ^ std::get<3>( seed.subSeed );
     }
 
     static inline constexpr uint64_t
@@ -38,24 +38,24 @@ private:
 public:
     constexpr explicit MinecraftNoise( const std::pair<uint64_t, uint64_t>& seed = { 0, 0 } )
         : m_Seed { .seed = seed }
-        , Noise::FastNoiseLite( GetIntSeed( ) )
+        , Noise::FastNoiseLite( GetIntSeed( NoiseType { .seed = seed } ) )
     { }
 
     constexpr explicit MinecraftNoise( const std::tuple<int32_t, int32_t, int32_t, int32_t>& seed )
         : m_Seed { .subSeed = seed }
-        , Noise::FastNoiseLite( GetIntSeed( ) )
+        , Noise::FastNoiseLite( GetIntSeed( NoiseType { .subSeed = seed } ) )
     { }
 
     constexpr MinecraftNoise( const MinecraftNoise& other )
         : m_Seed { .seed = other.m_Seed.seed }
-        , FastNoiseLite( GetIntSeed( ) )
+        , Noise::FastNoiseLite( GetIntSeed( NoiseType { .seed = other.m_Seed.seed } ) )
     {
     }
 
     MinecraftNoise& operator=( const MinecraftNoise& other )
     {
         m_Seed.seed = other.m_Seed.seed;
-        Noise::FastNoiseLite::SetSeed( GetIntSeed( ) );
+        Noise::FastNoiseLite::SetSeed( GetIntSeed( m_Seed ) );
         return *this;
     }
 
