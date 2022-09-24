@@ -121,7 +121,9 @@ public:
 
         // std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
 
-        auto                     chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate ) + ChunkCoordinate { 1, 0, 0 };
+        auto chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate );
+        chunkCoordinate      = chunkCoordinate + ChunkCoordinate { 1, 0, 0 };   // so that the first loop will always initialize "currentChunk" bellow
+
         std::shared_ptr<ChunkTy> currentChunk;
         Block*                   blockPtr;
         while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
@@ -134,6 +136,8 @@ public:
                 currentChunk = world.GetChunkCacheSafe( newChunkCoordinate );
                 if ( currentChunk != nullptr && !currentChunk->IsChunkStatusAtLeast( ChunkStatus::eFull ) )
                     currentChunk = nullptr;
+
+                chunkCoordinate = newChunkCoordinate;
             }
 
             if ( currentChunk )
