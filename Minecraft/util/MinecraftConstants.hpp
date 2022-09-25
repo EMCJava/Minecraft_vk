@@ -21,7 +21,8 @@ enum EightWayDirection : uint8_t {
 
     EightWayDirectionSize
 };
-enum Direction : uint8_t {
+
+enum CubeDirection : uint8_t {
     DirFront,
     DirBack,
     DirRight,
