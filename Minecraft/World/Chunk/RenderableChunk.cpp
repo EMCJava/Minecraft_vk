@@ -47,7 +47,7 @@ RenderableChunk::RegenerateVisibleFaces( )
     {
         // only count faces directed covered
         m_VisibleFacesCount += std::popcount( m_NeighborTransparency[ i ] & DirFaceMask );
-        UpdateAmbientOcclusionAt( i );
+        UpdateMetaDataAt( i );
     }
 }
 
@@ -281,7 +281,7 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( m_VisibleFacesCount ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexMetaData& faceAmbientOcclusionStrengths ) mutable {
+    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths ) mutable {
         static constexpr auto faceShaderMultiplier = 1.0f / 3;
 
         for ( int i = 0; i < FaceVerticesCount; ++i )
@@ -323,17 +323,17 @@ RenderableChunk::GenerateRenderBuffer( )
                     const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
 
                     if ( neighborTransparency & DirFrontBit )
-                        AddFace( textures[ DirFront ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirFront ] );
+                        AddFace( textures[ DirFront ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirFront ].ambientOcclusionData );
                     if ( neighborTransparency & DirBackBit )
-                        AddFace( textures[ DirBack ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirBack ] );
+                        AddFace( textures[ DirBack ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirBack ].ambientOcclusionData );
                     if ( neighborTransparency & DirRightBit )
-                        AddFace( textures[ DirRight ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirRight ] );
+                        AddFace( textures[ DirRight ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirRight ].ambientOcclusionData );
                     if ( neighborTransparency & DirLeftBit )
-                        AddFace( textures[ DirLeft ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirLeft ] );
+                        AddFace( textures[ DirLeft ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirLeft ].ambientOcclusionData );
                     if ( neighborTransparency & DirUpBit )
-                        AddFace( textures[ DirUp ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirUp ] );
+                        AddFace( textures[ DirUp ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirUp ].ambientOcclusionData );
                     if ( neighborTransparency & DirDownBit )
-                        AddFace( textures[ DirDown ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirDown ] );
+                        AddFace( textures[ DirDown ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirDown ].ambientOcclusionData );
                 }
             }
         }
@@ -486,7 +486,7 @@ RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bo
 }
 
 void
-RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexMetaData& metaData, std::array<bool, 8> sideTransparency )
+RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency )
 {
 #define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
     metaData.data[ 0 ] = GET_STRENGTH( 0, 1, 2 );
@@ -519,19 +519,268 @@ RenderableChunk::UpdateAmbientOcclusionAt( uint32_t index )
                     neighborTransparency& Dir##D8##Bit )
 
         if ( neighborTransparency & DirFrontBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirFront ], PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirFront ].ambientOcclusionData, PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
         if ( neighborTransparency & DirBackBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirBack ], PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirBack ].ambientOcclusionData, PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
         if ( neighborTransparency & DirRightBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirRight ], PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirRight ].ambientOcclusionData, PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
         if ( neighborTransparency & DirLeftBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirLeft ], PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirLeft ].ambientOcclusionData, PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
         if ( neighborTransparency & DirUpBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirUp ], PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirUp ].ambientOcclusionData, PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
         if ( neighborTransparency & DirDownBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirDown ], PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirDown ].ambientOcclusionData, PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
     }
 
 #undef PassNeighborTransparency
 #undef ToBoolArray
+}
+
+
+void
+RenderableChunk::UpdateMetaDataAt( uint32_t index )
+{
+    UpdateAmbientOcclusionAt( index );
+
+    // For greedy meshing
+    const auto& textureIndices = Minecraft::GetInstance( ).GetBlockTextures( ).GetTextureIndices( m_Blocks[ index ] );
+    for ( int i = 0; i < CubeDirection::DirSize; ++i )
+        m_VertexMetaData[ index ].faceVertexMetaData[ i ].textureID = textureIndices[ i ];
+}
+
+/*
+ *
+ * From https://github.com/roboleary/GreedyMesh/blob/master/src/mygame/Main.java
+ *
+ * */
+void
+RenderableChunk::GenerateGreedyMesh( )
+{
+
+    /*
+     * These are just working variables for the algorithm - almost all taken
+     * directly from Mikola Lysenko's javascript implementation.
+     */
+    int i, j, k, l, w, h, u, v, n, side = 0;
+
+    std::array<int, 3> x { 0, 0, 0 };
+    std::array<int, 3> q { 0, 0, 0 };
+    std::array<int, 3> du { 0, 0, 0 };
+    std::array<int, 3> dv { 0, 0, 0 };
+
+    /*
+     * We create a mask - this will contain the groups of matching voxel faces
+     * as we proceed through the chunk in 6 directions - once for each face.
+     */
+    FaceVertexMetaData                    emptyFace { .textureID = -1 };
+    std::unique_ptr<FaceVertexMetaData[]> mask = std::make_unique<FaceVertexMetaData[]>( SectionUnitLength * ChunkMaxHeight );
+
+    /*
+     * These are just working variables to hold two faces during comparison.
+     */
+    FaceVertexMetaData voxelFace, voxelFace1;
+
+    /**
+     * We start with the lesser-spotted boolean for-loop (also known as the old flippy floppy).
+     *
+     * The variable backFace will be TRUE on the first iteration and FALSE on the second - this allows
+     * us to track which direction the indices should run during creation of the quad.
+     *
+     * This loop runs twice, and the inner loop 3 times - totally 6 iterations - one for each
+     * voxel face.
+     */
+    for ( bool backFace = true, b = false; b != backFace; backFace = backFace && b, b = !b )
+    {
+
+        /*
+         * We sweep over the 3 dimensions - most of what follows is well described by Mikola Lysenko
+         * in his post - and is ported from his Javascript implementation.  Where this implementation
+         * diverges, I've added commentary.
+         */
+        for ( int d = 0; d < 3; d++ )
+        {
+
+            u = ( d + 1 ) % 3;
+            v = ( d + 2 ) % 3;
+
+            x[ 0 ] = 0;
+            x[ 1 ] = 0;
+            x[ 2 ] = 0;
+
+            q[ 0 ] = 0;
+            q[ 1 ] = 0;
+            q[ 2 ] = 0;
+            q[ d ] = 1;
+
+            /*
+             * Here we're keeping track of the side that we're meshing.
+             */
+            if ( d == MinecraftCoordinateXIndex )
+            {
+                side = backFace ? DirLeft : DirRight;
+            } else if ( d == MinecraftCoordinateYIndex )
+            {
+                side = backFace ? DirDown : DirUp;
+            } else if ( d == MinecraftCoordinateZIndex )
+            {
+                side = backFace ? DirBack : DirFront;
+            }
+
+            /*
+             * We move through the dimension from front to back
+             */
+            for ( x[ d ] = -1; x[ d ] < SectionUnitLength; )
+            {
+
+                /*
+                 * -------------------------------------------------------------------
+                 *   We compute the mask
+                 * -------------------------------------------------------------------
+                 */
+                n = 0;
+
+                for ( x[ v ] = 0; x[ v ] < ChunkMaxHeight; x[ v ]++ )
+                {
+
+                    for ( x[ u ] = 0; x[ u ] < SectionUnitLength; x[ u ]++ )
+                    {
+
+                        /*
+                         * Here we retrieve two voxel faces for comparison.
+                         */
+
+                        const auto block1 = GetBlockIndex( { x[ 0 ], x[ 1 ], x[ 2 ] } );
+                        const auto block2 = GetBlockIndex( { x[ 0 ] + q[ 0 ], x[ 1 ] + q[ 1 ], x[ 2 ] + q[ 2 ] } );
+
+                        bool face1Visible = x[ d ] >= 0 && m_NeighborTransparency[ block1 ] & ( 1 << side );
+                        bool face2Visible = x[ d ] < SectionUnitLength - 1 && m_NeighborTransparency[ block2 ] & ( 1 << side );
+
+                        //TODO: plz finish this
+
+                        voxelFace  = ( x[ d ] >= 0 ) ?: null;
+                        voxelFace1 = ( x[ d ] < SectionUnitLength - 1 ) ?: null;
+
+                        /*
+                         * Note that we're using the equals function in the voxel face class here, which lets the faces
+                         * be compared based on any number of attributes.
+                         *
+                         * Also, we choose the face to add to the mask depending on whether we're moving through on a backface or not.
+                         */
+                        if ( face1Visible && face2Visible && m_VertexMetaData[ block1 ].faceVertexMetaData[ side ] == m_VertexMetaData[ block2 ].faceVertexMetaData[ side ] )
+                            mask[ n++ ] = emptyFace;
+                        else
+                            mask[ n++ ] = backFace ? voxelFace1 : voxelFace;
+                    }
+                }
+
+                x[ d ]++;
+
+                /*
+                 * Now we generate the mesh for the mask
+                 */
+                n = 0;
+
+                for ( j = 0; j < ChunkMaxHeight; j++ )
+                {
+
+                    for ( i = 0; i < SectionUnitLength; )
+                    {
+
+                        if ( mask[ n ] != null )
+                        {
+
+                            /*
+                             * We compute the width
+                             */
+                            for ( w = 1; i + w < SectionUnitLength && mask[ n + w ] != null && mask[ n + w ].equals( mask[ n ] ); w++ ) { }
+
+                            /*
+                             * Then we compute height
+                             */
+                            boolean done = false;
+
+                            for ( h = 1; j + h < ChunkMaxHeight; h++ )
+                            {
+
+                                for ( k = 0; k < w; k++ )
+                                {
+
+                                    if ( mask[ n + k + h * SectionUnitLength ] == null || !mask[ n + k + h * SectionUnitLength ].equals( mask[ n ] ) )
+                                    {
+                                        done = true;
+                                        break;
+                                    }
+                                }
+
+                                if ( done ) { break; }
+                            }
+
+                            /*
+                             * Here we check the "transparent" attribute in the VoxelFace class to ensure that we don't mesh
+                             * any culled faces.
+                             */
+                            if ( !mask[ n ].transparent )
+                            {
+                                /*
+                                 * Add quad
+                                 */
+                                x[ u ] = i;
+                                x[ v ] = j;
+
+                                du[ 0 ] = 0;
+                                du[ 1 ] = 0;
+                                du[ 2 ] = 0;
+                                du[ u ] = w;
+
+                                dv[ 0 ] = 0;
+                                dv[ 1 ] = 0;
+                                dv[ 2 ] = 0;
+                                dv[ v ] = h;
+
+                                /*
+                                 * And here we call the quad function in order to render a merged quad in the scene.
+                                 *
+                                 * We pass mask[n] to the function, which is an instance of the VoxelFace class containing
+                                 * all the attributes of the face - which allows for variables to be passed to shaders - for
+                                 * example lighting values used to create ambient occlusion.
+                                 */
+                                quad( new Vector3f( x[ 0 ], x[ 1 ], x[ 2 ] ),
+                                      new Vector3f( x[ 0 ] + du[ 0 ], x[ 1 ] + du[ 1 ], x[ 2 ] + du[ 2 ] ),
+                                      new Vector3f( x[ 0 ] + du[ 0 ] + dv[ 0 ], x[ 1 ] + du[ 1 ] + dv[ 1 ], x[ 2 ] + du[ 2 ] + dv[ 2 ] ),
+                                      new Vector3f( x[ 0 ] + dv[ 0 ], x[ 1 ] + dv[ 1 ], x[ 2 ] + dv[ 2 ] ),
+                                      w,
+                                      h,
+                                      mask[ n ],
+                                      backFace );
+                            }
+
+                            /*
+                             * We zero out the mask
+                             */
+                            for ( l = 0; l < h; ++l )
+                            {
+
+                                for ( k = 0; k < w; ++k )
+                                {
+                                    mask[ n + k + l * SectionUnitLength ] = null;
+                                }
+                            }
+
+                            /*
+                             * And then finally increment the counters and continue
+                             */
+                            i += w;
+                            n += w;
+
+                        } else
+                        {
+
+                            i++;
+                            n++;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

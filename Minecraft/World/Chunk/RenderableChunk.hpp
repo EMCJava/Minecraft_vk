@@ -30,11 +30,22 @@ protected:
     uint32_t* m_NeighborTransparency { };
     static_assert( IntLog<DirBitSize - 1, 2>::value < ( sizeof( std::remove_pointer_t<decltype( m_NeighborTransparency )> ) << 3 ) );
 
-    union FaceVertexMetaData
+    union FaceVertexAmbientOcclusionData
     {
         uint16_t uuid;
         /* First two bit are for brightness */
         char data[ 4 ];
+    };
+
+    struct FaceVertexMetaData {
+
+        int32_t                        textureID = 0;
+        FaceVertexAmbientOcclusionData ambientOcclusionData { };
+
+        inline bool operator==( const FaceVertexMetaData& other ) const
+        {
+            return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid;
+        }
     };
 
     struct CubeVertexMetaData {
@@ -65,10 +76,13 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void UpdateFacesAmbientOcclusion( FaceVertexMetaData& metaData, std::array<bool, 8> sideTransparency );
+    void UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency );
     void UpdateAmbientOcclusionAt( uint32_t index );
+    void UpdateMetaDataAt( uint32_t index );
     void UpdateNeighborAt( uint32_t index );
     void RegenerateVisibleFaces( );
+
+    void GenerateGreedyMesh( );
 
 public:
     explicit RenderableChunk( class MinecraftWorld* world )
