@@ -43,7 +43,7 @@ protected:
     };
 
     int                 m_VisibleFacesCount = 0;
-    CubeVertexMetaData* m_VertexMetaData;
+    CubeVertexMetaData* m_VertexMetaData { };
 
     std::array<RenderableChunk*, EightWayDirectionSize> m_NearChunks { };
     uint8_t                                             m_EmptySlot = ( 1 << EightWayDirectionSize ) - 1;
