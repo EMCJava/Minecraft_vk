@@ -367,19 +367,20 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
         m_VisibleFacesCount += newFaceCount - originalFaceCount;
 
-        const auto* blockPtr     = m_Blocks.get( ) + blockIndex;
-        auto* const blockFacePtr = m_NeighborTransparency + blockIndex;
+        const auto* blockPtr = m_Blocks.get( ) + blockIndex;
         if ( !blockOnTop )
             if ( !blockPtr[ dirUpFaceOffset ].Transparent( ) )
             {
-                blockFacePtr[ dirUpFaceOffset ] ^= DirDownBit;
+                m_NeighborTransparency[ blockIndex + dirUpFaceOffset ] ^= DirDownBit;
+                UpdateAmbientOcclusionAt( blockIndex + dirUpFaceOffset );
                 m_VisibleFacesCount += faceCountDiff;
             }
 
         if ( !blockOnBottom )
             if ( !blockPtr[ dirDownFaceOffset ].Transparent( ) )
             {
-                blockFacePtr[ dirDownFaceOffset ] ^= DirUpBit;
+                m_NeighborTransparency[ blockIndex + dirDownFaceOffset ] ^= DirUpBit;
+                UpdateAmbientOcclusionAt( blockIndex + dirDownFaceOffset );
                 m_VisibleFacesCount += faceCountDiff;
             }
 
@@ -395,6 +396,8 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], 0 ).Transparent( ) )                              \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index ] ^= oppositeDirectionBit;                                                 \
+            chunk->UpdateAmbientOcclusionAt( index );                                                                       \
+                                                                                                                            \
             /* Within visible range */                                                                                      \
             if constexpr ( EWDir##dir <= EWDirLeft )                                                                        \
                 chunk->m_VisibleFacesCount += faceCountDiff;                                                                \
@@ -405,6 +408,8 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirUpFaceOffset ).Transparent( ) )                \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index + dirUpFaceOffset ] ^= oppositeDirectionDownBit;                           \
+            chunk->UpdateAmbientOcclusionAt( index + dirUpFaceOffset );                                                     \
+                                                                                                                            \
             /* regenerate other chunks faces */                                                                             \
             if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
         }                                                                                                                   \
@@ -412,6 +417,8 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirDownFaceOffset ).Transparent( ) )              \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index + dirDownFaceOffset ] ^= oppositeDirectionUpBit;                           \
+            chunk->UpdateAmbientOcclusionAt( index + dirDownFaceOffset );                                                   \
+                                                                                                                            \
             /* regenerate other chunks faces */                                                                             \
             if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
         }                                                                                                                   \
@@ -436,6 +443,9 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             checkingFaceCount += std::popcount( m_NeighborTransparency[ i ] & DirFaceMask );
         assert( m_VisibleFacesCount == checkingFaceCount );
 #endif
+
+        // Update self ambient occlusion
+        UpdateAmbientOcclusionAt( blockIndex );
     }
 
     return true;
