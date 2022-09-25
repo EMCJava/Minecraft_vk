@@ -385,7 +385,6 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         const int newFaceCount = std::popcount( m_NeighborTransparency[ blockIndex ] & DirFaceMask );
 
         m_VisibleFacesCount += newFaceCount - originalFaceCount;
-        const int originalFaceCountCache = m_VisibleFacesCount;
 
         const auto* blockPtr     = m_Blocks.get( ) + blockIndex;
         auto* const blockFacePtr = m_NeighborTransparency + blockIndex;
