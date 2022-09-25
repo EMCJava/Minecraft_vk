@@ -169,7 +169,8 @@ BlockTexture::BlockTexture( const std::string& folder )
         {
             const auto& texturePath = std::filesystem::path( folder + '/' + textureList[ j ].get<std::string>( ) ).make_preferred( ).string( );
 
-            index      = uniqueTexture.at( texturePath );
+            m_BlockTextureIndices[ i ][ j ] = index = uniqueTexture.at( texturePath );
+
             uint32_t x = ( index % textureAtlasesWidth ), y = ( index / textureAtlasesWidth );
 
             glm::vec2 offset { textureResolution * x, textureResolution * y };
