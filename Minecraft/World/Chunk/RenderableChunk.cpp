@@ -31,6 +31,7 @@ RenderableChunk::ResetRenderBuffer( )
 {
     DeleteCache( );
     m_NeighborTransparency = new uint32_t[ ChunkVolume ];
+    m_VertexMetaData       = new CubeVertexMetaData[ ChunkVolume ];
 }
 
 void
@@ -43,8 +44,11 @@ RenderableChunk::RegenerateVisibleFaces( )
 
     m_VisibleFacesCount = 0;
     for ( int i = 0; i < ChunkVolume; ++i )
+    {
         // only count faces directed covered
         m_VisibleFacesCount += std::popcount( m_NeighborTransparency[ i ] & DirFaceMask );
+        UpdateAmbientOcclusionAt( i );
+    }
 }
 
 namespace
@@ -277,23 +281,19 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( m_VisibleFacesCount ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, std::array<bool, 8> sideTransparency ) mutable {
+    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexMetaData& faceAmbientOcclusionStrengths ) mutable {
         static constexpr auto faceShaderMultiplier = 1.0f / 3;
-
-#define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
-        std::array<int, FaceVerticesCount> faceAmbientOcclusionStrengths = { GET_STRENGTH( 0, 1, 2 ), GET_STRENGTH( 2, 3, 4 ), GET_STRENGTH( 4, 5, 6 ), GET_STRENGTH( 6, 7, 0 ) };
-#undef GET_STRENGTH
 
         for ( int i = 0; i < FaceVerticesCount; ++i )
         {
             chunkVerticesPtr[ i ] = vertexArray[ i ];
             chunkVerticesPtr[ i ].pos += offset;
-            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + faceAmbientOcclusionStrengths[ i ] * faceShaderMultiplier;
+            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + faceAmbientOcclusionStrengths.data[ i ] * faceShaderMultiplier;
         }
 
         chunkVerticesPtr += FaceVerticesCount;
 
-        if ( faceAmbientOcclusionStrengths[ 3 ] + faceAmbientOcclusionStrengths[ 1 ] > faceAmbientOcclusionStrengths[ 0 ] + faceAmbientOcclusionStrengths[ 2 ] )
+        if ( faceAmbientOcclusionStrengths.data[ 3 ] + faceAmbientOcclusionStrengths.data[ 1 ] > faceAmbientOcclusionStrengths.data[ 0 ] + faceAmbientOcclusionStrengths.data[ 2 ] )
         {
             for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
             {
@@ -322,38 +322,19 @@ RenderableChunk::GenerateRenderBuffer( )
                     const auto& textures = blockTextures.GetTextureLocation( m_Blocks[ blockIndex ] );
                     const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
 
-                    // for ambient occlusion
-#define ToNotBoolArray( A, B, C, D, E, F, G, H )                                                       \
-    {                                                                                                  \
-        !bool( A ), !bool( B ), !bool( C ), !bool( D ), !bool( E ), !bool( F ), !bool( G ), !bool( H ) \
-    }
-
-#define PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) \
-    ToNotBoolArray( neighborTransparency& Dir##D1##Bit,            \
-                    neighborTransparency& Dir##D2##Bit,            \
-                    neighborTransparency& Dir##D3##Bit,            \
-                    neighborTransparency& Dir##D4##Bit,            \
-                    neighborTransparency& Dir##D5##Bit,            \
-                    neighborTransparency& Dir##D6##Bit,            \
-                    neighborTransparency& Dir##D7##Bit,            \
-                    neighborTransparency& Dir##D8##Bit )
-
                     if ( neighborTransparency & DirFrontBit )
-                        AddFace( textures[ DirFront ], offset, PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
+                        AddFace( textures[ DirFront ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirFront ] );
                     if ( neighborTransparency & DirBackBit )
-                        AddFace( textures[ DirBack ], offset, PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
+                        AddFace( textures[ DirBack ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirBack ] );
                     if ( neighborTransparency & DirRightBit )
-                        AddFace( textures[ DirRight ], offset, PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
+                        AddFace( textures[ DirRight ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirRight ] );
                     if ( neighborTransparency & DirLeftBit )
-                        AddFace( textures[ DirLeft ], offset, PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
+                        AddFace( textures[ DirLeft ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirLeft ] );
                     if ( neighborTransparency & DirUpBit )
-                        AddFace( textures[ DirUp ], offset, PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
+                        AddFace( textures[ DirUp ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirUp ] );
                     if ( neighborTransparency & DirDownBit )
-                        AddFace( textures[ DirDown ], offset, PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
+                        AddFace( textures[ DirDown ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirDown ] );
                 }
-
-#undef PassNeighborTransparency
-#undef ToBoolArray
             }
         }
     }
@@ -492,4 +473,55 @@ RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bo
     }
 
     return false;
+}
+
+void
+RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexMetaData& metaData, std::array<bool, 8> sideTransparency )
+{
+#define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
+    metaData.data[ 0 ] = GET_STRENGTH( 0, 1, 2 );
+    metaData.data[ 1 ] = GET_STRENGTH( 2, 3, 4 );
+    metaData.data[ 2 ] = GET_STRENGTH( 4, 5, 6 );
+    metaData.data[ 3 ] = GET_STRENGTH( 6, 7, 0 );
+#undef GET_STRENGTH
+}
+
+void
+RenderableChunk::UpdateAmbientOcclusionAt( uint32_t index )
+{
+
+    if ( const auto neighborTransparency = m_NeighborTransparency[ index ] )
+    {
+        // for ambient occlusion
+#define ToNotBoolArray( A, B, C, D, E, F, G, H )                                                       \
+    {                                                                                                  \
+        !bool( A ), !bool( B ), !bool( C ), !bool( D ), !bool( E ), !bool( F ), !bool( G ), !bool( H ) \
+    }
+
+#define PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) \
+    ToNotBoolArray( neighborTransparency& Dir##D1##Bit,            \
+                    neighborTransparency& Dir##D2##Bit,            \
+                    neighborTransparency& Dir##D3##Bit,            \
+                    neighborTransparency& Dir##D4##Bit,            \
+                    neighborTransparency& Dir##D5##Bit,            \
+                    neighborTransparency& Dir##D6##Bit,            \
+                    neighborTransparency& Dir##D7##Bit,            \
+                    neighborTransparency& Dir##D8##Bit )
+
+        if ( neighborTransparency & DirFrontBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirFront ], PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
+        if ( neighborTransparency & DirBackBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirBack ], PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
+        if ( neighborTransparency & DirRightBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirRight ], PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
+        if ( neighborTransparency & DirLeftBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirLeft ], PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
+        if ( neighborTransparency & DirUpBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirUp ], PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
+        if ( neighborTransparency & DirDownBit )
+            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirDown ], PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
+    }
+
+#undef PassNeighborTransparency
+#undef ToBoolArray
 }

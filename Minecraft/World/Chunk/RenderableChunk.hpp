@@ -30,7 +30,20 @@ protected:
     uint32_t* m_NeighborTransparency { };
     static_assert( IntLog<DirBitSize - 1, 2>::value < ( sizeof( std::remove_pointer_t<decltype( m_NeighborTransparency )> ) << 3 ) );
 
-    int m_VisibleFacesCount = 0;
+    union FaceVertexMetaData
+    {
+        uint16_t uuid;
+        /* First two bit are for brightness */
+        char data[ 4 ];
+    };
+
+    struct CubeVertexMetaData {
+
+        FaceVertexMetaData faceVertexMetaData[ CubeDirection::DirSize ];
+    };
+
+    int                 m_VisibleFacesCount = 0;
+    CubeVertexMetaData* m_VertexMetaData;
 
     std::array<RenderableChunk*, EightWayDirectionSize> m_NearChunks { };
     uint8_t                                             m_EmptySlot = ( 1 << EightWayDirectionSize ) - 1;
@@ -52,6 +65,8 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
+    void UpdateFacesAmbientOcclusion( FaceVertexMetaData& metaData, std::array<bool, 8> sideTransparency );
+    void UpdateAmbientOcclusionAt( uint32_t index );
     void UpdateNeighborAt( uint32_t index );
     void RegenerateVisibleFaces( );
 
@@ -99,6 +114,9 @@ public:
     {
         delete[] m_NeighborTransparency;
         m_NeighborTransparency = nullptr;
+
+        delete[] m_VertexMetaData;
+        m_VertexMetaData = nullptr;
 
         m_VisibleFacesCount = 0;
     }
