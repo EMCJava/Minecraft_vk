@@ -434,6 +434,9 @@ VulkanAPI::setupLogicalDevice( )
      * */
     m_vkGraphicQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.graphicsFamily.first, m_vkQueue_family_indices.graphicsFamily.second );
     m_vkPresentQueue = m_vkLogicalDevice->getQueue( m_vkQueue_family_indices.presentFamily, m_vkQueue_family_indices.graphicsFamily.second );
+
+    Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "New Graphic queue created", (VkQueue) m_vkGraphicQueue );
+    Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "New Present queue created", (VkQueue) m_vkPresentQueue );
 }
 
 void
@@ -738,7 +741,7 @@ VulkanAPI::setupGraphicCommandBuffers( )
 
 VulkanAPI::~VulkanAPI( )
 {
-    m_vkSwap_chain_depth_image.DestroyBuffer();
+    m_vkSwap_chain_depth_image.DestroyBuffer( );
     vmaDestroyAllocator( m_vkmAllocator );
 }
 
