@@ -142,9 +142,12 @@ public:
 
             if ( currentChunk )
             {
-                blockPtr = currentChunk->GetBlock( MinecraftWorld::BlockToChunkRelativeCoordinate( currentCoordinate ) );
-                if ( !blockPtr->Transparent( ) )
-                    break;
+                if ( GetMinecraftY( currentCoordinate ) >= 0 && GetMinecraftY( currentCoordinate ) < ChunkMaxHeight )
+                {
+                    blockPtr = currentChunk->GetBlock( MinecraftWorld::BlockToChunkRelativeCoordinate( currentCoordinate ) );
+                    if ( !blockPtr->Transparent( ) )
+                        break;
+                }
             }
 
             result.beforeSolidHit = currentCoordinate;
