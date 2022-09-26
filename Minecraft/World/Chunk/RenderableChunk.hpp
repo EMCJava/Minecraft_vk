@@ -46,6 +46,11 @@ protected:
         {
             return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid;
         }
+
+        inline bool operator!=( const FaceVertexMetaData& other ) const
+        {
+            return !( *this == other );
+        }
     };
 
     struct CubeVertexMetaData {
