@@ -25,7 +25,7 @@ void main() {
 
     fragTexCoord = inCoor_ColorIntensity.xy;
     vec3 diffVec = inPosition - ubo.highlightCoordinate;
-    if (diffVec.x >= 0 && diffVec.x <= 1 && diffVec.y >= 0 && diffVec.y <= 1 && diffVec.z >= 0 && diffVec.z <= 1) {
+    if (ubo.highlightCoordinate.y >= 0 && diffVec.x >= 0 && diffVec.x <= 1 && diffVec.y >= 0 && diffVec.y <= 1 && diffVec.z >= 0 && diffVec.z <= 1) {
         highlight = inCoor_ColorIntensity.z * mod(ubo.time, 1.0);
     } else {
         highlight = inCoor_ColorIntensity.z;
