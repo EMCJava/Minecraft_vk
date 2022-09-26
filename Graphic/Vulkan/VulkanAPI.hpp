@@ -30,6 +30,7 @@ namespace DataType
 struct TexturedVertex : VertexDetail {
     glm::ivec3 pos;
     glm::vec3  textureCoor_ColorIntensity;
+    glm::vec2  accumulatedTextureCoordinate { };
 
 
     constexpr TexturedVertex( glm::vec3 p = glm::vec3( 0 ), glm::vec2 c = glm::vec2( 0 ), float i = 1.0f )
@@ -39,8 +40,9 @@ struct TexturedVertex : VertexDetail {
 
     TexturedVertex& operator=( const TexturedVertex& other )
     {
-        pos                        = other.pos;
-        textureCoor_ColorIntensity = other.textureCoor_ColorIntensity;
+        pos                          = other.pos;
+        textureCoor_ColorIntensity   = other.textureCoor_ColorIntensity;
+        accumulatedTextureCoordinate = other.accumulatedTextureCoordinate;
 
         return *this;
     }
@@ -51,9 +53,14 @@ struct TexturedVertex : VertexDetail {
         textureCoor_ColorIntensity.y = c.y;
     }
 
+    inline void SetAccumulatedTextureCoor( glm::vec2 c )
+    {
+        accumulatedTextureCoordinate = c;
+    }
+
     static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions( )
     {
-        std::vector<vk::VertexInputAttributeDescription> attributeDescriptions( 2 );
+        std::vector<vk::VertexInputAttributeDescription> attributeDescriptions( 3 );
 
         attributeDescriptions[ 0 ].setBinding( 0 );
         attributeDescriptions[ 0 ].setLocation( 0 );
@@ -64,6 +71,11 @@ struct TexturedVertex : VertexDetail {
         attributeDescriptions[ 1 ].setLocation( 1 );
         attributeDescriptions[ 1 ].setFormat( vk::Format::eR32G32B32Sfloat );
         attributeDescriptions[ 1 ].setOffset( offsetof( TexturedVertex, textureCoor_ColorIntensity ) );
+
+        attributeDescriptions[ 2 ].setBinding( 0 );
+        attributeDescriptions[ 2 ].setLocation( 2 );
+        attributeDescriptions[ 2 ].setFormat( vk::Format::eR32G32Sfloat );
+        attributeDescriptions[ 2 ].setOffset( offsetof( TexturedVertex, accumulatedTextureCoordinate ) );
 
         return attributeDescriptions;
     }
@@ -297,7 +309,7 @@ private:
     std::pair<uint32_t, uint32_t>              m_vkTransfer_family_indices;
     vk::Queue                                  m_vkGraphicQueue;
     vk::Queue                                  m_vkPresentQueue;
-    
+
     /**
      *
      * Pipelines

@@ -53,38 +53,37 @@ inline const BlockTexture::TextureLocation defaultBlockVertices {
                          1.0f, 0.0f, 0.0f, 1.0f, 0.0f,      // B
                          1.0f, 1.0f, 0.0f, 1.0f, 1.0f,      // F
                          1.0f, 1.0f, 1.0f, 0.0f, 1.0f ) }   // H
-       ),
+                     ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
         TEXTURED_VERTEX( 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // A
                          0.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // C
                          0.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // G
                          0.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // E
-       ),
+                     ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
         TEXTURED_VERTEX( 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,      // C
                          1.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // D
                          1.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // H
                          0.0f, 1.0f, 1.0f, 0.0f, 1.0f ) }   // G
-       ),
+                     ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
         TEXTURED_VERTEX( 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // B
                          0.0f, 0.0f, 0.0f, 1.0f, 0.0f,      // A
                          0.0f, 1.0f, 0.0f, 1.0f, 1.0f,      // E
                          1.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // F
-       ),
+                     ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
         TEXTURED_VERTEX( 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,      // E
                          0.0f, 1.0f, 1.0f, 1.0f, 0.0f,      // G
                          1.0f, 1.0f, 1.0f, 1.0f, 1.0f,      // H
                          1.0f, 1.0f, 0.0f, 0.0f, 1.0f ) }   // F
-       ),
+                     ),
     CalculateNormal( std::array<DataType::TexturedVertex, FaceVerticesCount> {
         TEXTURED_VERTEX( 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,      // B
                          1.0f, 0.0f, 1.0f, 1.0f, 0.0f,      // D
                          0.0f, 0.0f, 1.0f, 1.0f, 1.0f,      // C
                          0.0f, 0.0f, 0.0f, 0.0f, 1.0f ) }   // A
-       )
-};
+                     ) };
 
 #undef TEXTURED_VERTEX
 
@@ -177,9 +176,16 @@ BlockTexture::BlockTexture( const std::string& folder )
 
             static_assert( FaceVerticesCount == 4 );
             m_BlockTextures[ i ][ j ][ 0 ].SetTextureCoor( offset );
-            m_BlockTextures[ i ][ j ][ 1 ].SetTextureCoor( offset + glm::vec2 { textureResolution, 0 } );
-            m_BlockTextures[ i ][ j ][ 2 ].SetTextureCoor( offset + glm::vec2 { textureResolution, textureResolution } );
-            m_BlockTextures[ i ][ j ][ 3 ].SetTextureCoor( offset + glm::vec2 { 0, textureResolution } );
+            m_BlockTextures[ i ][ j ][ 0 ].SetAccumulatedTextureCoor( glm::vec2 { 0 } );
+
+            m_BlockTextures[ i ][ j ][ 1 ].SetTextureCoor( offset );
+            m_BlockTextures[ i ][ j ][ 1 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, 0 } );
+
+            m_BlockTextures[ i ][ j ][ 2 ].SetTextureCoor( offset );
+            m_BlockTextures[ i ][ j ][ 2 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, textureResolution } );
+
+            m_BlockTextures[ i ][ j ][ 3 ].SetTextureCoor( offset );
+            m_BlockTextures[ i ][ j ][ 3 ].SetAccumulatedTextureCoor( glm::vec2 { 0, textureResolution } );
 
             //            m_BlockTextures[ i ][ j ][ 0 ].textureCoor = {0, 0};
             //            m_BlockTextures[ i ][ j ][ 1 ].textureCoor = {1, 0};

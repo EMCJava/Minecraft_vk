@@ -1,11 +1,13 @@
 #version 450
 
-layout(location = 0) out vec2 fragTexCoord;
-layout(location = 1) out float visibility;
-layout(location = 2) out float highlight;
+layout(location = 0) out vec2 fragTexCoordBegin;
+layout(location = 1) out vec2 accumulatedfragTexCoord;
+layout(location = 2) out float visibility;
+layout(location = 3) out float highlight;
 
 layout(location = 0) in ivec3 inPosition;
 layout(location = 1) in vec3 inCoor_ColorIntensity;
+layout(location = 2) in vec2 accumulatedTextureCoordinate;
 
 layout(binding  = 0) uniform UniformBufferObject {
     mat4 view;
@@ -23,7 +25,8 @@ void main() {
     const vec4 positionRelativeToCamera = ubo.view * vec4(inPosition, 1.0);
     gl_Position = ubo.proj * positionRelativeToCamera;
 
-    fragTexCoord = inCoor_ColorIntensity.xy;
+    accumulatedfragTexCoord = accumulatedTextureCoordinate;
+    fragTexCoordBegin = inCoor_ColorIntensity.xy;
     vec3 diffVec = inPosition - ubo.highlightCoordinate;
     if (ubo.highlightCoordinate.y >= 0 && diffVec.x >= 0 && diffVec.x <= 1 && diffVec.y >= 0 && diffVec.y <= 1 && diffVec.z >= 0 && diffVec.z <= 1) {
         highlight = inCoor_ColorIntensity.z * mod(ubo.time, 1.0);
