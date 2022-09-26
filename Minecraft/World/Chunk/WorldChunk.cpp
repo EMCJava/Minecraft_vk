@@ -60,7 +60,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
 
                     } else
                     {
-                        m_Blocks[ Chunk::GetBlockIndex( MakeMinecraftCoordinate( i, k, j ) ) ] = BlockID::BedRock;
+                        m_Blocks[ Chunk::GetBlockIndex( MakeMinecraftCoordinate( i, k, j ) ) ] = BlockID::DebugBlock;
                     }
                 }
     }
