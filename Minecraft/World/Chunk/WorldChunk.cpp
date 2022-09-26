@@ -9,6 +9,8 @@
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
+#define GENERATE_DEBUG_CHUNK false
+
 namespace
 {
 inline void
@@ -41,16 +43,32 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
 
     m_Blocks = std::make_unique<Block[]>( ChunkVolume );
 
+#if GENERATE_DEBUG_CHUNK
+
     // the following code are for debug purpose
-    //    for ( int i = 0; i < ChunkVolume; ++i )
-    //        m_Blocks[ i ] = BlockID::Air;
-    //
-    //    if ( ManhattanDistance( { 0, 0, 0 } ) == 0 )
-    //    {
-    //        m_Blocks[ 200 * SectionSurfaceSize ] = BlockID::BedRock;
-    //    }
-    //
-    //    return;
+    for ( int i = 0; i < ChunkVolume; ++i )
+        m_Blocks[ i ] = BlockID::Air;
+
+    if ( ManhattanDistance( { 0, 0, 0 } ) == 0 )
+    {
+        for ( int i = 0; i < 4; i++ )
+            for ( int j = 0; j < 5; j++ )
+                for ( int k = 0; k < 6; k++ )
+                {
+                    if ( ( i == 1 && j == 1 ) || ( i == 2 && j == 3 ) )
+                    {
+
+                    } else
+                    {
+                        m_Blocks[ Chunk::GetBlockIndex( MakeMinecraftCoordinate( i, k, j ) ) ] = BlockID::BedRock;
+                    }
+                }
+    }
+
+
+    return;
+
+#endif
 
     auto*    blocksPtr          = m_Blocks.get( );
     uint32_t horizontalMapIndex = 0;
@@ -163,7 +181,11 @@ WorldChunk::UpgradeChunk( ChunkStatus targetStatus )
 bool
 WorldChunk::AttemptRunStructureStart( )
 {
+#if !GENERATE_DEBUG_CHUNK
+
     DefaultBiomeStructures::TryGenerate( *this, m_StructureStarts );
+
+#endif
 
     return true;
 }
@@ -204,7 +226,12 @@ bool
 WorldChunk::AttemptRunNoise( )
 {
     FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
+
+#if !GENERATE_DEBUG_CHUNK
+
     FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+
+#endif
 
     return true;
 }
