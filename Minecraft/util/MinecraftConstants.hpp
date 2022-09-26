@@ -33,6 +33,12 @@ enum CubeDirection : uint8_t {
     DirSize
 };
 
+inline CubeDirection&
+operator++( CubeDirection& direction )
+{
+    return direction = CubeDirection( direction + 1 );
+}
+
 enum DirectionBit : uint32_t {
     DirFrontBit = 1 << DirFront,
     DirBackBit  = 1 << DirBack,
