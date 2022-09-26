@@ -32,7 +32,7 @@ protected:
 
     union FaceVertexAmbientOcclusionData
     {
-        uint16_t uuid;
+        uint16_t uuid = 0;
         /* First two bit are for brightness */
         char data[ 4 ];
     };
