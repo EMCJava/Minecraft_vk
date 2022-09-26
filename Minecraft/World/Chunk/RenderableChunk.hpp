@@ -19,6 +19,70 @@
 
 using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType>;
 
+
+union FaceVertexAmbientOcclusionData
+{
+    uint16_t uuid = 0;
+    /* First two bit are for brightness */
+    char data[ 4 ];
+};
+
+struct FaceVertexMetaData {
+
+    int32_t                        textureID = 0;
+    FaceVertexAmbientOcclusionData ambientOcclusionData { };
+
+    inline bool operator==( const FaceVertexMetaData& other ) const
+    {
+        return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid;
+    }
+
+    inline bool operator!=( const FaceVertexMetaData& other ) const
+    {
+        return !( *this == other );
+    }
+};
+
+struct CubeVertexMetaData {
+
+    FaceVertexMetaData faceVertexMetaData[ CubeDirection::DirSize ];
+};
+
+struct GreedyMeshFace {
+
+    glm::ivec3 offset, scale;
+    glm::ivec2 textureScale;
+
+    GreedyMeshFace( glm::ivec3 offset, glm::ivec3 scale, glm::ivec2 textureScale )
+        : offset( offset )
+        , scale( scale )
+        , textureScale( textureScale )
+    { }
+};
+
+struct GreedyMeshCollection {
+
+    std::vector<GreedyMeshFace> faces;
+};
+
+namespace std
+{
+
+template <>
+struct hash<FaceVertexMetaData> {
+    std::size_t operator( )( const FaceVertexMetaData& k ) const
+    {
+        // Compute individual hash values for first,
+        // second and third and combine them using XOR
+        // and bit shifting:
+
+        static_assert( sizeof( FaceVertexAmbientOcclusionData ) == 4 );
+        return ( k.textureID << 16 ) + k.ambientOcclusionData.uuid;
+    }
+};
+
+}   // namespace std
+
 class RenderableChunk : public Chunk
 {
 protected:
@@ -29,34 +93,6 @@ protected:
      * */
     uint32_t* m_NeighborTransparency { };
     static_assert( IntLog<DirBitSize - 1, 2>::value < ( sizeof( std::remove_pointer_t<decltype( m_NeighborTransparency )> ) << 3 ) );
-
-    union FaceVertexAmbientOcclusionData
-    {
-        uint16_t uuid = 0;
-        /* First two bit are for brightness */
-        char data[ 4 ];
-    };
-
-    struct FaceVertexMetaData {
-
-        int32_t                        textureID = 0;
-        FaceVertexAmbientOcclusionData ambientOcclusionData { };
-
-        inline bool operator==( const FaceVertexMetaData& other ) const
-        {
-            return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid;
-        }
-
-        inline bool operator!=( const FaceVertexMetaData& other ) const
-        {
-            return !( *this == other );
-        }
-    };
-
-    struct CubeVertexMetaData {
-
-        FaceVertexMetaData faceVertexMetaData[ CubeDirection::DirSize ];
-    };
 
     int                 m_VisibleFacesCount = 0;
     CubeVertexMetaData* m_VertexMetaData { };
@@ -87,7 +123,7 @@ protected:
     void UpdateNeighborAt( uint32_t index );
     void RegenerateVisibleFaces( );
 
-    std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize> GenerateGreedyMesh( );
+    std::array<std::unordered_map<FaceVertexMetaData, GreedyMeshCollection>, CubeDirection::DirSize> GenerateGreedyMesh( );
 
 public:
     explicit RenderableChunk( class MinecraftWorld* world )

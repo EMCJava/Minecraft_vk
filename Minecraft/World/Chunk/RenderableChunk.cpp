@@ -255,7 +255,14 @@ RenderableChunk::UpdateNeighborAt( uint32_t index )
 void
 RenderableChunk::GenerateRenderBuffer( )
 {
+    // TODO: remove m_VisibleFacesCount
     if ( m_VisibleFacesCount == 0 ) return;
+
+    const auto requiredMeshes    = GenerateGreedyMesh( );
+    uint32_t   greedyVisibleFace = 0;
+    for ( const auto& mesh : requiredMeshes )
+        for ( const auto& face : mesh )
+            greedyVisibleFace += face.second.faces.size( );
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Generating chunk:", chunk.GetCoordinate( ) );
 
@@ -267,8 +274,8 @@ RenderableChunk::GenerateRenderBuffer( )
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndices        = { 0, 1, 2, 2, 3, 0 };
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndicesFlipped = { 0, 1, 3, 1, 2, 3 };
 
-    const auto verticesDataSize = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( m_VisibleFacesCount );
-    const auto indicesDataSize  = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( m_VisibleFacesCount ) );
+    const auto verticesDataSize = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( greedyVisibleFace );
+    const auto indicesDataSize  = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( greedyVisibleFace ) );
     auto&      api              = MainApplication::GetInstance( ).GetVulkanAPI( );
 
     if ( m_BufferAllocation.targetChunk == nullptr )
@@ -278,7 +285,7 @@ RenderableChunk::GenerateRenderBuffer( )
 
     const uint32_t indexOffset = ScaleToSecond<sizeof( DataType::TexturedVertex ), 1, uint32_t>( m_BufferAllocation.region.vertexStartingOffset );
 
-    std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( m_VisibleFacesCount ) );
+    std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( greedyVisibleFace ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
     auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths ) mutable {
@@ -293,6 +300,7 @@ RenderableChunk::GenerateRenderBuffer( )
 
         chunkVerticesPtr += FaceVerticesCount;
 
+        // TODO: This should be consider in greedy meshing generation
         if ( faceAmbientOcclusionStrengths.data[ 3 ] + faceAmbientOcclusionStrengths.data[ 1 ] > faceAmbientOcclusionStrengths.data[ 0 ] + faceAmbientOcclusionStrengths.data[ 2 ] )
         {
             for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
@@ -311,35 +319,47 @@ RenderableChunk::GenerateRenderBuffer( )
     };
 
     const auto& blockTextures = Minecraft::GetInstance( ).GetBlockTextures( );
-    for ( int y = 0, blockIndex = 0; y < ChunkMaxHeight; ++y )
+    for ( auto dir = CubeDirection { 0 }; dir < CubeDirection::DirSize; ++dir )
     {
-        for ( int z = 0; z < SectionUnitLength; ++z )
+        for ( const auto& faces : requiredMeshes[ dir ] )
         {
-            for ( int x = 0; x < SectionUnitLength; ++x, ++blockIndex )
-            {
-                if ( const auto neighborTransparency = m_NeighborTransparency[ blockIndex ] )
-                {
-                    const auto& textures = blockTextures.GetTextureLocation( m_Blocks[ blockIndex ] );
-                    const auto  offset   = glm::vec3( chunkX + x, y, chunkZ + z );
+            const auto& vertexMeta = faces.first;
+            const auto& textures   = blockTextures.GetTextureLocationByIndex( vertexMeta.textureID );
 
-                    if ( neighborTransparency & DirFrontBit )
-                        AddFace( textures[ DirFront ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirFront ].ambientOcclusionData );
-                    if ( neighborTransparency & DirBackBit )
-                        AddFace( textures[ DirBack ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirBack ].ambientOcclusionData );
-                    if ( neighborTransparency & DirRightBit )
-                        AddFace( textures[ DirRight ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirRight ].ambientOcclusionData );
-                    if ( neighborTransparency & DirLeftBit )
-                        AddFace( textures[ DirLeft ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirLeft ].ambientOcclusionData );
-                    if ( neighborTransparency & DirUpBit )
-                        AddFace( textures[ DirUp ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirUp ].ambientOcclusionData );
-                    if ( neighborTransparency & DirDownBit )
-                        AddFace( textures[ DirDown ], offset, m_VertexMetaData[ blockIndex ].faceVertexMetaData[ DirDown ].ambientOcclusionData );
-                }
+            for ( const auto& face : faces.second.faces )
+            {
+                auto textureCopy = textures;
+                textureCopy[ 0 ].pos *= face.scale;
+                textureCopy[ 0 ].accumulatedTextureCoordinate *= face.textureScale;
+                textureCopy[ 1 ].pos *= face.scale;
+                textureCopy[ 1 ].accumulatedTextureCoordinate *= face.textureScale;
+                textureCopy[ 2 ].pos *= face.scale;
+                textureCopy[ 2 ].accumulatedTextureCoordinate *= face.textureScale;
+                textureCopy[ 3 ].pos *= face.scale;
+                textureCopy[ 3 ].accumulatedTextureCoordinate *= face.textureScale;
+
+                /*
+                 * for javascript debug purpose
+                 * https://github.com/mikolalysenko/mikolalysenko.github.com/tree/gh-pages/MinecraftMeshes
+                 *
+                 * */
+                // using Log   = LoggerBase<false, false, false>;
+                // static const auto render = []( const glm::vec3& vec ) {
+                //     Log::getInstance( ).LogLine( "[", vec.x, ",", vec.y, ",", vec.z, "]," );
+                // };
+                // Log::getInstance( ).LogLine( "quads.push([" );
+                //
+                // render( textureCopy[ 0 ].pos + face.offset );
+                // render( textureCopy[ 1 ].pos + face.offset );
+                // render( textureCopy[ 2 ].pos + face.offset );
+                // render( textureCopy[ 3 ].pos + face.offset );
+                //
+                // Log::getInstance( ).LogLine( " ]);" );
+
+                AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData );
             }
         }
     }
-
-    GenerateGreedyMesh( );
 
     ChunkSolidBuffer::GetInstance( ).CopyBuffer( m_BufferAllocation, chunkVertices.get( ), chunkIndices.get( ) );
 }
@@ -556,12 +576,12 @@ RenderableChunk::UpdateMetaDataAt( uint32_t index )
  * with multiple buf fixes
  *
  * */
-std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize>
+std::array<std::unordered_map<FaceVertexMetaData, GreedyMeshCollection>, CubeDirection::DirSize>
 RenderableChunk::GenerateGreedyMesh( )
 {
     static constexpr std::array<int, 3> dims { SectionUnitLength, ChunkMaxHeight, SectionUnitLength };
 
-    std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize> faces { };
+    std::array<std::unordered_map<FaceVertexMetaData, GreedyMeshCollection>, CubeDirection::DirSize> faces;
 
     /*
      * These are just working variables for the algorithm - almost all taken
@@ -569,10 +589,10 @@ RenderableChunk::GenerateGreedyMesh( )
      */
     int i, j, k, l, w, h, u, v, n, side = 0;
 
-    std::array<int, 3> x { 0, 0, 0 };
-    std::array<int, 3> q { 0, 0, 0 };
-    std::array<int, 3> du { 0, 0, 0 };
-    std::array<int, 3> dv { 0, 0, 0 };
+    glm::ivec3 x { 0, 0, 0 };
+    glm::ivec3 q { 0, 0, 0 };
+    glm::ivec3 du { 0, 0, 0 };
+    glm::ivec3 dv { 0, 0, 0 };
 
     /*
      * We create a mask - this will contain the groups of matching voxel faces
@@ -695,22 +715,21 @@ RenderableChunk::GenerateGreedyMesh( )
                             /*
                              * Then we compute height
                              */
-                            bool done = false;
-
-                            for ( h = 1; j + h < dims[ v ]; h++ )
                             {
-
-                                for ( k = 0; k < w; k++ )
+                                for ( h = 1; j + h < dims[ v ]; h++ )
                                 {
 
-                                    if ( mask[ n + k + h * dims[ u ] ].textureID == -1 || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
+                                    for ( k = 0; k < w; k++ )
                                     {
-                                        done = true;
-                                        break;
+
+                                        if ( mask[ n + k + h * dims[ u ] ].textureID == -1 || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
+                                        {
+                                            goto compute_height_finish;
+                                        }
                                     }
                                 }
 
-                                if ( done ) { break; }
+                            compute_height_finish:;
                             }
 
                             /*
@@ -729,13 +748,17 @@ RenderableChunk::GenerateGreedyMesh( )
                             dv[ 2 ] = 0;
                             dv[ v ] = h;
 
-                            faces[ side ].push_back( std::array<glm::ivec3, 4> {
-                                glm::ivec3 {                    x[ 0 ],                     x[ 1 ],                     x[ 2 ]}, /* Bottom Left */
-                                glm::ivec3 {          x[ 0 ] + du[ 0 ],           x[ 1 ] + du[ 1 ],           x[ 2 ] + du[ 2 ]}, /* Top Left */
-                                glm::ivec3 {x[ 0 ] + du[ 0 ] + dv[ 0 ], x[ 1 ] + du[ 1 ] + dv[ 1 ], x[ 2 ] + du[ 2 ] + dv[ 2 ]}, /* Top Right */
-                                glm::ivec3 {          x[ 0 ] + dv[ 0 ],           x[ 1 ] + dv[ 1 ],           x[ 2 ] + dv[ 2 ]}  /* Bottom Right */
-                            } );
+                            glm::ivec3 offset = x;
+                            if ( !backFace ) offset[ d ] -= 1; /* Counter for the cube vertex offset, this algorithm assume all faces starts at [0,0,0] */
 
+                            glm::ivec3 scale = du + dv;
+                            scale[ d ]       = 1;
+
+                            glm::ivec2 textureScale { w, h };
+                            if(d == 0) std::swap( textureScale[ 0 ], textureScale[ 1 ] );
+
+                            /* Save face */
+                            faces[ side ][ mask[ n ] ].faces.emplace_back( offset, scale, textureScale );
 
                             /*
                              * We zero out the mask
@@ -766,26 +789,6 @@ RenderableChunk::GenerateGreedyMesh( )
             }
         }
     }
-
-    /*
-     * for javascript debug purpose
-     * https://github.com/mikolalysenko/mikolalysenko.github.com/tree/gh-pages/MinecraftMeshes
-     *
-     * */
-    //    using Log = LoggerBase<false, false, false>;
-    //
-    //
-    //    for ( const auto& coors : faces )
-    //    {
-    //        Log::getInstance( ).LogLine( "quads.push([" );
-    //
-    //        for ( const auto& vert : coors )
-    //        {
-    //            Log::getInstance( ).LogLine( "[", vert.x, ",", vert.y, ",", vert.z, "]," );
-    //        }
-    //
-    //        Log::getInstance( ).LogLine( " ]);" );
-    //    }
 
     return faces;
 }
