@@ -20,21 +20,24 @@ class BlockTexture
 {
 public:
     using TextureLocation = std::array<std::array<DataType::TexturedVertex, FaceVerticesCount>, DirSize>;
-    using TextureIndices  = std::array<uint32_t, DirSize>;
+    using TextureIndices = std::array<uint32_t, DirSize>;
 
 private:
-    ImageMeta textureImage;
+    ImageMeta                       textureImage;
+    std::map<std::string, uint32_t> m_UniqueTexture;
 
-    std::array<TextureLocation, BlockIDSize> m_BlockTextures { };
-    std::array<TextureIndices, BlockIDSize>  m_BlockTextureIndices { };
+    std::vector<std::array<DataType::TexturedVertex, FaceVerticesCount>> m_TextureList;
+
+    std::array<TextureIndices, BlockIDSize> m_BlockTextureIndices { };
 
 public:
     BlockTexture( const std::string& folder );
 
-    inline const auto& GetTextureLocation( BlockID id ) const { return m_BlockTextures.at( id ); }
+    inline const auto& GetTextureLocationByIndex( uint32_t id ) const { return m_TextureList.at( id ); }
     inline const auto& GetTextureIndices( BlockID id ) const { return m_BlockTextureIndices.at( id ); }
 
-    const auto& GetTexture( ) const { return textureImage; }
+    inline auto        GetTotalUniqueTexture( ) const { return m_UniqueTexture.size( ); }
+    inline const auto& GetTexture( ) const { return textureImage; }
 };
 
 

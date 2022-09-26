@@ -102,8 +102,8 @@ BlockTexture::BlockTexture( const std::string& folder )
 
     Logger::getInstance( ).LogLine( "Using texture", textureSpec[ "texture_name" ] );
 
-    std::map<std::string, uint32_t> uniqueTexture;
-    const auto&                     blockTexturesJson = textureSpec[ "blocks" ];
+    m_UniqueTexture.clear( );
+    const auto& blockTexturesJson = textureSpec[ "blocks" ];
     for ( int i = 0; i < BlockIDSize; ++i )
     {
         const auto blockName = toString( static_cast<BlockID>( i ) );
@@ -118,12 +118,12 @@ BlockTexture::BlockTexture( const std::string& folder )
         {
             const auto& textureName = textureList[ j ].get<std::string>( );
             const auto& texturePath = std::filesystem::path( folder + '/' + textureName ).make_preferred( ).string( );
-            if ( uniqueTexture.contains( texturePath ) ) continue;
-            uniqueTexture[ texturePath ] = uniqueTexture.size( );
+            if ( m_UniqueTexture.contains( texturePath ) ) continue;
+            m_UniqueTexture[ texturePath ] = m_UniqueTexture.size( );
         }
     }
 
-    const auto     totalTexture         = uniqueTexture.size( );
+    const auto     totalTexture         = m_UniqueTexture.size( );
     const uint32_t textureAtlasesWidth  = std::floor( std::sqrt( totalTexture ) );
     const uint32_t textureAtlasesHeight = std::ceil( (float) totalTexture / textureAtlasesWidth );
 
@@ -133,7 +133,7 @@ BlockTexture::BlockTexture( const std::string& folder )
     textureImage.Create( textureAtlasesWidth * textureResolution, textureAtlasesHeight * textureResolution, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, VMA_MEMORY_USAGE_GPU_ONLY, VmaAllocationCreateFlagBits::VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT );
 
     uint32_t index = 0;
-    for ( auto& texturePath : uniqueTexture )
+    for ( auto& texturePath : m_UniqueTexture )
     {
         texturePath.second = index;
 
@@ -162,30 +162,33 @@ BlockTexture::BlockTexture( const std::string& folder )
 
         const auto& textureList = blockTexturesJson[ blockName ];
 
-        m_BlockTextures[ i ] = defaultBlockVertices;
-
         for ( int j = 0; j < DirSize; ++j )
         {
             const auto& texturePath = std::filesystem::path( folder + '/' + textureList[ j ].get<std::string>( ) ).make_preferred( ).string( );
 
-            m_BlockTextureIndices[ i ][ j ] = index = uniqueTexture.at( texturePath );
+            index = m_UniqueTexture.at( texturePath );
 
             uint32_t x = ( index % textureAtlasesWidth ), y = ( index / textureAtlasesWidth );
 
             glm::vec2 offset { textureResolution * x, textureResolution * y };
 
             static_assert( FaceVerticesCount == 4 );
-            m_BlockTextures[ i ][ j ][ 0 ].SetTextureCoor( offset );
-            m_BlockTextures[ i ][ j ][ 0 ].SetAccumulatedTextureCoor( glm::vec2 { 0 } );
+            std::array<DataType::TexturedVertex, FaceVerticesCount> textureFace = defaultBlockVertices[ j ];
 
-            m_BlockTextures[ i ][ j ][ 1 ].SetTextureCoor( offset );
-            m_BlockTextures[ i ][ j ][ 1 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, 0 } );
+            textureFace[ 0 ].SetTextureCoor( offset );
+            textureFace[ 0 ].SetAccumulatedTextureCoor( glm::vec2 { 0 } );
 
-            m_BlockTextures[ i ][ j ][ 2 ].SetTextureCoor( offset );
-            m_BlockTextures[ i ][ j ][ 2 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, textureResolution } );
+            textureFace[ 1 ].SetTextureCoor( offset );
+            textureFace[ 1 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, 0 } );
 
-            m_BlockTextures[ i ][ j ][ 3 ].SetTextureCoor( offset );
-            m_BlockTextures[ i ][ j ][ 3 ].SetAccumulatedTextureCoor( glm::vec2 { 0, textureResolution } );
+            textureFace[ 2 ].SetTextureCoor( offset );
+            textureFace[ 2 ].SetAccumulatedTextureCoor( glm::vec2 { textureResolution, textureResolution } );
+
+            textureFace[ 3 ].SetTextureCoor( offset );
+            textureFace[ 3 ].SetAccumulatedTextureCoor( glm::vec2 { 0, textureResolution } );
+
+            m_BlockTextureIndices[ i ][ j ] = m_TextureList.size( );
+            m_TextureList.push_back( textureFace );
 
             //            m_BlockTextures[ i ][ j ][ 0 ].textureCoor = {0, 0};
             //            m_BlockTextures[ i ][ j ][ 1 ].textureCoor = {1, 0};
