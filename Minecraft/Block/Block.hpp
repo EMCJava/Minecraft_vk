@@ -12,6 +12,7 @@ case X: return #X;
 
 enum BlockID : uint8_t {
     Air,
+    DebugBlock,
     Stone,
     Grass,
     Dart,
@@ -33,6 +34,7 @@ toString( const BlockID& id )
     switch ( id )
     {
         SWITCH_TOSTRING( Air )
+        SWITCH_TOSTRING( DebugBlock )
         SWITCH_TOSTRING( Stone )
         SWITCH_TOSTRING( Grass )
         SWITCH_TOSTRING( Dart )

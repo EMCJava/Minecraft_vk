@@ -97,6 +97,14 @@
       "stripped_birch_log.png",
       "stripped_birch_log_top.png",
       "stripped_birch_log_top.png"
+    ],
+    "DebugBlock": [
+      "debug_block.png",
+      "debug_block.png",
+      "debug_block.png",
+      "debug_block.png",
+      "debug_block.png",
+      "debug_block.png"
     ]
   }
 }
