@@ -87,7 +87,7 @@ protected:
     void UpdateNeighborAt( uint32_t index );
     void RegenerateVisibleFaces( );
 
-    void GenerateGreedyMesh( );
+    std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize> GenerateGreedyMesh( );
 
 public:
     explicit RenderableChunk( class MinecraftWorld* world )

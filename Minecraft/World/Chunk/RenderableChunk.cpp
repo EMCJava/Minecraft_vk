@@ -339,6 +339,8 @@ RenderableChunk::GenerateRenderBuffer( )
         }
     }
 
+    GenerateGreedyMesh( );
+
     ChunkSolidBuffer::GetInstance( ).CopyBuffer( m_BufferAllocation, chunkVertices.get( ), chunkIndices.get( ) );
 }
 
@@ -551,11 +553,15 @@ RenderableChunk::UpdateMetaDataAt( uint32_t index )
 /*
  *
  * From https://github.com/roboleary/GreedyMesh/blob/master/src/mygame/Main.java
+ * with multiple buf fixes
  *
  * */
-void
+std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize>
 RenderableChunk::GenerateGreedyMesh( )
 {
+    static constexpr std::array<int, 3> dims { SectionUnitLength, ChunkMaxHeight, SectionUnitLength };
+
+    std::array<std::vector<std::array<glm::ivec3, 4>>, CubeDirection::DirSize> faces { };
 
     /*
      * These are just working variables for the algorithm - almost all taken
@@ -572,13 +578,8 @@ RenderableChunk::GenerateGreedyMesh( )
      * We create a mask - this will contain the groups of matching voxel faces
      * as we proceed through the chunk in 6 directions - once for each face.
      */
-    FaceVertexMetaData                    emptyFace { .textureID = -1 };
+    static constexpr FaceVertexMetaData   emptyFace { .textureID = -1 };
     std::unique_ptr<FaceVertexMetaData[]> mask = std::make_unique<FaceVertexMetaData[]>( SectionUnitLength * ChunkMaxHeight );
-
-    /*
-     * These are just working variables to hold two faces during comparison.
-     */
-    FaceVertexMetaData voxelFace, voxelFace1;
 
     /**
      * We start with the lesser-spotted boolean for-loop (also known as the old flippy floppy).
@@ -607,6 +608,7 @@ RenderableChunk::GenerateGreedyMesh( )
             x[ 1 ] = 0;
             x[ 2 ] = 0;
 
+            // Move along d axis
             q[ 0 ] = 0;
             q[ 1 ] = 0;
             q[ 2 ] = 0;
@@ -615,21 +617,23 @@ RenderableChunk::GenerateGreedyMesh( )
             /*
              * Here we're keeping track of the side that we're meshing.
              */
-            if ( d == MinecraftCoordinateXIndex )
-            {
-                side = backFace ? DirLeft : DirRight;
-            } else if ( d == MinecraftCoordinateYIndex )
-            {
-                side = backFace ? DirDown : DirUp;
-            } else if ( d == MinecraftCoordinateZIndex )
+            if ( d == 0 )
             {
                 side = backFace ? DirBack : DirFront;
+
+            } else if ( d == 1 )
+            {
+                side = backFace ? DirDown : DirUp;
+
+            } else if ( d == 2 )
+            {
+                side = backFace ? DirLeft : DirRight;
             }
 
             /*
              * We move through the dimension from front to back
              */
-            for ( x[ d ] = -1; x[ d ] < SectionUnitLength; )
+            for ( x[ d ] = -1; x[ d ] < dims[ d ]; )
             {
 
                 /*
@@ -639,37 +643,31 @@ RenderableChunk::GenerateGreedyMesh( )
                  */
                 n = 0;
 
-                for ( x[ v ] = 0; x[ v ] < ChunkMaxHeight; x[ v ]++ )
+                for ( x[ v ] = 0; x[ v ] < dims[ v ]; x[ v ]++ )
                 {
 
-                    for ( x[ u ] = 0; x[ u ] < SectionUnitLength; x[ u ]++ )
+                    for ( x[ u ] = 0; x[ u ] < dims[ u ]; x[ u ]++ )
                     {
 
                         /*
                          * Here we retrieve two voxel faces for comparison.
                          */
 
-                        const auto block1 = GetBlockIndex( { x[ 0 ], x[ 1 ], x[ 2 ] } );
-                        const auto block2 = GetBlockIndex( { x[ 0 ] + q[ 0 ], x[ 1 ] + q[ 1 ], x[ 2 ] + q[ 2 ] } );
+                        const BlockCoordinate block1Coordinate = MakeMinecraftCoordinate( x[ 0 ], x[ 1 ], x[ 2 ] );
+                        const BlockCoordinate block2Coordinate = MakeMinecraftCoordinate( x[ 0 ] + q[ 0 ], x[ 1 ] + q[ 1 ], x[ 2 ] + q[ 2 ] );
+
+                        const auto block1 = GetBlockIndex( block1Coordinate );
+                        const auto block2 = GetBlockIndex( block2Coordinate );
 
                         bool face1Visible = x[ d ] >= 0 && m_NeighborTransparency[ block1 ] & ( 1 << side );
-                        bool face2Visible = x[ d ] < SectionUnitLength - 1 && m_NeighborTransparency[ block2 ] & ( 1 << side );
+                        bool face2Visible = x[ d ] < dims[ d ] - 1 && m_NeighborTransparency[ block2 ] & ( 1 << side );
 
-                        //TODO: plz finish this
-
-                        voxelFace  = ( x[ d ] >= 0 ) ?: null;
-                        voxelFace1 = ( x[ d ] < SectionUnitLength - 1 ) ?: null;
-
-                        /*
-                         * Note that we're using the equals function in the voxel face class here, which lets the faces
-                         * be compared based on any number of attributes.
-                         *
-                         * Also, we choose the face to add to the mask depending on whether we're moving through on a backface or not.
-                         */
-                        if ( face1Visible && face2Visible && m_VertexMetaData[ block1 ].faceVertexMetaData[ side ] == m_VertexMetaData[ block2 ].faceVertexMetaData[ side ] )
-                            mask[ n++ ] = emptyFace;
+                        if ( !backFace && face1Visible )
+                            mask[ n++ ] = m_VertexMetaData[ block1 ].faceVertexMetaData[ side ];
+                        else if ( backFace && face2Visible )
+                            mask[ n++ ] = m_VertexMetaData[ block2 ].faceVertexMetaData[ side ];
                         else
-                            mask[ n++ ] = backFace ? voxelFace1 : voxelFace;
+                            mask[ n++ ] = emptyFace;   // face covered, ont visible
                     }
                 }
 
@@ -680,32 +678,32 @@ RenderableChunk::GenerateGreedyMesh( )
                  */
                 n = 0;
 
-                for ( j = 0; j < ChunkMaxHeight; j++ )
+                for ( j = 0; j < dims[ v ]; j++ )
                 {
 
-                    for ( i = 0; i < SectionUnitLength; )
+                    for ( i = 0; i < dims[ u ]; )
                     {
 
-                        if ( mask[ n ] != null )
+                        if ( mask[ n ].textureID != emptyFace.textureID )
                         {
 
                             /*
                              * We compute the width
                              */
-                            for ( w = 1; i + w < SectionUnitLength && mask[ n + w ] != null && mask[ n + w ].equals( mask[ n ] ); w++ ) { }
+                            for ( w = 1; i + w < dims[ u ] && mask[ n + w ].textureID != -1 && mask[ n + w ] == mask[ n ]; w++ ) { }
 
                             /*
                              * Then we compute height
                              */
-                            boolean done = false;
+                            bool done = false;
 
-                            for ( h = 1; j + h < ChunkMaxHeight; h++ )
+                            for ( h = 1; j + h < dims[ v ]; h++ )
                             {
 
                                 for ( k = 0; k < w; k++ )
                                 {
 
-                                    if ( mask[ n + k + h * SectionUnitLength ] == null || !mask[ n + k + h * SectionUnitLength ].equals( mask[ n ] ) )
+                                    if ( mask[ n + k + h * dims[ u ] ].textureID == -1 || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
                                     {
                                         done = true;
                                         break;
@@ -716,43 +714,28 @@ RenderableChunk::GenerateGreedyMesh( )
                             }
 
                             /*
-                             * Here we check the "transparent" attribute in the VoxelFace class to ensure that we don't mesh
-                             * any culled faces.
+                             * Add quad
                              */
-                            if ( !mask[ n ].transparent )
-                            {
-                                /*
-                                 * Add quad
-                                 */
-                                x[ u ] = i;
-                                x[ v ] = j;
+                            x[ u ] = i;
+                            x[ v ] = j;
 
-                                du[ 0 ] = 0;
-                                du[ 1 ] = 0;
-                                du[ 2 ] = 0;
-                                du[ u ] = w;
+                            du[ 0 ] = 0;
+                            du[ 1 ] = 0;
+                            du[ 2 ] = 0;
+                            du[ u ] = w;
 
-                                dv[ 0 ] = 0;
-                                dv[ 1 ] = 0;
-                                dv[ 2 ] = 0;
-                                dv[ v ] = h;
+                            dv[ 0 ] = 0;
+                            dv[ 1 ] = 0;
+                            dv[ 2 ] = 0;
+                            dv[ v ] = h;
 
-                                /*
-                                 * And here we call the quad function in order to render a merged quad in the scene.
-                                 *
-                                 * We pass mask[n] to the function, which is an instance of the VoxelFace class containing
-                                 * all the attributes of the face - which allows for variables to be passed to shaders - for
-                                 * example lighting values used to create ambient occlusion.
-                                 */
-                                quad( new Vector3f( x[ 0 ], x[ 1 ], x[ 2 ] ),
-                                      new Vector3f( x[ 0 ] + du[ 0 ], x[ 1 ] + du[ 1 ], x[ 2 ] + du[ 2 ] ),
-                                      new Vector3f( x[ 0 ] + du[ 0 ] + dv[ 0 ], x[ 1 ] + du[ 1 ] + dv[ 1 ], x[ 2 ] + du[ 2 ] + dv[ 2 ] ),
-                                      new Vector3f( x[ 0 ] + dv[ 0 ], x[ 1 ] + dv[ 1 ], x[ 2 ] + dv[ 2 ] ),
-                                      w,
-                                      h,
-                                      mask[ n ],
-                                      backFace );
-                            }
+                            faces[ side ].push_back( std::array<glm::ivec3, 4> {
+                                glm::ivec3 {                    x[ 0 ],                     x[ 1 ],                     x[ 2 ]}, /* Bottom Left */
+                                glm::ivec3 {          x[ 0 ] + du[ 0 ],           x[ 1 ] + du[ 1 ],           x[ 2 ] + du[ 2 ]}, /* Top Left */
+                                glm::ivec3 {x[ 0 ] + du[ 0 ] + dv[ 0 ], x[ 1 ] + du[ 1 ] + dv[ 1 ], x[ 2 ] + du[ 2 ] + dv[ 2 ]}, /* Top Right */
+                                glm::ivec3 {          x[ 0 ] + dv[ 0 ],           x[ 1 ] + dv[ 1 ],           x[ 2 ] + dv[ 2 ]}  /* Bottom Right */
+                            } );
+
 
                             /*
                              * We zero out the mask
@@ -762,7 +745,7 @@ RenderableChunk::GenerateGreedyMesh( )
 
                                 for ( k = 0; k < w; ++k )
                                 {
-                                    mask[ n + k + l * SectionUnitLength ] = null;
+                                    mask[ n + k + l * dims[ u ] ].textureID = -1;
                                 }
                             }
 
@@ -783,4 +766,26 @@ RenderableChunk::GenerateGreedyMesh( )
             }
         }
     }
+
+    /*
+     * for javascript debug purpose
+     * https://github.com/mikolalysenko/mikolalysenko.github.com/tree/gh-pages/MinecraftMeshes
+     *
+     * */
+    //    using Log = LoggerBase<false, false, false>;
+    //
+    //
+    //    for ( const auto& coors : faces )
+    //    {
+    //        Log::getInstance( ).LogLine( "quads.push([" );
+    //
+    //        for ( const auto& vert : coors )
+    //        {
+    //            Log::getInstance( ).LogLine( "[", vert.x, ",", vert.y, ",", vert.z, "]," );
+    //        }
+    //
+    //        Log::getInstance( ).LogLine( " ]);" );
+    //    }
+
+    return faces;
 }
