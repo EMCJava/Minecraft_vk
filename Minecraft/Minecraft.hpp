@@ -12,9 +12,8 @@
 class Minecraft : public Tickable
     , public Singleton<Minecraft>
 {
-
+    std::unique_ptr<BlockTexture> m_BlockTextures;
     std::unique_ptr<MinecraftServer> m_Server;
-    std::unique_ptr<BlockTexture>    m_BlockTextures;
 
 public:
     Minecraft( ) = default;
