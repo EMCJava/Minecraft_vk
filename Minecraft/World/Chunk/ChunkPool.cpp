@@ -157,12 +157,10 @@ ChunkPool::CleanUpJobs( )
     CleanRunningThread( &finished );
     for ( auto* cache : finished )
     {
-        cache->initializing = false;
-        cache->initialized  = true;
-
         if ( !cache->IsAtLeastTargetStatus( ) )
         {
             // Logger::getInstance( ).LogLine( "Load not complete, re-appending chunk", cache );
+            cache->initializing = false;
             cache->initialized = false;
             AddJobContext( cache );
             continue;
@@ -184,6 +182,10 @@ ChunkPool::CleanUpJobs( )
                 }
             }
         }
+
+        /* Initialization include mesh building */
+        cache->initializing = false;
+        cache->initialized  = true;
     }
 
     {
