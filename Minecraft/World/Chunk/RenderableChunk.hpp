@@ -170,12 +170,11 @@ public:
 
     inline const auto& GetCubeVertexMetaData( uint32_t index ) const
     {
-        if ( m_VertexMetaData == nullptr )
-            auto a = 0;
-
         assert( m_VertexMetaData != nullptr );
         return m_VertexMetaData[ index ];
     }
+
+    inline bool IsCacheReady( ) { return m_NeighborTransparency != nullptr && m_VertexMetaData != nullptr; }
 
     inline void DeleteCache( )
     {
