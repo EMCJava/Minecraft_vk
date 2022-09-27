@@ -466,7 +466,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 #endif
 
         // Update self ambient occlusion
-        UpdateAmbientOcclusionAt( blockIndex );
+        UpdateMetaDataAt( blockIndex );
     }
 
     return true;
