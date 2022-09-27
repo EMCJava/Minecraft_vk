@@ -113,6 +113,21 @@ public:
 
     std::pair<float, float> GetMovementDelta( );
 
+    inline auto IsJumping( ) const
+    {
+        return glfwGetKey( m_window, GLFW_KEY_SPACE ) == GLFW_PRESS;
+    }
+
+    inline auto IsCrouch( ) const
+    {
+        return glfwGetKey( m_window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS;
+    }
+
+    inline auto IsSprint( ) const
+    {
+        return glfwGetKey( m_window, GLFW_KEY_LEFT_CONTROL ) == GLFW_PRESS;
+    }
+
     void LockMouse( )
     {
         m_is_mouse_locked = true;

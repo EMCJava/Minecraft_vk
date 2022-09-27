@@ -89,6 +89,13 @@ public:
         UpdateViewMatrix( );
     }
 
+    inline void ProcessVerticalMovement( float deltaYMovement, float deltaTime )
+    {
+        const float velocity = MovementSpeed * deltaTime;
+        Position.y += velocity * deltaYMovement;
+        UpdateViewMatrix( );
+    }
+
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
     inline void ProcessMouseMovement( const std::pair<double, double>& offset, bool constrainPitch = true )
     {
