@@ -22,9 +22,9 @@ using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBuffe
 
 union FaceVertexAmbientOcclusionData
 {
-    uint16_t uuid = 0;
+    uint32_t uuid = 0;
     /* First two bit are for brightness */
-    char data[ 4 ];
+    uint8_t data[ 4 ];
 };
 
 struct FaceVertexMetaData {
