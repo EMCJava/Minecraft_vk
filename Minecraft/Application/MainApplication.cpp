@@ -961,9 +961,17 @@ MainApplication::RenderThreadMouseHandle( )
                 m_BlockDetailMap.emplace_back( "Name", toString( chunkCache->At( blockCoordinate ) ) );
                 if ( chunkCache->NeighborCompleted( ) )
                 {
-                    const auto transparency = chunkCache->GetNeighborTransparency( blockCoordinate );
+                    const auto  transparency = chunkCache->GetNeighborTransparency( blockCoordinate );
+                    const auto& vertexMeta   = chunkCache->GetCubeVertexMetaData( blockCoordinate );
 
 #define BoolToString( b ) b ? "True" : "false"
+
+                    m_BlockDetailMap.emplace_back( "Up AO", std::to_string( vertexMeta.faceVertexMetaData[ DirUp ].ambientOcclusionData.uuid ) );
+                    m_BlockDetailMap.emplace_back( "Down AO", std::to_string( vertexMeta.faceVertexMetaData[ DirDown ].ambientOcclusionData.uuid ) );
+                    m_BlockDetailMap.emplace_back( "Front AO", std::to_string( vertexMeta.faceVertexMetaData[ DirFront ].ambientOcclusionData.uuid ) );
+                    m_BlockDetailMap.emplace_back( "Back AO", std::to_string( vertexMeta.faceVertexMetaData[ DirBack ].ambientOcclusionData.uuid ) );
+                    m_BlockDetailMap.emplace_back( "Right AO", std::to_string( vertexMeta.faceVertexMetaData[ DirRight ].ambientOcclusionData.uuid ) );
+                    m_BlockDetailMap.emplace_back( "Left AO", std::to_string( vertexMeta.faceVertexMetaData[ DirLeft ].ambientOcclusionData.uuid ) );
 
                     m_BlockDetailMap.emplace_back( "DirFrontBit", BoolToString( transparency & DirFrontBit ) );
                     m_BlockDetailMap.emplace_back( "DirBackBit", BoolToString( transparency & DirBackBit ) );
