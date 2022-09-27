@@ -288,7 +288,7 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( greedyVisibleFace ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths ) mutable {
+    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths, bool flipped ) mutable {
         static constexpr auto faceShaderMultiplier = 1.0f / 3;
 
         for ( int i = 0; i < FaceVerticesCount; ++i )
@@ -300,8 +300,7 @@ RenderableChunk::GenerateRenderBuffer( )
 
         chunkVerticesPtr += FaceVerticesCount;
 
-        // TODO: This should be consider in greedy meshing generation
-        if ( faceAmbientOcclusionStrengths.data[ 3 ] + faceAmbientOcclusionStrengths.data[ 1 ] > faceAmbientOcclusionStrengths.data[ 0 ] + faceAmbientOcclusionStrengths.data[ 2 ] )
+        if ( flipped )
         {
             for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
             {
@@ -356,7 +355,7 @@ RenderableChunk::GenerateRenderBuffer( )
                 //
                 // Log::getInstance( ).LogLine( " ]);" );
 
-                AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData );
+                AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData, vertexMeta.quadFlipped );
             }
         }
     }
@@ -507,7 +506,7 @@ RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bo
     return false;
 }
 
-void
+bool
 RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency )
 {
 #define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
@@ -516,6 +515,8 @@ RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& me
     metaData.data[ 2 ] = GET_STRENGTH( 4, 5, 6 );
     metaData.data[ 3 ] = GET_STRENGTH( 6, 7, 0 );
 #undef GET_STRENGTH
+
+    return metaData.data[ 3 ] + metaData.data[ 1 ] > metaData.data[ 0 ] + metaData.data[ 2 ];
 }
 
 void
@@ -540,20 +541,25 @@ RenderableChunk::UpdateAmbientOcclusionAt( uint32_t index )
                     neighborTransparency& Dir##D7##Bit,            \
                     neighborTransparency& Dir##D8##Bit )
 
+#define Update( Dir, D1, D2, D3, D4, D5, D6, D7, D8 ) \
+    m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].quadFlipped = UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].ambientOcclusionData, PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) );
+
+
         if ( neighborTransparency & DirFrontBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirFront ].ambientOcclusionData, PassNeighborTransparency( FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp ) );
+            Update( DirFront, FrontRight, FrontRightDown, FrontDown, FrontLeftDown, FrontLeft, FrontLeftUp, FrontUp, FrontRightUp );
         if ( neighborTransparency & DirBackBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirBack ].ambientOcclusionData, PassNeighborTransparency( BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp ) );
+            Update( DirBack, BackLeft, BackLeftDown, BackDown, BackRightDown, BackRight, BackRightUp, BackUp, BackLeftUp );
         if ( neighborTransparency & DirRightBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirRight ].ambientOcclusionData, PassNeighborTransparency( BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp ) );
+            Update( DirRight, BackRight, BackRightDown, RightDown, FrontRightDown, FrontRight, FrontRightUp, RightUp, BackRightUp );
         if ( neighborTransparency & DirLeftBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirLeft ].ambientOcclusionData, PassNeighborTransparency( FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp ) );
+            Update( DirLeft, FrontLeft, FrontLeftDown, LeftDown, BackLeftDown, BackLeft, BackLeftUp, LeftUp, FrontLeftUp );
         if ( neighborTransparency & DirUpBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirUp ].ambientOcclusionData, PassNeighborTransparency( LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp ) );
+            Update( DirUp, LeftUp, BackLeftUp, BackUp, BackRightUp, RightUp, FrontRightUp, FrontUp, FrontLeftUp );
         if ( neighborTransparency & DirDownBit )
-            UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ DirDown ].ambientOcclusionData, PassNeighborTransparency( LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown ) );
+            Update( DirDown, LeftDown, FrontLeftDown, FrontDown, FrontRightDown, RightDown, BackRightDown, BackDown, BackLeftDown );
     }
 
+#undef Update
 #undef PassNeighborTransparency
 #undef ToBoolArray
 }
@@ -755,7 +761,7 @@ RenderableChunk::GenerateGreedyMesh( )
                             scale[ d ]       = 1;
 
                             glm::ivec2 textureScale { w, h };
-                            if(d == 0) std::swap( textureScale[ 0 ], textureScale[ 1 ] );
+                            if ( d == 0 ) std::swap( textureScale[ 0 ], textureScale[ 1 ] );
 
                             /* Save face */
                             faces[ side ][ mask[ n ] ].faces.emplace_back( offset, scale, textureScale );

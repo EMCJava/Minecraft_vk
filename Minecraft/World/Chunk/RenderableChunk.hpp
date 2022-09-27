@@ -29,12 +29,13 @@ union FaceVertexAmbientOcclusionData
 
 struct FaceVertexMetaData {
 
-    int32_t                        textureID = 0;
+    bool                           quadFlipped = false;
+    int32_t                        textureID   = 0;
     FaceVertexAmbientOcclusionData ambientOcclusionData { };
 
     inline bool operator==( const FaceVertexMetaData& other ) const
     {
-        return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid;
+        return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid && quadFlipped == other.quadFlipped;
     }
 
     inline bool operator!=( const FaceVertexMetaData& other ) const
@@ -117,7 +118,9 @@ protected:
      * Can only be used when surrounding chunk is loaded
      *
      * */
-    void UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency );
+
+    // return true if quad needed to be flipped for better viewing
+    bool UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency );
     void UpdateAmbientOcclusionAt( uint32_t index );
     void UpdateMetaDataAt( uint32_t index );
     void UpdateNeighborAt( uint32_t index );
@@ -159,10 +162,19 @@ public:
      * */
     bool SetBlock( const BlockCoordinate& blockCoordinate, const Block& block );
 
-    inline auto GetNeighborTransparency( uint32_t index )
+    inline auto GetNeighborTransparency( uint32_t index ) const
     {
         assert( m_NeighborTransparency != nullptr );
         return m_NeighborTransparency[ index ];
+    }
+
+    inline const auto& GetCubeVertexMetaData( uint32_t index ) const
+    {
+        if ( m_VertexMetaData == nullptr )
+            auto a = 0;
+
+        assert( m_VertexMetaData != nullptr );
+        return m_VertexMetaData[ index ];
     }
 
     inline void DeleteCache( )
