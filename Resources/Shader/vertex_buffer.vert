@@ -2,8 +2,10 @@
 
 layout(location = 0) out vec2 fragTexCoordBegin;
 layout(location = 1) out vec2 accumulatedfragTexCoord;
-layout(location = 2) out float visibility;
-layout(location = 3) out float highlight;
+layout(location = 2) out vec3 selectionDiff;
+layout(location = 3) out float visibility;
+layout(location = 4) out float colorIntensity;
+layout(location = 5) out float time;
 
 layout(location = 0) in ivec3 inPosition;
 layout(location = 1) in vec3 inCoor_ColorIntensity;
@@ -25,17 +27,19 @@ void main() {
     const vec4 positionRelativeToCamera = ubo.view * vec4(inPosition, 1.0);
     gl_Position = ubo.proj * positionRelativeToCamera;
 
-    accumulatedfragTexCoord = accumulatedTextureCoordinate;
     fragTexCoordBegin = inCoor_ColorIntensity.xy;
-    vec3 diffVec = inPosition - ubo.highlightCoordinate;
-    if (ubo.highlightCoordinate.y >= 0 && diffVec.x >= 0 && diffVec.x <= 1 && diffVec.y >= 0 && diffVec.y <= 1 && diffVec.z >= 0 && diffVec.z <= 1) {
-        highlight = inCoor_ColorIntensity.z * mod(ubo.time, 1.0);
-    } else {
-        highlight = inCoor_ColorIntensity.z;
+    accumulatedfragTexCoord = accumulatedTextureCoordinate;
+    selectionDiff = inPosition - ubo.highlightCoordinate;// highlight selected block
+    colorIntensity = inCoor_ColorIntensity.z;
+    time = ubo.time;
+
+    // not selecting
+    if (ubo.highlightCoordinate.y < 0) {
+        selectionDiff.x = -1;
     }
 
+    // fog
     float pointDistance = length(positionRelativeToCamera.xyz);
-
     if (pointDistance > fogDistance)
     {
         pointDistance -= fogDistance;
