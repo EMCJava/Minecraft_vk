@@ -8,6 +8,7 @@
 #include <Include/GraphicAPI.hpp>
 #include <Include/vk_mem_alloc.h>
 
+#include <fstream>
 #include <mutex>
 
 class BufferMeta

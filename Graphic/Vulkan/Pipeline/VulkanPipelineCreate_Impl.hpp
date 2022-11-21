@@ -13,7 +13,7 @@ void
 VulkanPipeline::SetupInputStage( float width, float height )
 {
     createInfo.viewport = vk::Viewport { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
-    createInfo.scissor  = {
+    createInfo.scissor  = vk::Rect2D{
          {0, 0},
          vk::Extent2D( static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) )
     };

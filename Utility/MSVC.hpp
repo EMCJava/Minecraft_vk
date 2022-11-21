@@ -10,8 +10,8 @@
 namespace std
 {
 template <class _Ty>
-inline pair<_Ty*, std::ptrdiff_t>
-get_temporary_buffer( std::ptrdiff_t _Count )
+pair<_Ty*, std::ptrdiff_t>
+get_temporary_buffer( std::ptrdiff_t _Count ) noexcept
 {   // get raw temporary buffer of up to _Count elements
     _Ty* _Pbuf;
 
@@ -32,7 +32,7 @@ get_temporary_buffer( std::ptrdiff_t _Count )
 
 // TEMPLATE FUNCTION return_temporary_buffer
 template <class _Ty>
-inline void
+void
 return_temporary_buffer( _Ty* _Pbuf )
 {   // delete raw temporary buffer
     ::operator delete( _Pbuf );

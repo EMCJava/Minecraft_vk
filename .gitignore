@@ -9,3 +9,5 @@
 /CMakeSettings.json
 .cache/
 /imgui.ini
+
+/Lib/*

@@ -28,7 +28,7 @@ if (WIN32 OR MSVC)
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     endif ()
 
-    set(SHADERC_LIB "shaderc_shared")
+    set(SHADERC_LIB "${CMAKE_SOURCE_DIR}/lib/shaderc_shared.lib")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB glfw)
     message(STATUS "Assume platform window")
@@ -46,6 +46,7 @@ endif ()
 
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(Include/Imgui/)
+include_directories(Include)
 include_directories(Include/Imgui/backends)
 include_directories(${Boost_INCLUDE_DIRS})
 
