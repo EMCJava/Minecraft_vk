@@ -36,7 +36,7 @@ GetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData data, int index )
 inline auto
 SetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData& data, FaceVertexAmbientOcclusionData newData, int index )
 {
-    return data &= newData << ( index * 2 );
+    return data |= newData << ( index * 2 );
 }
 
 struct FaceVertexMetaData {
