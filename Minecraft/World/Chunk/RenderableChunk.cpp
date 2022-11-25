@@ -295,7 +295,7 @@ RenderableChunk::GenerateRenderBuffer( )
         {
             chunkVerticesPtr[ i ] = vertexArray[ i ];
             chunkVerticesPtr[ i ].pos += offset;
-            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + faceAmbientOcclusionStrengths.data[ i ] * faceShaderMultiplier;
+            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + GetAmbientOcclusionDataAt( faceAmbientOcclusionStrengths, i ) * faceShaderMultiplier;
         }
 
         chunkVerticesPtr += FaceVerticesCount;
@@ -510,13 +510,13 @@ bool
 RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency )
 {
 #define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
-    metaData.data[ 0 ] = GET_STRENGTH( 0, 1, 2 );
-    metaData.data[ 1 ] = GET_STRENGTH( 2, 3, 4 );
-    metaData.data[ 2 ] = GET_STRENGTH( 4, 5, 6 );
-    metaData.data[ 3 ] = GET_STRENGTH( 6, 7, 0 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 0, 1, 2 ), 0 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 2, 3, 4 ), 1 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 4, 5, 6 ), 2 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 6, 7, 0 ), 3 );
 #undef GET_STRENGTH
 
-    return metaData.data[ 3 ] + metaData.data[ 1 ] > metaData.data[ 0 ] + metaData.data[ 2 ];
+    return GetAmbientOcclusionDataAt( metaData, 3 ) + GetAmbientOcclusionDataAt( metaData, 1 ) > GetAmbientOcclusionDataAt( metaData, 0 ) + GetAmbientOcclusionDataAt( metaData, 2 );
 }
 
 void

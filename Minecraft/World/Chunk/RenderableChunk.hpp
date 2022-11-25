@@ -19,13 +19,25 @@
 
 using ChunkSolidBuffer = ChunkRenderBuffers<DataType::TexturedVertex, IndexBufferType>;
 
+using FaceVertexAmbientOcclusionData = uint8_t;
+// union FaceVertexAmbientOcclusionData
+//{
+//     uint32_t uuid = 0;
+//     /* First two bit are for brightness */
+//     uint8_t data[ 4 ];
+// };
 
-union FaceVertexAmbientOcclusionData
+inline auto
+GetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData data, int index )
 {
-    uint32_t uuid = 0;
-    /* First two bit are for brightness */
-    uint8_t data[ 4 ];
-};
+    return (data >> ( index * 2 )) & 0b11;
+}
+
+inline auto
+SetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData& data, FaceVertexAmbientOcclusionData newData, int index )
+{
+    return data &= newData << ( index * 2 );
+}
 
 struct FaceVertexMetaData {
 
@@ -35,7 +47,7 @@ struct FaceVertexMetaData {
 
     inline bool operator==( const FaceVertexMetaData& other ) const
     {
-        return textureID == other.textureID && ambientOcclusionData.uuid == other.ambientOcclusionData.uuid && quadFlipped == other.quadFlipped;
+        return textureID == other.textureID && ambientOcclusionData == other.ambientOcclusionData && quadFlipped == other.quadFlipped;
     }
 
     inline bool operator!=( const FaceVertexMetaData& other ) const
@@ -77,8 +89,8 @@ struct hash<FaceVertexMetaData> {
         // second and third and combine them using XOR
         // and bit shifting:
 
-        static_assert( sizeof( FaceVertexAmbientOcclusionData ) == 4 );
-        return ( (std::size_t) k.textureID << 32 ) + k.ambientOcclusionData.uuid;
+        return ( (std::size_t) k.textureID << sizeof( FaceVertexAmbientOcclusionData ) )
+            + k.ambientOcclusionData;
     }
 };
 
