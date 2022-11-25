@@ -92,3 +92,9 @@ Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const 
     if ( !IsPointInside( blockCoordinate ) ) return false;
     return SetBlock( GetBlockIndex( blockCoordinate - m_WorldCoordinate ), block, replace );
 }
+
+size_t
+Chunk::GetObjectSize( ) const
+{
+    return sizeof(Chunk) + ( m_Blocks ? sizeof( m_Blocks[ 0 ] ) * ChunkVolume : 0 ) + ( m_HeightMap ? sizeof( m_HeightMap[ 0 ] ) * SectionSurfaceSize : 0 );
+}

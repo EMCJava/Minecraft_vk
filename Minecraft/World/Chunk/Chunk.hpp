@@ -11,13 +11,15 @@
 #include <Minecraft/util/MinecraftConstants.hpp>
 #include <Minecraft/util/MinecraftType.h>
 
+#include <Utility/Profiler/Profilable.hpp>
+
 #include "ChunkStatus.hpp"
 
 #include <array>
 #include <cmath>
 #include <memory>
 
-class Chunk : public AABB
+class Chunk : public AABB, public Profilable
 {
 protected:
     class MinecraftWorld* m_World;
@@ -96,6 +98,8 @@ public:
             + std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) )
             + std::abs( std::get<2>( m_Coordinate ) - std::get<2>( other ) );
     }
+
+    size_t GetObjectSize( ) const;
 };
 
 

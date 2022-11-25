@@ -78,7 +78,7 @@ struct hash<FaceVertexMetaData> {
         // and bit shifting:
 
         static_assert( sizeof( FaceVertexAmbientOcclusionData ) == 4 );
-        return ( k.textureID << 16 ) + k.ambientOcclusionData.uuid;
+        return ( (std::size_t) k.textureID << 32 ) + k.ambientOcclusionData.uuid;
     }
 };
 
@@ -189,6 +189,8 @@ public:
 
     inline bool     NeighborCompleted( ) const { return m_EmptySlot == 0; }
     inline uint32_t GetIndexBufferSize( ) const { return m_IndexBufferSize; }
+
+    size_t GetObjectSize( ) const;
 };
 
 

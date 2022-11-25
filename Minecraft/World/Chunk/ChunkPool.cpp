@@ -161,7 +161,7 @@ ChunkPool::CleanUpJobs( )
         {
             // Logger::getInstance( ).LogLine( "Load not complete, re-appending chunk", cache );
             cache->initializing = false;
-            cache->initialized = false;
+            cache->initialized  = false;
             AddJobContext( cache );
             continue;
         }
@@ -181,6 +181,8 @@ ChunkPool::CleanUpJobs( )
                     if ( chunkPtr->SyncChunkFromDirection( cache, static_cast<EightWayDirection>( i ^ 0b1 ) ) ) chunkPtr->GenerateRenderBuffer( );
                 }
             }
+
+            Logger::getInstance( ).LogLine( "New Chunk with size: ", cache->GetObjectSize( ) );
         }
 
         /* Initialization include mesh building */
@@ -249,7 +251,7 @@ ChunkPool::FlushSafeAddedChunks( )
 
     {
         std::lock_guard lock( m_SafeAddedChunksLock );
-        chunks = std::move(m_SafeAddedChunks);
+        chunks = std::move( m_SafeAddedChunks );
         // m_SafeAddedChunks.clear( );
     }
 

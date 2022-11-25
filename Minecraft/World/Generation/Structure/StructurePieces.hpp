@@ -7,10 +7,11 @@
 
 #include <Minecraft/World/Physics/Box/AABB.hpp>
 
+#include <Utility/Profiler/Profilable.hpp>
 #include <algorithm>
 #include <vector>
 
-class StructurePieces
+class StructurePieces : public Profilable
 {
     std::vector<AABB> m_PiecesBoundingBox;
 
@@ -21,6 +22,8 @@ public:
     {
         return std::ranges::any_of( m_PiecesBoundingBox, [ boundingBox ]( auto const& e ) { return e & boundingBox; } );
     }
+
+    size_t GetObjectSize( ) const;
 };
 
 

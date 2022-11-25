@@ -80,3 +80,9 @@ Structure::FillCube( Chunk& chunk, const Block& block, CoordinateType minX, Coor
         }
     }
 }
+
+size_t
+Structure::GetObjectSize( ) const
+{
+    return StructurePieces::GetObjectSize( ) + sizeof(Structure);
+}

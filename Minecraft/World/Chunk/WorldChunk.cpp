@@ -427,3 +427,15 @@ WorldChunk::NextStatusUpgradeSatisfied( ) const
 
     return false;   // ???
 }
+
+size_t
+WorldChunk::GetObjectSize( ) const
+{
+
+    size_t result = RenderableChunk::GetObjectSize( ) + sizeof( WorldChunk ) + m_RequiredBy.capacity( ) * sizeof( m_RequiredBy[ 0 ] ) + m_StructureStarts.capacity( ) * sizeof( m_StructureStarts[ 0 ] ) + m_StructureReferences.size( ) * sizeof( m_StructureReferences.front( ) );
+    
+    for ( const auto& ss : m_StructureStarts )
+        result += ss->GetObjectSize( );
+
+    return result;
+}

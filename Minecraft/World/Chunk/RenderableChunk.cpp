@@ -798,3 +798,9 @@ RenderableChunk::GenerateGreedyMesh( )
 
     return faces;
 }
+
+size_t
+RenderableChunk::GetObjectSize( ) const
+{
+    return Chunk::GetObjectSize( ) + sizeof( RenderableChunk ) + ( m_NeighborTransparency ? sizeof( m_NeighborTransparency[ 0 ] ) * ChunkVolume : 0 ) + ( m_VertexMetaData ? sizeof( m_VertexMetaData[ 0 ] ) * ChunkVolume : 0 );
+}

@@ -143,6 +143,8 @@ public:
         m_MissingEssentialChunks.clear( );
         return backup;
     }
+
+    size_t GetObjectSize( ) const;
 };
 
 

@@ -96,6 +96,8 @@ public:
     {
         return ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( coordinate ) ) + GetMinecraftX( coordinate );
     }
+
+    size_t GetObjectSize( ) const;
 };
 
 #endif   // MINECRAFT_VK_STRUCTURE_HPP
