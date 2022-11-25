@@ -249,8 +249,8 @@ ChunkPool::FlushSafeAddedChunks( )
 
     {
         std::lock_guard lock( m_SafeAddedChunksLock );
-        chunks = m_SafeAddedChunks;
-        m_SafeAddedChunks.clear( );
+        chunks = std::move(m_SafeAddedChunks);
+        // m_SafeAddedChunks.clear( );
     }
 
     //    std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
