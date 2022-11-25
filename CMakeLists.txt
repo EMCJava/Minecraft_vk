@@ -19,6 +19,10 @@ find_package(Boost 1.78.0 COMPONENTS)
 
 add_executable(Minecraft_vk main.cpp)
 
+set_target_properties(
+        Minecraft_vk PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
 if (WIN32 OR MSVC)
 
     find_package(glfw3 CONFIG REQUIRED)
