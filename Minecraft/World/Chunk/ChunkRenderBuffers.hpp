@@ -97,7 +97,7 @@ public:
 
         friend std::ostream& operator<<( std::ostream& o, const SuitableAllocation& sa )
         {
-            o << "[ " << sa.targetChunk << "] : (" << sa.region.vertexStartingOffset << ", " << sa.region.vertexSize << ", " << sa.region.indexStartingOffset << ", " << sa.region.indexSize << ')' << std::flush;
+            o << "[ " << sa.targetChunk << " ] : (" << sa.region.vertexStartingOffset << ", " << sa.region.vertexSize << ", " << sa.region.indexStartingOffset << ", " << sa.region.indexSize << ')' << std::flush;
             return o;
         }
     };
