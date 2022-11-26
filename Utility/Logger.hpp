@@ -191,7 +191,7 @@ public:
     LogWithPrefix( Ty&& colorElement, Tys&&... elms )
     {
         std::stringstream output;
-        
+
         if constexpr ( IncludeTime )
         {
             std::time_t t = std::time( nullptr );
@@ -221,5 +221,7 @@ public:
 };
 
 using Logger = LoggerBase<false, false>;
+
+#define LOG_EXPRESSION( x ) Logger::getInstance( ).LogLine( #x " = [", ( x ), ']');
 
 #endif   // MINECRAFT_VK_UTILITY_LOGGER_HPP
