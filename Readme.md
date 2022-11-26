@@ -12,4 +12,3 @@
 6. vcpkg install boost:x64-windows
 7. vcpkg integrate install
 8. Setup your cmake tool chain as suggested by the output above
-9. Copy shaderc_shared.lib from your Vulkan installation into lib folder

@@ -32,7 +32,9 @@ if (WIN32 OR MSVC)
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     endif ()
 
-    set(SHADERC_LIB "${CMAKE_SOURCE_DIR}/lib/shaderc_shared.lib")
+    get_filename_component(Vulkan_Lib_Dir ${Vulkan_LIBRARY} DIRECTORY)
+
+    set(SHADERC_LIB "${Vulkan_Lib_Dir}/shaderc_shared.lib")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB glfw)
     message(STATUS "Assume platform window")
