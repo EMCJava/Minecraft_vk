@@ -288,36 +288,10 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( greedyVisibleFace ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths, bool flipped ) mutable {
-        static constexpr auto faceShaderMultiplier = 1.0f / 3;
-
-        for ( int i = 0; i < FaceVerticesCount; ++i )
-        {
-            chunkVerticesPtr[ i ] = vertexArray[ i ];
-            chunkVerticesPtr[ i ].pos += offset;
-            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + GetAmbientOcclusionDataAt( faceAmbientOcclusionStrengths, i ) * faceShaderMultiplier;
-        }
-
-        chunkVerticesPtr += FaceVerticesCount;
-
-        if ( flipped )
-        {
-            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
-            {
-                *chunkIndicesPtr = blockIndicesFlipped[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
-            }
-        } else
-        {
-            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
-            {
-                *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
-            }
-        }
-
-        ++faceAdded;
-    };
-
-    const auto& blockTextures = Minecraft::GetInstance( ).GetBlockTextures( );
+    auto        chunkIndicesPtr  = chunkIndices.get( );
+    auto        chunkVerticesPtr = chunkVertices.get( );
+    int         faceAdded        = 0;
+    const auto& blockTextures    = Minecraft::GetInstance( ).GetBlockTextures( );
     for ( auto dir = CubeDirection { 0 }; dir < CubeDirection::DirSize; ++dir )
     {
         for ( const auto& faces : requiredMeshes[ dir ] )
@@ -355,7 +329,35 @@ RenderableChunk::GenerateRenderBuffer( )
                 //
                 // Log::getInstance( ).LogLine( " ]);" );
 
-                AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData, vertexMeta.quadFlipped );
+                // AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData, vertexMeta.quadFlipped );
+                static constexpr auto faceShaderMultiplier = 1.0f / 3;
+
+                // Copy vertex data
+                for ( int i = 0; i < FaceVerticesCount; ++i )
+                {
+                    chunkVerticesPtr[ i ] = textureCopy[ i ];
+                    chunkVerticesPtr[ i ].pos += (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ );
+                    chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + GetAmbientOcclusionDataAt( vertexMeta.ambientOcclusionData, i ) * faceShaderMultiplier;
+                }
+
+                chunkVerticesPtr += FaceVerticesCount;
+
+                // Use different index buffer base on ambient occlusion side
+                if ( vertexMeta.quadFlipped )
+                {
+                    for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+                    {
+                        *chunkIndicesPtr = blockIndicesFlipped[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+                    }
+                } else
+                {
+                    for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+                    {
+                        *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+                    }
+                }
+
+                ++faceAdded;
             }
         }
     }
