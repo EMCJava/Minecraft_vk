@@ -30,31 +30,62 @@ using FaceVertexAmbientOcclusionData = uint8_t;
 inline auto
 GetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData data, int index )
 {
-    return (data >> ( index * 2 )) & 0b11;
+    return ( data >> ( index * 2 ) ) & 0b11;
 }
 
 inline auto
 SetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData& data, FaceVertexAmbientOcclusionData newData, int index )
 {
+    data &= ~( 0b11 << ( index * 2 ) );
     return data |= newData << ( index * 2 );
 }
 
+#pragma pack( push, 1 )
 struct FaceVertexMetaData {
 
-    bool                           quadFlipped = false;
+    using TextureIDTy = uint16_t;
+
+    TextureIDTy                    textureID_quadFlipped = 0;
     FaceVertexAmbientOcclusionData ambientOcclusionData { };
-    int32_t                        textureID   = 0;
 
     inline bool operator==( const FaceVertexMetaData& other ) const
     {
-        return textureID == other.textureID && ambientOcclusionData == other.ambientOcclusionData && quadFlipped == other.quadFlipped;
+        return textureID_quadFlipped == other.textureID_quadFlipped && ambientOcclusionData == other.ambientOcclusionData;
     }
 
     inline bool operator!=( const FaceVertexMetaData& other ) const
     {
         return !( *this == other );
     }
+
+    inline static constexpr auto GetMaxTextureIDSupported( )
+    {
+        return std::numeric_limits<TextureIDTy>::max( ) >> 1;
+    }
+
+    inline TextureIDTy GetTextureID( ) const
+    {
+        return textureID_quadFlipped & GetMaxTextureIDSupported( );
+    }
+
+    inline void SetTextureID( TextureIDTy textureID )
+    {
+        textureID_quadFlipped &= ~GetMaxTextureIDSupported( );
+        textureID_quadFlipped |= ( textureID & GetMaxTextureIDSupported( ) );
+    }
+
+    inline bool GetQuadFlipped( ) const
+    {
+        return textureID_quadFlipped & ~GetMaxTextureIDSupported( );
+    }
+
+    inline void SetQuadFlipped( bool QuadFlipped )
+    {
+        textureID_quadFlipped &= GetMaxTextureIDSupported( );
+        if ( QuadFlipped ) textureID_quadFlipped |= ~GetMaxTextureIDSupported( );
+    }
 };
+#pragma pack( pop )
 
 struct CubeVertexMetaData {
 
@@ -89,7 +120,7 @@ struct hash<FaceVertexMetaData> {
         // second and third and combine them using XOR
         // and bit shifting:
 
-        return ( (std::size_t) k.textureID << sizeof( FaceVertexAmbientOcclusionData ) )
+        return ( (std::size_t) k.textureID_quadFlipped << sizeof( FaceVertexAmbientOcclusionData ) )
             + k.ambientOcclusionData;
     }
 };
