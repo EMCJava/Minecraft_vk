@@ -42,8 +42,8 @@ SetAmbientOcclusionDataAt( FaceVertexAmbientOcclusionData& data, FaceVertexAmbie
 struct FaceVertexMetaData {
 
     bool                           quadFlipped = false;
-    int32_t                        textureID   = 0;
     FaceVertexAmbientOcclusionData ambientOcclusionData { };
+    int32_t                        textureID   = 0;
 
     inline bool operator==( const FaceVertexMetaData& other ) const
     {
