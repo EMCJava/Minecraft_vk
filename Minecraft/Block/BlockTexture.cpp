@@ -4,6 +4,8 @@
 
 #include "BlockTexture.hpp"
 
+#include <Minecraft/World/Chunk/RenderableChunk.hpp>
+
 #include <Include/nlohmann/json.hpp>
 #include <Utility/Logger.hpp>
 
@@ -198,4 +200,9 @@ BlockTexture::BlockTexture( const std::string& folder )
     }
 
     file.close( );
+
+    if ( m_TextureList.size( ) >= FaceVertexMetaData::GetMaxTextureIDSupported( ) )
+    {
+        throw std::runtime_error( "m_TextureList.size() >= FaceVertexMetaData::GetMaxTextureIDSupported()" );
+    }
 }
