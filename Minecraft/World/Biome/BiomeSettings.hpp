@@ -9,6 +9,9 @@
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 #include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 
-using DefaultBiomeStructures = StructureGroup<StructureTree, StructureAbandonedHouse>;
+struct DefaultBiome{
+using StructuresSettings = StructureGroup<StructureTree, StructureAbandonedHouse>;
+};
+
 
 #endif   // MINECRAFT_VK_MINECRAFT_WORLD_BIOME_BIOMESETTINGS_HPP

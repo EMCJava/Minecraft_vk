@@ -183,7 +183,7 @@ WorldChunk::AttemptRunStructureStart( )
 {
 #if !GENERATE_DEBUG_CHUNK
 
-    DefaultBiomeStructures::TryGenerate( *this, m_StructureStarts );
+    DefaultBiome::StructuresSettings::TryGenerate( *this, m_StructureStarts );
 
 #endif
 
