@@ -18,7 +18,7 @@ layout(binding  = 0) uniform UniformBufferObject {
     float time;
 } ubo;
 
-const float fogDistance = 150;
+const float fogDistance = 16 * (16 - 4);
 const float density = 0.05;
 const float gradient = 1.5;
 

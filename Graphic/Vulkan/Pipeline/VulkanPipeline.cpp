@@ -49,9 +49,9 @@ void
 VulkanPipeline::SetupBlendingStage( )
 {
 
-    createInfo.colorBlendAttachmentState = { false,
-                                             vk::BlendFactor::eOne,
-                                             vk::BlendFactor::eZero,
+    createInfo.colorBlendAttachmentState = { true,
+                                             vk::BlendFactor::eSrcAlpha,
+                                             vk::BlendFactor::eOneMinusSrcAlpha,
                                              vk::BlendOp::eAdd,
                                              vk::BlendFactor::eOne,
                                              vk::BlendFactor::eZero,
