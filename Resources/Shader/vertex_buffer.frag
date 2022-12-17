@@ -15,13 +15,13 @@ const float textureResolution = 16;
 
 void main() {
 
-    vec4 colorModifier = vec4(colorIntensity, colorIntensity, colorIntensity, 1);
+    vec3 colorModifier = vec3(colorIntensity, colorIntensity, colorIntensity);
 
     // selection highlight
     if (selectionDiff.x >= 0 && selectionDiff.x <= 1 && selectionDiff.y >= 0 && selectionDiff.y <= 1 && selectionDiff.z >= 0 && selectionDiff.z <= 1) {
         colorModifier *= sin(time * 3) * 0.3 + 0.7;
     }
 
-    outColor = textureLod(texSampler, mod(accumulatedfragTexCoord, textureResolution) + fragTexCoordBegin, 0) * colorModifier;
+    outColor = textureLod(texSampler, mod(accumulatedfragTexCoord, textureResolution) + fragTexCoordBegin, 0) * vec4(colorModifier, 1);
     outColor = mix(vec4(13.0 / 256, 129.0 / 256, 168.0 / 256, 0.5), outColor, visibility);
 }
