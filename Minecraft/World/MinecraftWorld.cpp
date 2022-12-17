@@ -129,7 +129,7 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
                                                                               ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
          chunkCache != nullptr )
     {
-        if ( chunkCache->initialized && chunkCache->SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ), GetMinecraftY( blockCoordinate ), GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ), block ) )
+        if ( chunkCache->initialized && chunkCache->SetBlock( BlockToChunkRelativeCoordinate( blockCoordinate ), block ) )
         {
             chunkCache->GenerateRenderBuffer( );
             return true;
