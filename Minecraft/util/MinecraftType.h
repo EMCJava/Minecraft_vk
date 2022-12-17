@@ -16,9 +16,10 @@ static constexpr int MinecraftCoordinateXIndex = 0;
 static constexpr int MinecraftCoordinateYIndex = 2;
 static constexpr int MinecraftCoordinateZIndex = 1;
 
-using EntityCoordinate = std::tuple<float, float, float>;
-using BlockCoordinate  = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
-using ChunkCoordinate  = BlockCoordinate;
+using EntityCoordinate    = std::tuple<float, float, float>;
+using BlockCoordinate     = std::tuple<CoordinateType, CoordinateType, CoordinateType>;
+using ChunkCoordinate     = BlockCoordinate;
+using ChunkCoordinateHash = uint64_t;
 
 namespace
 {
@@ -149,21 +150,21 @@ operator-( const std::tuple<Ty, Ty, Ty>& a )
 }
 
 template <typename Ty>
-inline auto&
+constexpr inline auto&
 GetMinecraftX( Ty&& a )
 {
     return std::get<MinecraftCoordinateXIndex>( a );
 }
 
 template <typename Ty>
-inline auto&
+constexpr inline auto&
 GetMinecraftY( Ty&& a )
 {
     return std::get<MinecraftCoordinateYIndex>( a );
 }
 
 template <typename Ty>
-inline auto&
+constexpr inline auto&
 GetMinecraftZ( Ty&& a )
 {
     return std::get<MinecraftCoordinateZIndex>( a );
@@ -188,6 +189,12 @@ inline Ty
 MakeCoordinate( auto x, auto y, auto z )
 {
     return { x, y, z };
+}
+
+constexpr ChunkCoordinateHash
+ToChunkCoordinateHash( const ChunkCoordinate& coordinate )
+{
+    return ( static_cast<ChunkCoordinateHash>( GetMinecraftX( coordinate ) ) << 32 ) + GetMinecraftZ( coordinate );
 }
 
 constexpr inline BlockCoordinate

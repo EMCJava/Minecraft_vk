@@ -209,11 +209,12 @@ ChunkPool::CleanUpJobs( )
 ChunkTy*
 ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status )
 {
-    ChunkTy* newChunk = nullptr;
+    ChunkTy* newChunk;
+    const auto hashedCoordinate = ToChunkCoordinateHash(coordinate);
 
     {
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-        if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
+        if ( auto find_it = m_ChunkCache.find( hashedCoordinate ); find_it != m_ChunkCache.end( ) )
         {
             // need upgrade
             if ( find_it->second->GetTargetStatus( ) < status )
@@ -236,7 +237,7 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
         newChunk->SetCoordinate( coordinate );
         newChunk->SetExpectedStatus( status );
 
-        m_ChunkCache.insert( { coordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
+        m_ChunkCache.insert( { hashedCoordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
     }
 
     AddJobContext( newChunk );
@@ -252,7 +253,6 @@ ChunkPool::FlushSafeAddedChunks( )
     {
         std::lock_guard lock( m_SafeAddedChunksLock );
         chunks = std::move( m_SafeAddedChunks );
-        // m_SafeAddedChunks.clear( );
     }
 
     //    std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );

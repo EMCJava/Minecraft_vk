@@ -23,8 +23,8 @@ private:
     BlockCoordinate               m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread> m_UpdateThread;
 
-    std::recursive_mutex                                          m_ChunkCacheLock;
-    std::unordered_map<BlockCoordinate, std::shared_ptr<ChunkTy>> m_ChunkCache;
+    std::recursive_mutex                                              m_ChunkCacheLock;
+    std::unordered_map<ChunkCoordinateHash, std::shared_ptr<ChunkTy>> m_ChunkCache;
 
     std::atomic_flag m_ChunkErased = ATOMIC_FLAG_INIT;
 
@@ -50,7 +50,8 @@ private:
      * Namely m_ChunkCache and m_PendingThreads
      *
      * */
-    ChunkTy* AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull );
+    ChunkTy* AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull );
+    ChunkTy* AddCoordinate( const ChunkCoordinateHash& coordinateHash, ChunkStatus status = ChunkStatus::eFull );
     void     FlushSafeAddedChunks( );
 
 public:
@@ -96,12 +97,13 @@ public:
     void AddCoordinateSafe( const ChunkCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull )
     {
         std::lock_guard lock( m_SafeAddedChunksLock );
-        m_SafeAddedChunks[ coordinate ] = std::max( m_SafeAddedChunks[ coordinate ], (ChunkStatusTy) status );
+        auto&           chunk = m_SafeAddedChunks[ coordinate ];
+        chunk                 = std::max( chunk, (ChunkStatusTy) status );
     }
 
     bool IsChunkLoading( const BlockCoordinate& coordinate ) const
     {
-        if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
+        if ( auto find_it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); find_it != m_ChunkCache.end( ) )
         {
             return find_it->second->initializing;
         }
@@ -110,7 +112,7 @@ public:
 
     bool IsChunkLoaded( const BlockCoordinate& coordinate ) const
     {
-        if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
+        if ( auto find_it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); find_it != m_ChunkCache.end( ) )
         {
             return find_it->second->initialized;
         }
@@ -158,7 +160,7 @@ public:
     [[nodiscard]] inline std::shared_ptr<ChunkTy> GetChunkCacheSafe( const ChunkCoordinate& coordinate )
     {
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
+        if ( auto it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); it != m_ChunkCache.end( ) )
         {
             return it->second;
         }
@@ -169,7 +171,7 @@ public:
     // This function should only be called when ChunkCache can be confirmed not changing
     [[nodiscard]] inline std::shared_ptr<ChunkTy> GetChunkCacheUnsafe( const ChunkCoordinate& coordinate ) const
     {
-        if ( auto it = m_ChunkCache.find( coordinate ); it != m_ChunkCache.end( ) )
+        if ( auto it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); it != m_ChunkCache.end( ) )
         {
             return it->second;
         }
