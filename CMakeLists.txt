@@ -15,7 +15,7 @@ include_directories(.)
 
 find_package(Threads)
 find_package(Vulkan REQUIRED)
-find_package(Boost 1.78.0 COMPONENTS)
+find_package(Boost 1.75.0 COMPONENTS)
 
 add_executable(Minecraft_vk main.cpp)
 
@@ -50,6 +50,7 @@ else ()
 
 endif ()
 
+link_libraries(glm::glm)
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(Include/Imgui/)
 include_directories(Include)
