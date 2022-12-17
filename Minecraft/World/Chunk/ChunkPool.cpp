@@ -18,28 +18,28 @@ template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirFront>( )
 {
-    return MakeMinecraftCoordinate( 1, 0, 0 );
+    return MakeMinecraftChunkCoordinate( 1, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirBack>( )
 {
-    return MakeMinecraftCoordinate( -1, 0, 0 );
+    return MakeMinecraftChunkCoordinate( -1, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirRight>( )
 {
-    return MakeMinecraftCoordinate( 0, 0, 1 );
+    return MakeMinecraftChunkCoordinate( 0, 1 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirLeft>( )
 {
-    return MakeMinecraftCoordinate( 0, 0, -1 );
+    return MakeMinecraftChunkCoordinate( 0, -1 );
 }
 
 template <>
@@ -94,7 +94,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             }
 
             UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( this, cache ); },
-                          [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) {
+                          [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) -> bool {
                               const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
                               const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
                               if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
@@ -182,7 +182,7 @@ ChunkPool::CleanUpJobs( )
                 }
             }
 
-            Logger::getInstance( ).LogLine( "New Chunk with size: ", cache->GetObjectSize( ) );
+            // Logger::getInstance( ).LogLine( "New Chunk with size: ", cache->GetObjectSize( ) );
         }
 
         /* Initialization include mesh building */
@@ -207,10 +207,10 @@ ChunkPool::CleanUpJobs( )
 }
 
 ChunkTy*
-ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status )
+ChunkPool::AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status )
 {
-    ChunkTy* newChunk;
-    const auto hashedCoordinate = ToChunkCoordinateHash(coordinate);
+    ChunkTy*   newChunk;
+    const auto hashedCoordinate = ToChunkCoordinateHash( coordinate );
 
     {
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );

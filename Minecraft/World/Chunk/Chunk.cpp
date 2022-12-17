@@ -76,9 +76,8 @@ Chunk::GetHeight( uint32_t index )
 void
 Chunk::SetCoordinate( const ChunkCoordinate& coordinate )
 {
-    m_WorldCoordinate = m_Coordinate = coordinate;
-    GetMinecraftX( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
-    GetMinecraftZ( m_WorldCoordinate ) <<= SectionUnitLengthBinaryOffset;
+    m_Coordinate      = coordinate;
+    m_WorldCoordinate = ToMinecraftCoordinate( m_Coordinate << SectionUnitLengthBinaryOffset );
 
     minX = GetMinecraftX( m_WorldCoordinate );
     maxX = GetMinecraftX( m_WorldCoordinate ) + SectionUnitLength;
@@ -96,5 +95,5 @@ Chunk::SetBlockAtWorldCoordinate( const BlockCoordinate& blockCoordinate, const 
 size_t
 Chunk::GetObjectSize( ) const
 {
-    return sizeof(Chunk) + ( m_Blocks ? sizeof( m_Blocks[ 0 ] ) * ChunkVolume : 0 ) + ( m_HeightMap ? sizeof( m_HeightMap[ 0 ] ) * SectionSurfaceSize : 0 );
+    return sizeof( Chunk ) + ( m_Blocks ? sizeof( m_Blocks[ 0 ] ) * ChunkVolume : 0 ) + ( m_HeightMap ? sizeof( m_HeightMap[ 0 ] ) * SectionSurfaceSize : 0 );
 }

@@ -635,7 +635,6 @@ MainApplication::renderImgui( uint32_t renderIndex )
             srand( (unsigned int) ( ImGui::GetTime( ) * 1000000 ) );
 
             auto playerPosition             = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
-            GetMinecraftY( playerPosition ) = 0;
 
             {
                 std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
@@ -644,7 +643,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
                 {
                     for ( int j = -span; j <= span; ++j, ++index )
                     {
-                        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( playerPosition + MakeMinecraftCoordinate( i, 0, j ) ); chunkCache != nullptr )
+                        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( playerPosition + MakeMinecraftChunkCoordinate( i, j ) ); chunkCache != nullptr )
                         {
                             values[ index ] = (int) chunkCache->GetStatus( );
                         } else
@@ -948,7 +947,7 @@ MainApplication::RenderThreadMouseHandle( )
     if ( playerRaycastResult.hasSolidHit )
     {
 
-        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkCacheSafe( GetHorizontalMinecraftCoordinate( playerRaycastResult.solidHit ) >> 4 );
+        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkCacheSafe( ToChunkCoordinate( playerRaycastResult.solidHit ) >> IntLog<SectionUnitLength, 2>::value );
              chunkCache != nullptr )
         {
             const auto inChunkBlockCoordinate = MakeMinecraftCoordinate( GetMinecraftX( playerRaycastResult.solidHit ) & ( SectionUnitLength - 1 ), GetMinecraftY( playerRaycastResult.solidHit ), GetMinecraftZ( playerRaycastResult.solidHit ) & ( SectionUnitLength - 1 ) );

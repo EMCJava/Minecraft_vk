@@ -20,7 +20,7 @@ private:
     class MinecraftWorld* m_World;
 
     CoordinateType                m_RemoveJobAfterRange = 0;
-    BlockCoordinate               m_PrioritizeCoordinate;
+    ChunkCoordinate               m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread> m_UpdateThread;
 
     std::recursive_mutex                                              m_ChunkCacheLock;
@@ -66,7 +66,7 @@ public:
         Clean( );
     }
 
-    inline void SetCentre( const BlockCoordinate& centre )
+    inline void SetCentre( const ChunkCoordinate& centre )
     {
         m_PrioritizeCoordinate = centre;
     }
@@ -101,7 +101,7 @@ public:
         chunk                 = std::max( chunk, (ChunkStatusTy) status );
     }
 
-    bool IsChunkLoading( const BlockCoordinate& coordinate ) const
+    bool IsChunkLoading( const ChunkCoordinate& coordinate ) const
     {
         if ( auto find_it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); find_it != m_ChunkCache.end( ) )
         {
@@ -110,7 +110,7 @@ public:
         return false;
     }
 
-    bool IsChunkLoaded( const BlockCoordinate& coordinate ) const
+    bool IsChunkLoaded( const ChunkCoordinate& coordinate ) const
     {
         if ( auto find_it = m_ChunkCache.find( ToChunkCoordinateHash( coordinate ) ); find_it != m_ChunkCache.end( ) )
         {

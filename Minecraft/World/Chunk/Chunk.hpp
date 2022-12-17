@@ -19,13 +19,14 @@
 #include <cmath>
 #include <memory>
 
-class Chunk : public AABB, public Profilable
+class Chunk : public AABB
+    , public Profilable
 {
 protected:
     class MinecraftWorld* m_World;
 
     ChunkCoordinate m_Coordinate;
-    ChunkCoordinate m_WorldCoordinate;
+    BlockCoordinate m_WorldCoordinate;
 
     std::unique_ptr<Block[]>   m_Blocks { };
     std::unique_ptr<int32_t[]> m_HeightMap { };
@@ -79,7 +80,7 @@ public:
     inline auto&                  GetWorld( ) const { return m_World; }
     inline BlockCoordinate        WorldToChunkRelativeCoordinate( const BlockCoordinate& blockCoordinate ) const { return blockCoordinate - m_WorldCoordinate; }
     inline const ChunkCoordinate& GetChunkCoordinate( ) const { return m_Coordinate; }
-    inline const ChunkCoordinate& GetWorldCoordinate( ) const { return m_WorldCoordinate; }
+    inline const BlockCoordinate& GetWorldCoordinate( ) const { return m_WorldCoordinate; }
     inline bool                   IsPointInside( const BlockCoordinate& blockCoordinate ) const { return IsPointInsideVertically( blockCoordinate ) && IsPointInsideHorizontally( blockCoordinate ); }
     inline bool                   IsPointInsideVertically( const BlockCoordinate& blockCoordinate ) const { return GetMinecraftY( blockCoordinate ) < ChunkMaxHeight && GetMinecraftY( blockCoordinate ) >= 0; }
     inline bool                   IsPointInsideHorizontally( const BlockCoordinate& blockCoordinate ) const
@@ -94,9 +95,7 @@ public:
 
     [[nodiscard]] inline CoordinateType ManhattanDistance( const ChunkCoordinate& other ) const
     {
-        return std::abs( std::get<0>( m_Coordinate ) - std::get<0>( other ) )
-            + std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) )
-            + std::abs( std::get<2>( m_Coordinate ) - std::get<2>( other ) );
+        return ::ManhattanDistance( m_Coordinate, other );
     }
 
     size_t GetObjectSize( ) const;

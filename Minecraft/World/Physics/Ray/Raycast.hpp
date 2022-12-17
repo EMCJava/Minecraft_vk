@@ -122,7 +122,7 @@ public:
         // std::lock_guard<std::recursive_mutex> lock( world.GetChunkPool( ).GetChunkCacheLock( ) );
 
         auto chunkCoordinate = MinecraftWorld::BlockToChunkWorldCoordinate( currentCoordinate );
-        chunkCoordinate      = chunkCoordinate + ChunkCoordinate { 1, 0, 0 };   // so that the first loop will always initialize "currentChunk" bellow
+        chunkCoordinate      = chunkCoordinate + ChunkCoordinate { 1, 0 };   // so that the first loop will always initialize "currentChunk" bellow
 
         std::shared_ptr<ChunkTy> currentChunk;
         Block*                   blockPtr;

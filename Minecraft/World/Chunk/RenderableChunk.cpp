@@ -266,7 +266,8 @@ RenderableChunk::GenerateRenderBuffer( )
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Generating chunk:", chunk.GetCoordinate( ) );
 
-    auto [ chunkX, chunkZ, chunkY ] = GetChunkCoordinate( );
+    static_assert( MinecraftCoordinateXIndex == 0 );
+    auto [ chunkX, chunkZ ] = GetChunkCoordinate( );
 
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;
