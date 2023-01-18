@@ -49,7 +49,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
     for ( int i = 0; i < ChunkVolume; ++i )
         m_Blocks[ i ] = BlockID::Air;
 
-    if ( ManhattanDistance( { 0, 0, 0 } ) == 0 )
+    if ( ManhattanDistance( { 0, 0 } ) == 0 )
     {
         for ( int i = 0; i < 4; i++ )
             for ( int j = 0; j < 5; j++ )
@@ -70,6 +70,7 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
 
 #endif
 
+    // terrain
     auto*    blocksPtr          = m_Blocks.get( );
     uint32_t horizontalMapIndex = 0;
     for ( int i = 0; i < ChunkMaxHeight; ++i )

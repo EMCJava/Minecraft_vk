@@ -23,6 +23,8 @@ using ChunkCoordinate     = std::tuple<CoordinateType, CoordinateType>;
 using ChunkCoordinateHash = uint64_t;
 static_assert( sizeof( ChunkCoordinateHash ) == sizeof( ChunkCoordinate ) );
 
+using FloatTy = float;
+
 namespace
 {
 enum OperatorIndexTy : uint8_t {
@@ -101,6 +103,14 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
     return ( std::abs( std::get<I>( t1 ) - std::get<I>( t2 ) ) + ... );
 }
 
+//template <typename... T1, typename... T2, std::size_t... I>
+//inline constexpr auto
+//Equal( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
+//       std::index_sequence<I...> )
+//{
+//    return ( ( std::get<I>( t1 ) == std::get<I>( t2 ) ) && ... );
+//}
+
 }   // namespace
 
 template <typename... T1, typename... T2>
@@ -111,6 +121,15 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
     static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
     return ManhattanDistance( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
 }
+
+//template <typename... T1, typename... T2>
+//inline constexpr bool
+//operator==( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+//{
+//    // make sure both tuples have the same size
+//    static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
+//    return Equal( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
+//}
 
 template <typename... T1, typename... T2>
 inline constexpr auto
@@ -212,18 +231,6 @@ MakeMinecraftChunkCoordinate( auto x, auto y )
     return { x, y };
 }
 
-inline constexpr ChunkCoordinate
-ToChunkCoordinate( const BlockCoordinate& coordinate )
-{
-    return { GetMinecraftX( coordinate ), GetMinecraftZ( coordinate ) };
-}
-
-inline constexpr BlockCoordinate
-ToMinecraftCoordinate( const ChunkCoordinate& coordinate )
-{
-    return MakeMinecraftCoordinate( GetMinecraftX( coordinate ), 0, GetMinecraftZ( coordinate ) );
-}
-
 template <typename Ty>
 inline auto
 GetHorizontalMinecraftCoordinate( Ty&& a )
@@ -244,17 +251,31 @@ ToChunkCoordinateHash( const ChunkCoordinate& coordinate )
     return ( static_cast<ChunkCoordinateHash>( GetMinecraftX( coordinate ) ) << 32 ) + GetMinecraftZ( coordinate );
 }
 
-constexpr inline BlockCoordinate
-ToCartesianCoordinate( BlockCoordinate&& coor )
+template <size_t I1, size_t I2>
+inline constexpr void
+SwapIndex( auto& array )
+{
+    std::swap( array[ I1 ], array[ I2 ] );
+}
+
+template <size_t I1, size_t I2, typename... T1>
+inline constexpr void
+SwapIndex( std::tuple<T1...>& t1 )
+{
+    std::swap( get<I1>( t1 ), get<I2>( t1 ) );
+}
+
+constexpr inline auto
+ToCartesianCoordinate( auto&& coor )
 {
     if constexpr ( MinecraftCoordinateXIndex != 0 )
     {
-        std::swap( get<MinecraftCoordinateXIndex>( coor ), get<0>( coor ) );
+        SwapIndex<MinecraftCoordinateXIndex, 0>( coor );
         if constexpr ( MinecraftCoordinateYIndex == 0 )
         {
             if constexpr ( MinecraftCoordinateXIndex != 1 )
             {
-                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<1>( coor ) );
+                SwapIndex<MinecraftCoordinateXIndex, 1>( coor );
             }
         }
 
@@ -262,22 +283,22 @@ ToCartesianCoordinate( BlockCoordinate&& coor )
         {
             if constexpr ( MinecraftCoordinateXIndex != 2 )
             {
-                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<2>( coor ) );
+                SwapIndex<MinecraftCoordinateXIndex, 2>( coor );
             }
         }
     } else
     {
         if constexpr ( MinecraftCoordinateYIndex != 1 )
         {
-            std::swap( get<MinecraftCoordinateYIndex>( coor ), get<MinecraftCoordinateZIndex>( coor ) );
+            SwapIndex<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( coor );
         }
     }
 
     return coor;
 }
 
-constexpr inline BlockCoordinate
-ToMinecraftCoordinate( BlockCoordinate&& coor )
+constexpr inline auto
+ToMinecraftCoordinate( auto&& coor )
 {
     if constexpr ( MinecraftCoordinateXIndex != 0 )
     {
@@ -285,7 +306,7 @@ ToMinecraftCoordinate( BlockCoordinate&& coor )
         {
             if constexpr ( MinecraftCoordinateXIndex != 1 )
             {
-                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<1>( coor ) );
+                SwapIndex<MinecraftCoordinateXIndex, 1>( coor );
             }
         }
 
@@ -293,16 +314,15 @@ ToMinecraftCoordinate( BlockCoordinate&& coor )
         {
             if constexpr ( MinecraftCoordinateXIndex != 2 )
             {
-                std::swap( get<MinecraftCoordinateXIndex>( coor ), get<2>( coor ) );
+                SwapIndex<MinecraftCoordinateXIndex, 2>( coor );
             }
         }
-
-        std::swap( get<MinecraftCoordinateXIndex>( coor ), get<0>( coor ) );
+        SwapIndex<MinecraftCoordinateXIndex, 0>( coor );
     } else
     {
         if constexpr ( MinecraftCoordinateYIndex != 1 )
         {
-            std::swap( get<MinecraftCoordinateYIndex>( coor ), get<MinecraftCoordinateZIndex>( coor ) );
+            SwapIndex<MinecraftCoordinateYIndex, MinecraftCoordinateZIndex>( coor );
         }
     }
 
@@ -319,6 +339,24 @@ inline BlockCoordinate
 ToMinecraftCoordinate( const BlockCoordinate& coor )
 {
     return ToMinecraftCoordinate( BlockCoordinate { coor } );
+}
+
+inline constexpr ChunkCoordinate
+ToChunkCoordinate( const BlockCoordinate& coordinate )
+{
+    return { GetMinecraftX( coordinate ), GetMinecraftZ( coordinate ) };
+}
+
+inline constexpr BlockCoordinate
+ToMinecraftCoordinate( ChunkCoordinate&& coordinate )
+{
+    return MakeMinecraftCoordinate( GetMinecraftX( coordinate ), 0, GetMinecraftZ( coordinate ) );
+}
+
+inline constexpr BlockCoordinate
+ToMinecraftCoordinate( const ChunkCoordinate& coordinate )
+{
+    return MakeMinecraftCoordinate( GetMinecraftX( coordinate ), 0, GetMinecraftZ( coordinate ) );
 }
 
 namespace std

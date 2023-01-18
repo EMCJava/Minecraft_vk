@@ -115,7 +115,7 @@ ClassName( typename ChunkRenderBuffers<VertexTy, IndexTy>::SuitableAllocation ):
         }
         chunkUsing.shouldUpdateIndirectDrawBuffers = true;
 
-        Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "New Buffer at", std::make_tuple( newAllocation.vertexStartingOffset, newAllocation.indexStartingOffset, newAllocation.vertexSize, newAllocation.indexSize ) );
+        // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "New Buffer at", std::make_tuple( newAllocation.vertexStartingOffset, newAllocation.indexStartingOffset, newAllocation.vertexSize, newAllocation.indexSize ) );
         return { &chunkUsing, newAllocation };
 
     } else

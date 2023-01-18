@@ -37,7 +37,7 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block, bool replace )
     assert( m_Blocks != nullptr && m_HeightMap != nullptr );
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
 
-    // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Coordinate, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
+    // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, "Setting block at chunk:", m_Position, "index:", blockIndex, "from:", toString( (BlockID) m_Blocks[ blockIndex ] ), "to:", toString( (BlockID) block ) );
 
     if ( At( blockIndex ) == block ) return false;             // same block
     if ( !replace && At( blockIndex ) != Air ) return false;   // not replacing
