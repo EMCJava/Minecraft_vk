@@ -30,6 +30,8 @@ MainApplication::MainApplication( )
 {
     InitWindow( );
 
+    m_UserInput.SetEventWindow( m_window );
+
     m_graphics_api = std::make_unique<VulkanAPI>( m_window );
 
     m_graphics_api->addDesiredQueueType( &m_imgui_io, vk::QueueFlagBits::eGraphics );
@@ -379,6 +381,12 @@ MainApplication::renderThread( const std::stop_token& st )
 
         m_deltaMouseHoldUpdate.test_and_set( );
 
+        /*
+         *
+         * Update user input
+         *
+         * */
+        m_UserInput.Update( );
         RenderThreadMouseHandle( );
 
         /*
@@ -634,7 +642,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
             std::unique_ptr<double[]> values = std::make_unique<double[]>( size * size );
             srand( (unsigned int) ( ImGui::GetTime( ) * 1000000 ) );
 
-            auto playerPosition             = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
+            auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
 
             {
                 std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
@@ -788,23 +796,23 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  cellularDistanceFunctionIndex = 1;
                 const char* cellularDistanceFunction[]    = {
-                       "CellularDistanceFunction_Euclidean",
-                       "CellularDistanceFunction_EuclideanSq",
-                       "CellularDistanceFunction_Manhattan",
-                       "CellularDistanceFunction_Hybrid" };
+                    "CellularDistanceFunction_Euclidean",
+                    "CellularDistanceFunction_EuclideanSq",
+                    "CellularDistanceFunction_Manhattan",
+                    "CellularDistanceFunction_Hybrid" };
 
                 if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
                     terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
 
                 static int  cellularReturnTypeIndex = 1;
                 const char* cellularReturnType[]    = {
-                       "CellularReturnType_CellValue",
-                       "CellularReturnType_Distance",
-                       "CellularReturnType_Distance2",
-                       "CellularReturnType_Distance2Add",
-                       "CellularReturnType_Distance2Sub",
-                       "CellularReturnType_Distance2Mul",
-                       "CellularReturnType_Distance2Div" };
+                    "CellularReturnType_CellValue",
+                    "CellularReturnType_Distance",
+                    "CellularReturnType_Distance2",
+                    "CellularReturnType_Distance2Add",
+                    "CellularReturnType_Distance2Sub",
+                    "CellularReturnType_Distance2Mul",
+                    "CellularReturnType_Distance2Div" };
 
                 if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
                     terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
@@ -819,9 +827,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  rotationTypeIndex = 0;
                 const char* rotationType[]    = {
-                       "RotationType3D_None",
-                       "RotationType3D_ImproveXYPlanes",
-                       "RotationType3D_ImproveXZPlanes" };
+                    "RotationType3D_None",
+                    "RotationType3D_ImproveXYPlanes",
+                    "RotationType3D_ImproveXZPlanes" };
 
                 if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
                     terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
@@ -830,12 +838,12 @@ MainApplication::renderImgui( uint32_t renderIndex )
             {
                 static int  fractalTypeIndex = 0;
                 const char* fractalType[]    = {
-                       "FractalType_None",
-                       "FractalType_FBm",
-                       "FractalType_Ridged",
-                       "FractalType_PingPong",
-                       "FractalType_DomainWarpProgressive",
-                       "FractalType_DomainWarpIndependent" };
+                    "FractalType_None",
+                    "FractalType_FBm",
+                    "FractalType_Ridged",
+                    "FractalType_PingPong",
+                    "FractalType_DomainWarpProgressive",
+                    "FractalType_DomainWarpIndependent" };
 
                 if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
                     terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
@@ -921,28 +929,13 @@ void
 MainApplication::RenderThreadMouseHandle( )
 {
     const auto playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
-    static int oldMouseLeftState   = GLFW_RELEASE;
-    int        mouseLeftState      = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_LEFT );
-    if ( m_is_mouse_locked && mouseLeftState == GLFW_PRESS && oldMouseLeftState == GLFW_RELEASE )
-    {
+    if ( m_is_mouse_locked && m_UserInput.GetPrimaryKey( ).isPressed )
+        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.solidHit, BlockID::Air ) )
+            MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
 
-        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.solidHit, BlockID::Air ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
-
-        Logger::getInstance( ).LogLine( "Mouse left button pressed" );
-    }
-
-    oldMouseLeftState = mouseLeftState;
-
-    static int oldMouseRightState = GLFW_RELEASE;
-    int        mouseRightState    = glfwGetMouseButton( m_window, GLFW_MOUSE_BUTTON_RIGHT );
-    if ( m_is_mouse_locked && mouseRightState == GLFW_PRESS && oldMouseRightState == GLFW_RELEASE )
-    {
-        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.beforeSolidHit, BlockID::Stone ) ) MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
-
-        Logger::getInstance( ).LogLine( "Mouse right button pressed" );
-    }
-
-    oldMouseRightState = mouseRightState;
+    if ( m_is_mouse_locked && m_UserInput.GetSecondaryKey( ).isPressed )
+        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.beforeSolidHit, BlockID::Stone ) )
+            MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
 
     if ( playerRaycastResult.hasSolidHit )
     {
