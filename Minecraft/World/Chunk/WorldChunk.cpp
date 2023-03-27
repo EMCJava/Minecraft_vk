@@ -183,7 +183,7 @@ WorldChunk::AttemptRunStructureStart( )
 {
 #if !GENERATE_DEBUG_CHUNK
 
-    DefaultBiomeStructures::TryGenerate( *this, m_StructureStarts );
+    DefaultBiome::StructuresSettings::TryGenerate( *this, m_StructureStarts );
 
 #endif
 
@@ -202,7 +202,7 @@ WorldChunk::AttemptRunStructureReference( )
         {
             for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz, ++index )
             {
-                const auto                  worldCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto                  worldCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
                 const auto                  weakChunkCache  = GetChunkReference( index, worldCoordinate );
                 std::shared_ptr<WorldChunk> chunkCache      = weakChunkCache.lock( );
 
@@ -321,7 +321,7 @@ WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
         for ( int dz = -range; dz <= range; ++dz )
             for ( int dx = -range; dx <= range; ++dx )
             {
-                const auto chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto chunkCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
                 if ( auto chunkCache = GetChunkReference( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), chunkCoordinate );
                      chunkCache.expired( ) || !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) )
                     missingChunk.push_back( chunkCoordinate );
@@ -347,7 +347,7 @@ WorldChunk::IsSavedChunksStatusAtLeastInRange( ChunkStatus targetStatus, int ran
     for ( int dz = -range; dz <= range; ++dz )
         for ( int dx = -range; dx <= range; ++dx )
         {
-            const auto chunkCoordinate = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+            const auto chunkCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
             if ( auto chunkCache = GetChunkReferenceConst( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), chunkCoordinate );
                  !chunkCache.expired( ) && !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) ) return false;
         }
@@ -368,7 +368,7 @@ WorldChunk::GetChunkRefInRange( int range )
         for ( int dz = -range; dz <= range; ++dz )
             for ( int dx = -range; dx <= range; ++dx )
             {
-                const auto chunkCoordinate    = m_Coordinate + MakeMinecraftCoordinate( dx, 0, dz );
+                const auto chunkCoordinate    = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
                 const auto chunkRelativeIndex = ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range );
                 chunks.push_back( GetChunkReferenceConst( chunkRelativeIndex, chunkCoordinate ) );
             }
@@ -433,7 +433,7 @@ WorldChunk::GetObjectSize( ) const
 {
 
     size_t result = RenderableChunk::GetObjectSize( ) + sizeof( WorldChunk ) + m_RequiredBy.capacity( ) * sizeof( m_RequiredBy[ 0 ] ) + m_StructureStarts.capacity( ) * sizeof( m_StructureStarts[ 0 ] ) + m_StructureReferences.size( ) * sizeof( m_StructureReferences.front( ) );
-    
+
     for ( const auto& ss : m_StructureStarts )
         result += ss->GetObjectSize( );
 

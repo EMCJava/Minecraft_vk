@@ -15,9 +15,13 @@ include_directories(.)
 
 find_package(Threads)
 find_package(Vulkan REQUIRED)
-find_package(Boost 1.78.0 COMPONENTS)
+find_package(Boost 1.75.0 COMPONENTS)
 
 add_executable(Minecraft_vk main.cpp)
+
+set_target_properties(
+        Minecraft_vk PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
 if (WIN32 OR MSVC)
 
@@ -28,7 +32,9 @@ if (WIN32 OR MSVC)
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     endif ()
 
-    set(SHADERC_LIB "${CMAKE_SOURCE_DIR}/lib/shaderc_shared.lib")
+    get_filename_component(Vulkan_Lib_Dir ${Vulkan_LIBRARY} DIRECTORY)
+
+    set(SHADERC_LIB "${Vulkan_Lib_Dir}/shaderc_shared.lib")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB glfw)
     message(STATUS "Assume platform window")
@@ -44,6 +50,7 @@ else ()
 
 endif ()
 
+link_libraries(glm::glm)
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(Include/Imgui/)
 include_directories(Include)

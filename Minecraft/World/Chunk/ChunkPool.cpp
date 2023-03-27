@@ -18,28 +18,28 @@ template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirFront>( )
 {
-    return MakeMinecraftCoordinate( 1, 0, 0 );
+    return MakeMinecraftChunkCoordinate( 1, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirBack>( )
 {
-    return MakeMinecraftCoordinate( -1, 0, 0 );
+    return MakeMinecraftChunkCoordinate( -1, 0 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirRight>( )
 {
-    return MakeMinecraftCoordinate( 0, 0, 1 );
+    return MakeMinecraftChunkCoordinate( 0, 1 );
 }
 
 template <>
 constexpr ChunkCoordinate
 getNearChunkDirection<EWDirLeft>( )
 {
-    return MakeMinecraftCoordinate( 0, 0, -1 );
+    return MakeMinecraftChunkCoordinate( 0, -1 );
 }
 
 template <>
@@ -94,7 +94,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             }
 
             UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( this, cache ); },
-                          [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) {
+                          [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) -> bool {
                               const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
                               const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );
                               if ( aUpgradeable != bUpgradeable ) return aUpgradeable;
@@ -182,7 +182,7 @@ ChunkPool::CleanUpJobs( )
                 }
             }
 
-            Logger::getInstance( ).LogLine( "New Chunk with size: ", cache->GetObjectSize( ) );
+            // Logger::getInstance( ).LogLine( "New Chunk with size: ", cache->GetObjectSize( ) );
         }
 
         /* Initialization include mesh building */
@@ -207,13 +207,14 @@ ChunkPool::CleanUpJobs( )
 }
 
 ChunkTy*
-ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status )
+ChunkPool::AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status )
 {
-    ChunkTy* newChunk = nullptr;
+    ChunkTy*   newChunk;
+    const auto hashedCoordinate = ToChunkCoordinateHash( coordinate );
 
     {
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
-        if ( auto find_it = m_ChunkCache.find( coordinate ); find_it != m_ChunkCache.end( ) )
+        if ( auto find_it = m_ChunkCache.find( hashedCoordinate ); find_it != m_ChunkCache.end( ) )
         {
             // need upgrade
             if ( find_it->second->GetTargetStatus( ) < status )
@@ -236,7 +237,7 @@ ChunkPool::AddCoordinate( const BlockCoordinate& coordinate, ChunkStatus status 
         newChunk->SetCoordinate( coordinate );
         newChunk->SetExpectedStatus( status );
 
-        m_ChunkCache.insert( { coordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
+        m_ChunkCache.insert( { hashedCoordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
     }
 
     AddJobContext( newChunk );
@@ -252,7 +253,6 @@ ChunkPool::FlushSafeAddedChunks( )
     {
         std::lock_guard lock( m_SafeAddedChunksLock );
         chunks = std::move( m_SafeAddedChunks );
-        // m_SafeAddedChunks.clear( );
     }
 
     //    std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );

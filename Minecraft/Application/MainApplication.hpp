@@ -10,6 +10,7 @@
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
 #include <Graphic/Vulkan/VulkanAPI.hpp>
 #include <Include/GlobalConfig.hpp>
+#include <Minecraft/Application/Input/UserInput.hpp>
 #include <Minecraft/Minecraft.hpp>
 #include <Utility/ImguiAddons/CurveEditor.hpp>
 #include <Utility/Logger.hpp>
@@ -35,6 +36,7 @@ class MainApplication : public Singleton<MainApplication>
     bool        m_window_fullscreen = false;
     bool        m_is_mouse_locked   = false;
 
+    UserInput                 m_UserInput;
     std::pair<double, double> m_MousePos;
 
     std::atomic_flag          m_deltaMouseHoldUpdate;

@@ -1,4 +1,5 @@
 add_subdirectory(Camera)
+add_subdirectory(Input)
 
 add_library(MainApplicationLib MainApplication.hpp MainApplication.cpp)
-target_link_libraries(MainApplicationLib ImplotLib ImplotDemoLib ImguiLib VulkanAPILib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib MinecraftLib ImGuiCurveEditorLib BlockTextureLib PlayerLib ${WINDOW_PLATFORM_LIB})
+target_link_libraries(MainApplicationLib ImplotLib ImplotDemoLib ImguiLib VulkanAPILib ValidationLayerLib VulkanExtensionLib VulkanPipelineLib VulkanShaderLib MinecraftLib ImGuiCurveEditorLib BlockTextureLib PlayerLib UserInputLib ${WINDOW_PLATFORM_LIB})

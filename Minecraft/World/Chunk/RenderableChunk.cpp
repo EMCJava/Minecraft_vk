@@ -266,7 +266,8 @@ RenderableChunk::GenerateRenderBuffer( )
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Generating chunk:", chunk.GetCoordinate( ) );
 
-    auto [ chunkX, chunkZ, chunkY ] = GetChunkCoordinate( );
+    static_assert( MinecraftCoordinateXIndex == 0 );
+    auto [ chunkX, chunkZ ] = GetChunkCoordinate( );
 
     chunkX <<= SectionUnitLengthBinaryOffset;
     chunkZ <<= SectionUnitLengthBinaryOffset;
@@ -288,42 +289,16 @@ RenderableChunk::GenerateRenderBuffer( )
     std::unique_ptr<DataType::TexturedVertex[]> chunkVertices = std::make_unique<DataType::TexturedVertex[]>( ScaleToSecond<1, FaceVerticesCount>( greedyVisibleFace ) );
     std::unique_ptr<IndexBufferType[]>          chunkIndices  = std::make_unique<IndexBufferType[]>( m_IndexBufferSize );
 
-    auto AddFace = [ indexOffset, faceAdded = 0, chunkVerticesPtr = chunkVertices.get( ), chunkIndicesPtr = chunkIndices.get( ) ]( const std::array<DataType::TexturedVertex, FaceVerticesCount>& vertexArray, const glm::vec3& offset, const FaceVertexAmbientOcclusionData& faceAmbientOcclusionStrengths, bool flipped ) mutable {
-        static constexpr auto faceShaderMultiplier = 1.0f / 3;
-
-        for ( int i = 0; i < FaceVerticesCount; ++i )
-        {
-            chunkVerticesPtr[ i ] = vertexArray[ i ];
-            chunkVerticesPtr[ i ].pos += offset;
-            chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + faceAmbientOcclusionStrengths.data[ i ] * faceShaderMultiplier;
-        }
-
-        chunkVerticesPtr += FaceVerticesCount;
-
-        if ( flipped )
-        {
-            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
-            {
-                *chunkIndicesPtr = blockIndicesFlipped[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
-            }
-        } else
-        {
-            for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
-            {
-                *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
-            }
-        }
-
-        ++faceAdded;
-    };
-
-    const auto& blockTextures = Minecraft::GetInstance( ).GetBlockTextures( );
+    auto        chunkIndicesPtr  = chunkIndices.get( );
+    auto        chunkVerticesPtr = chunkVertices.get( );
+    int         faceAdded        = 0;
+    const auto& blockTextures    = Minecraft::GetInstance( ).GetBlockTextures( );
     for ( auto dir = CubeDirection { 0 }; dir < CubeDirection::DirSize; ++dir )
     {
         for ( const auto& faces : requiredMeshes[ dir ] )
         {
             const auto& vertexMeta = faces.first;
-            const auto& textures   = blockTextures.GetTextureLocationByIndex( vertexMeta.textureID );
+            const auto& textures   = blockTextures.GetTextureLocationByIndex( vertexMeta.GetTextureID( ) );
 
             for ( const auto& face : faces.second.faces )
             {
@@ -355,7 +330,35 @@ RenderableChunk::GenerateRenderBuffer( )
                 //
                 // Log::getInstance( ).LogLine( " ]);" );
 
-                AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData, vertexMeta.quadFlipped );
+                // AddFace( textureCopy, (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ ), vertexMeta.ambientOcclusionData, vertexMeta.quadFlipped );
+                static constexpr auto faceShaderMultiplier = 1.0f / 3;
+
+                // Copy vertex data
+                for ( int i = 0; i < FaceVerticesCount; ++i )
+                {
+                    chunkVerticesPtr[ i ] = textureCopy[ i ];
+                    chunkVerticesPtr[ i ].pos += (glm::vec3) face.offset + glm::vec3( chunkX, 0, chunkZ );
+                    chunkVerticesPtr[ i ].textureCoor_ColorIntensity.z *= 0.2f + GetAmbientOcclusionDataAt( vertexMeta.ambientOcclusionData, i ) * faceShaderMultiplier;
+                }
+
+                chunkVerticesPtr += FaceVerticesCount;
+
+                // Use different index buffer base on ambient occlusion side
+                if ( vertexMeta.GetQuadFlipped( ) )
+                {
+                    for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+                    {
+                        *chunkIndicesPtr = blockIndicesFlipped[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+                    }
+                } else
+                {
+                    for ( int k = 0; k < FaceIndicesCount; ++k, ++chunkIndicesPtr )
+                    {
+                        *chunkIndicesPtr = blockIndices[ k ] + ScaleToSecond<1, FaceVerticesCount>( faceAdded ) + indexOffset;
+                    }
+                }
+
+                ++faceAdded;
             }
         }
     }
@@ -510,13 +513,13 @@ bool
 RenderableChunk::UpdateFacesAmbientOcclusion( FaceVertexAmbientOcclusionData& metaData, std::array<bool, 8> sideTransparency )
 {
 #define GET_STRENGTH( inx1, inx2, inx3 ) sideTransparency[ inx1 ] && sideTransparency[ inx3 ] ? 0 : ( 3 - (int) sideTransparency[ inx1 ] - (int) sideTransparency[ inx2 ] - (int) sideTransparency[ inx3 ] )
-    metaData.data[ 0 ] = GET_STRENGTH( 0, 1, 2 );
-    metaData.data[ 1 ] = GET_STRENGTH( 2, 3, 4 );
-    metaData.data[ 2 ] = GET_STRENGTH( 4, 5, 6 );
-    metaData.data[ 3 ] = GET_STRENGTH( 6, 7, 0 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 0, 1, 2 ), 0 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 2, 3, 4 ), 1 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 4, 5, 6 ), 2 );
+    SetAmbientOcclusionDataAt( metaData, GET_STRENGTH( 6, 7, 0 ), 3 );
 #undef GET_STRENGTH
 
-    return metaData.data[ 3 ] + metaData.data[ 1 ] > metaData.data[ 0 ] + metaData.data[ 2 ];
+    return GetAmbientOcclusionDataAt( metaData, 3 ) + GetAmbientOcclusionDataAt( metaData, 1 ) > GetAmbientOcclusionDataAt( metaData, 0 ) + GetAmbientOcclusionDataAt( metaData, 2 );
 }
 
 void
@@ -542,7 +545,7 @@ RenderableChunk::UpdateAmbientOcclusionAt( uint32_t index )
                     neighborTransparency& Dir##D8##Bit )
 
 #define Update( Dir, D1, D2, D3, D4, D5, D6, D7, D8 ) \
-    m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].quadFlipped = UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].ambientOcclusionData, PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) );
+    m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].SetQuadFlipped( UpdateFacesAmbientOcclusion( m_VertexMetaData[ index ].faceVertexMetaData[ Dir ].ambientOcclusionData, PassNeighborTransparency( D1, D2, D3, D4, D5, D6, D7, D8 ) ) );
 
 
         if ( neighborTransparency & DirFrontBit )
@@ -573,7 +576,10 @@ RenderableChunk::UpdateMetaDataAt( uint32_t index )
     // For greedy meshing
     const auto& textureIndices = Minecraft::GetInstance( ).GetBlockTextures( ).GetTextureIndices( m_Blocks[ index ] );
     for ( int i = 0; i < CubeDirection::DirSize; ++i )
-        m_VertexMetaData[ index ].faceVertexMetaData[ i ].textureID = textureIndices[ i ];
+    {
+        assert( textureIndices[ i ] <= FaceVertexMetaData::GetMaxTextureIDSupported( ) );
+        m_VertexMetaData[ index ].faceVertexMetaData[ i ].SetTextureID( textureIndices[ i ] );
+    }
 }
 
 /*
@@ -604,7 +610,8 @@ RenderableChunk::GenerateGreedyMesh( )
      * We create a mask - this will contain the groups of matching voxel faces
      * as we proceed through the chunk in 6 directions - once for each face.
      */
-    static constexpr FaceVertexMetaData   emptyFace { .textureID = -1 };
+    static constexpr auto                 EmptyTexture = FaceVertexMetaData::GetMaxTextureIDSupported( );
+    static constexpr FaceVertexMetaData   emptyFace { .textureID_quadFlipped = EmptyTexture };
     std::unique_ptr<FaceVertexMetaData[]> mask = std::make_unique<FaceVertexMetaData[]>( SectionUnitLength * ChunkMaxHeight );
 
     /**
@@ -710,13 +717,13 @@ RenderableChunk::GenerateGreedyMesh( )
                     for ( i = 0; i < dims[ u ]; )
                     {
 
-                        if ( mask[ n ].textureID != emptyFace.textureID )
+                        if ( mask[ n ].GetTextureID( ) != emptyFace.GetTextureID( ) )
                         {
 
                             /*
                              * We compute the width
                              */
-                            for ( w = 1; i + w < dims[ u ] && mask[ n + w ].textureID != -1 && mask[ n + w ] == mask[ n ]; w++ ) { }
+                            for ( w = 1; i + w < dims[ u ] && mask[ n + w ].GetTextureID( ) != EmptyTexture && mask[ n + w ] == mask[ n ]; w++ ) { }
 
                             /*
                              * Then we compute height
@@ -728,7 +735,7 @@ RenderableChunk::GenerateGreedyMesh( )
                                     for ( k = 0; k < w; k++ )
                                     {
 
-                                        if ( mask[ n + k + h * dims[ u ] ].textureID == -1 || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
+                                        if ( mask[ n + k + h * dims[ u ] ].GetTextureID( ) == EmptyTexture || mask[ n + k + h * dims[ u ] ] != mask[ n ] )
                                         {
                                             goto compute_height_finish;
                                         }
@@ -774,7 +781,7 @@ RenderableChunk::GenerateGreedyMesh( )
 
                                 for ( k = 0; k < w; ++k )
                                 {
-                                    mask[ n + k + l * dims[ u ] ].textureID = -1;
+                                    mask[ n + k + l * dims[ u ] ].SetTextureID( EmptyTexture );
                                 }
                             }
 

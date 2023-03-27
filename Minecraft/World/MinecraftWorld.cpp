@@ -44,7 +44,7 @@ MinecraftWorld::IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t ra
     m_ChunkPool->SetCentre( centre );
     for ( int i = -radius; i <= radius; ++i )
         for ( int j = -radius; j <= radius; ++j )
-            IntroduceChunk( centre + MakeMinecraftCoordinate( i, 0, j ), ChunkStatus::eFull );
+            IntroduceChunk( centre + MakeMinecraftChunkCoordinate( i, j ), ChunkStatus::eFull );
 }
 
 void
@@ -55,8 +55,7 @@ MinecraftWorld::Tick( float deltaTime )
     m_TimeSinceChunkLoad += deltaTime;
     if ( m_TimeSinceChunkLoad > 0.2f )
     {
-        auto chunkCoordinate      = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
-        get<2>( chunkCoordinate ) = 0;
+        auto chunkCoordinate = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
         IntroduceChunkInRange( chunkCoordinate, m_ChunkLoadingRange );
 
         m_TimeSinceChunkLoad = 0;
@@ -126,12 +125,11 @@ MinecraftWorld::SetBlock( const BlockCoordinate& blockCoordinate, const Block& b
 {
     if ( GetMinecraftY( blockCoordinate ) < 0 ) return false;
 
-    if ( auto chunkCache = GetChunkCacheUnsafe( MakeMinecraftCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
-                                                                   0,
-                                                                   ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
+    if ( auto chunkCache = GetChunkCacheUnsafe( MakeMinecraftChunkCoordinate( ScaleToSecond<SectionUnitLength, 1>( GetMinecraftX( blockCoordinate ) ),
+                                                                              ScaleToSecond<SectionUnitLength, 1>( GetMinecraftZ( blockCoordinate ) ) ) );
          chunkCache != nullptr )
     {
-        if ( chunkCache->initialized && chunkCache->SetBlock( MakeMinecraftCoordinate( GetMinecraftX( blockCoordinate ) & ( SectionUnitLength - 1 ), GetMinecraftY( blockCoordinate ), GetMinecraftZ( blockCoordinate ) & ( SectionUnitLength - 1 ) ), block ) )
+        if ( chunkCache->initialized && chunkCache->SetBlock( BlockToChunkRelativeCoordinate( blockCoordinate ), block ) )
         {
             chunkCache->GenerateRenderBuffer( );
             return true;
