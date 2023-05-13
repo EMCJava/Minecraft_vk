@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include <Include/GLM.hpp>
+#include <Utility/Type.hpp>
 
 class Camera
 {
@@ -33,7 +34,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
+        , Zoom( glm::radians( 144.0f / 2 ) )
     {
         Position = position;
         WorldUp  = up;
@@ -46,7 +47,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
+        , Zoom( glm::radians( 144.0f / 2 ) )
     {
         Position = glm::vec3( posX, posY, posZ );
         WorldUp  = glm::vec3( upX, upY, upZ );
@@ -97,7 +98,7 @@ public:
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    inline void ProcessMouseMovement( const std::pair<double, double>& offset, bool constrainPitch = true )
+    inline void ProcessMouseMovement( const std::pair<FloatTy, FloatTy>& offset, bool constrainPitch = true )
     {
         Yaw += offset.first * MouseSensitivity;
         Pitch += offset.second * MouseSensitivity;

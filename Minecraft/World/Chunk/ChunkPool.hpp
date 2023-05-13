@@ -31,7 +31,7 @@ private:
     std::mutex                                         m_SafeAddedChunksLock;
     std::unordered_map<ChunkCoordinate, ChunkStatusTy> m_SafeAddedChunks;
 
-    void LoadChunk( ChunkPool* pool, ChunkTy* cache )
+    static inline void LoadChunk( ChunkTy* cache )
     {
         // Logger::getInstance( ).LogLine( "Start loading", cache );
 
@@ -62,6 +62,8 @@ public:
 
     ~ChunkPool( )
     {
+        LOGL_SYS( "Destroying ChunkPool" );
+
         StopThread( );
         Clean( );
     }

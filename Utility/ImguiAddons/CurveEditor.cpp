@@ -81,7 +81,7 @@ CurveEditor::Render( )
         }
 
         ImPlot::SetNextLineStyle( ImVec4( 0, 0.9f, 0, 1 ), 2 );
-        ImPlot::PlotLine( "##bez", &m_Points[ 0 ].x, &m_Points[ 0 ].y, m_Points.size( ), 0, 0, sizeof( Point ) );
+        ImPlot::PlotLine( "##bez", &m_Points[ 0 ].x, &m_Points[ 0 ].y, (int) m_Points.size( ), 0, 0, sizeof( Point ) );
 
         ImPlot::EndPlot( );
     }

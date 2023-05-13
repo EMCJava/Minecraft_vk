@@ -86,7 +86,7 @@ protected:
 
     virtual void SetupDescriptorSet( vk::Device&, uint32_t descriptorCount );
 
-    virtual void SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
+    virtual void SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
 
     virtual void SetupDepthStencilStage( );
 

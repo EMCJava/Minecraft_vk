@@ -93,7 +93,7 @@ VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk:
      * Render pass
      *
      * */
-    SetupRenderPass( physicalDevice, device, imageFormat, depthFormat );
+    SetupRenderPass( device, imageFormat, depthFormat );
     SetupDepthStencilStage();
 
     createInfo.createInfo.setStageCount( createInfo.shaderStagesCreateInfo.size( ) );

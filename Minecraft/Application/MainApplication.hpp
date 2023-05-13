@@ -17,6 +17,7 @@
 #include <Utility/Singleton.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
+#include <Utility/Type.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -37,10 +38,10 @@ class MainApplication : public Singleton<MainApplication>
     bool        m_is_mouse_locked   = false;
 
     UserInput                 m_UserInput;
-    std::pair<double, double> m_MousePos;
+    std::pair<FloatTy, FloatTy> m_MousePos;
 
     std::atomic_flag          m_deltaMouseHoldUpdate;
-    std::pair<double, double> m_NegDeltaMouse;
+    std::pair<FloatTy, FloatTy> m_NegDeltaMouse;
 
     struct ImGuiIO*          m_imgui_io { };
     vk::UniqueDescriptorPool m_imguiDescriptorPool;

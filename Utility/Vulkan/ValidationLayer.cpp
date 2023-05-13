@@ -43,6 +43,8 @@ ValidationLayer::debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void*                                       pUserData )
 {
+    (void) pUserData;
+
     Logger::LogType log_type = Logger::LogType::eInfo;
 
     switch ( messageSeverity )

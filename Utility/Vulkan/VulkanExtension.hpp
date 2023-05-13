@@ -20,7 +20,7 @@ private:
 public:
     VulkanExtension( );
 
-    inline uint32_t
+    inline size_t
     VulkanExtensionCount( )
     {
         return m_extensions.size( );
@@ -32,7 +32,7 @@ public:
         return m_extensions.data( );
     }
 
-    inline uint32_t
+    inline size_t
     DeviceExtensionCount( )
     {
         return m_device_extensions.size( );

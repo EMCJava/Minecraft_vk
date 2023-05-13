@@ -109,7 +109,7 @@ VulkanPipeline::SetupPipelineLayout( vk::Device& device )
 }
 
 void
-VulkanPipeline::SetupRenderPass( vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
+VulkanPipeline::SetupRenderPass( vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
 {
 
     createInfo.colorAttachment = {

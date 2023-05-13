@@ -891,8 +891,8 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
 
     if ( !mainApplication->m_deltaMouseHoldUpdate.test( ) && mainApplication->m_is_mouse_locked )
     {
-        mainApplication->m_NegDeltaMouse.first += xpos - mainApplication->m_MousePos.first;
-        mainApplication->m_NegDeltaMouse.second += mainApplication->m_MousePos.second - ypos;
+        mainApplication->m_NegDeltaMouse.first += static_cast<FloatTy>( xpos ) - mainApplication->m_MousePos.first;
+        mainApplication->m_NegDeltaMouse.second += mainApplication->m_MousePos.second - static_cast<FloatTy>( ypos );
     }
     mainApplication->m_MousePos = { xpos, ypos };
 

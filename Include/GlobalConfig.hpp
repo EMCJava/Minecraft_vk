@@ -71,6 +71,7 @@ public:
     {
         // initialize config instance
         auto& existing_config = getConfigData( );
+        (void) existing_config;
 
         std::ifstream  file( path );
         nlohmann::json j;
