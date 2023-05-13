@@ -23,7 +23,7 @@ public:
         : PawnEntity( Coordinate, up, yaw, pitch )
         , MovementSpeed( 20.5f )
         , ViewSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
+        , Zoom( glm::radians( 104.0f) )
     {
         updateCameraVectors( );
     }
@@ -58,7 +58,7 @@ public:
     inline void ProcessKeyboardHorizontal( const std::pair<float, float>& direction, float deltaTime )
     {
         const float velocity = MovementSpeed * deltaTime;
-        m_Position += velocity * ( glm::normalize( glm::vec3 { Front.x, 0, Front.z } ) * direction.second + Right * direction.first );
+        m_Velocity += velocity * ( glm::normalize( glm::vec3 { Front.x, 0, Front.z } ) * direction.second + Right * direction.first );
         UpdateViewMatrix( );
     }
 
