@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include <Include/GLM.hpp>
+#include <Utility/Type.hpp>
 
 class Camera
 {
@@ -97,7 +98,7 @@ public:
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    inline void ProcessMouseMovement( const std::pair<double, double>& offset, bool constrainPitch = true )
+    inline void ProcessMouseMovement( const std::pair<FloatTy, FloatTy>& offset, bool constrainPitch = true )
     {
         Yaw += offset.first * MouseSensitivity;
         Pitch += offset.second * MouseSensitivity;

@@ -30,7 +30,7 @@ public:
         return m_isAvailable;
     }
 
-    inline uint32_t
+    inline size_t
     RequiredLayerCount( )
     {
         return m_requiredLayer.size( );

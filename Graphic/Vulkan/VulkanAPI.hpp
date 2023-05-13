@@ -185,6 +185,8 @@ public:
             m_vkLogicalDevice->resetFences( m_vkRender_fence_syncs[ i ].get( ) );
             m_vkRender_fence_syncs[ i ]           = m_vkLogicalDevice->createFenceUnique( { vk::FenceCreateFlagBits::eSignaled } );
             m_vkSwap_chain_image_fence_syncs[ i ] = nullptr;
+
+            (void) wait_fence_result;
             assert( wait_fence_result == vk::Result::eSuccess );
         }
     }

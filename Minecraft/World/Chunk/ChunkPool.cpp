@@ -100,7 +100,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
                 continue;
             }
 
-            UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( this, cache ); },
+            UpdateSorted( [ this ]( ChunkTy* cache ) { ChunkPool::LoadChunk( cache ); },
                           [ centre = m_PrioritizeCoordinate ]( const ChunkTy* a, const ChunkTy* b ) -> bool {
                               const auto aUpgradeable = a->NextStatusUpgradeSatisfied( );
                               const auto bUpgradeable = b->NextStatusUpgradeSatisfied( );

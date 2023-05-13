@@ -131,14 +131,15 @@ WorldChunk::FillBedRock( const MinecraftNoise& generator )
     auto xCoordinate = GetMinecraftX( m_WorldCoordinate );
     auto zCoordinate = GetMinecraftZ( m_WorldCoordinate );
 
-    auto blackRockHeightMap = std::make_unique<uint32_t[]>( SectionSurfaceSize );
+    auto blackRockHeightMap = std::make_unique<int[]>( SectionSurfaceSize );
 
     int horizontalMapIndex = 0;
     for ( int k = 0; k < SectionUnitLength; ++k )
         for ( int j = 0; j < SectionUnitLength; ++j )
         {
+            // From 0 to 2
             const auto& noiseValue                   = generator.GetNoiseInt( xCoordinate + j, zCoordinate + k ) + 1;
-            blackRockHeightMap[ horizontalMapIndex ] = noiseValue * 2 + 1;
+            blackRockHeightMap[ horizontalMapIndex ] = static_cast<int>( noiseValue * 2 + 1 );
 
             for ( int i = 0; i < blackRockHeightMap[ horizontalMapIndex ]; ++i )
                 At( horizontalMapIndex + SectionSurfaceSize * i ) = BlockID ::BedRock;

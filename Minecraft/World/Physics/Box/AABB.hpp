@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_MINECRAFT_WORLD_PHYSICS_BOX_AABB_HPP
 #define MINECRAFT_VK_MINECRAFT_WORLD_PHYSICS_BOX_AABB_HPP
 
+#include <Utility/Type.hpp>
+
 template <typename Ty = float>
 struct TAABB {
     Ty minX, minY, maxX, maxY;
@@ -20,6 +22,6 @@ struct TAABB {
     }
 };
 
-using AABB = TAABB<float>;
+using AABB = TAABB<FloatTy>;
 
 #endif   // MINECRAFT_VK_MINECRAFT_WORLD_PHYSICS_BOX_AABB_HPP
