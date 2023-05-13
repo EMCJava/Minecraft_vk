@@ -70,7 +70,14 @@ getNearChunkDirection<EWDirBackRight>( )
     return getNearChunkDirection<EWDirBack>( ) + getNearChunkDirection<EWDirRight>( );
 }
 
-constexpr std::array<ChunkCoordinate, EightWayDirectionSize> NearChunkDirection { getNearChunkDirection<0>( ), getNearChunkDirection<1>( ), getNearChunkDirection<2>( ), getNearChunkDirection<3>( ), getNearChunkDirection<4>( ), getNearChunkDirection<5>( ), getNearChunkDirection<6>( ), getNearChunkDirection<7>( ) };
+constexpr std::array<ChunkCoordinate, EightWayDirectionSize> NearChunkDirection { getNearChunkDirection<0>( ),
+                                                                                  getNearChunkDirection<1>( ),
+                                                                                  getNearChunkDirection<2>( ),
+                                                                                  getNearChunkDirection<3>( ),
+                                                                                  getNearChunkDirection<4>( ),
+                                                                                  getNearChunkDirection<5>( ),
+                                                                                  getNearChunkDirection<6>( ),
+                                                                                  getNearChunkDirection<7>( ) };
 }   // namespace
 
 
