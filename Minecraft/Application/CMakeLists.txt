@@ -1,4 +1,3 @@
-add_subdirectory(Camera)
 add_subdirectory(Input)
 
 add_library(MainApplicationLib MainApplication.hpp MainApplication.cpp)
