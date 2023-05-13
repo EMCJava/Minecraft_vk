@@ -15,7 +15,9 @@ Player::Tick( float deltaTime )
 
     const auto& deltaMouse      = MainApplication::GetInstance( ).GetDeltaMouse( );
     const auto& deltaMovement   = MainApplication::GetInstance( ).GetMovementDelta( );
-    const float speedMultiplier = MainApplication::GetInstance( ).IsSprint( ) ? 2.f : 1.f;
+    float       speedMultiplier = 3.f;
+
+    if ( MainApplication::GetInstance( ).IsSprint( ) ) speedMultiplier *= 1.3f;
 
     {
         if ( deltaMouse.first != 0 || deltaMouse.second != 0 )
@@ -42,7 +44,11 @@ Player::Tick( float deltaTime )
         static bool previousJump = false;
         bool        currentJump  = MainApplication::GetInstance( ).IsJumping( );
         if ( !previousJump && currentJump )
-            m_Velocity.y += 10;
+        {
+            const auto jumpHeight       = 1.25f;
+            const auto verticalVelocity = std::sqrt( -2 * m_Gravity * jumpHeight );
+            m_Velocity.y += verticalVelocity;
+        }
 
         previousJump = currentJump;
     }
