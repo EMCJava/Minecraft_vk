@@ -356,7 +356,7 @@ WorldChunk::IsSavedChunksStatusAtLeastInRange( ChunkStatus targetStatus, int ran
 }
 
 std::vector<std::weak_ptr<WorldChunk>>
-WorldChunk::GetChunkRefInRange( int range )
+WorldChunk::GetChunkRefInRange( int range ) const
 {
     assert( range <= ChunkReferenceRange );
     int unitOffset = StructureReferenceStatusRange - range;
@@ -364,7 +364,8 @@ WorldChunk::GetChunkRefInRange( int range )
     std::vector<std::weak_ptr<WorldChunk>> chunks;
 
     {
-        std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
+        // Not reading or writing chunk cache, just local storage
+        // std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
         for ( int dz = -range; dz <= range; ++dz )
             for ( int dx = -range; dx <= range; ++dx )
             {

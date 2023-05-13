@@ -67,7 +67,7 @@ private:
      * */
     std::weak_ptr<WorldChunk>              GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const;
     std::weak_ptr<WorldChunk>&             GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate );
-    std::vector<std::weak_ptr<WorldChunk>> GetChunkRefInRange( int range );
+    [[nodiscard]] std::vector<std::weak_ptr<WorldChunk>> GetChunkRefInRange( int range ) const;
 
     /*
      *
