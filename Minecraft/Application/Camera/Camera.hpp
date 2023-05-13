@@ -33,7 +33,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
+        , Zoom( glm::radians( 144.0f / 2 ) )
     {
         Position = position;
         WorldUp  = up;
@@ -46,7 +46,7 @@ public:
         : Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
         , MovementSpeed( 20.5f )
         , MouseSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
+        , Zoom( glm::radians( 144.0f / 2 ) )
     {
         Position = glm::vec3( posX, posY, posZ );
         WorldUp  = glm::vec3( upX, upY, upZ );
