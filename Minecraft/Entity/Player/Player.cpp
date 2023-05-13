@@ -22,7 +22,12 @@ Player::Tick( float deltaTime )
             ProcessMouseMovement( deltaMouse );
 
         if ( deltaMovement.first != 0 || deltaMovement.second != 0 )
-            ProcessKeyboard( deltaMovement, deltaTime * speedMultiplier );
+        {
+            if ( m_UseGravity )
+                ProcessKeyboardHorizontal( deltaMovement, deltaTime * speedMultiplier );
+            else
+                ProcessKeyboard( deltaMovement, deltaTime * speedMultiplier );
+        }
     }
 
     // Flying
