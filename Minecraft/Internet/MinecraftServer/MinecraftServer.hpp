@@ -7,7 +7,7 @@
 
 #include <Utility/Singleton.hpp>
 
-#include <Minecraft/Player/Player.hpp>
+#include <Minecraft/Entity/Player/Player.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/util/Tickable.hpp>
 

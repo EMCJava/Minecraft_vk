@@ -8,13 +8,25 @@
 #include <Minecraft/World/MinecraftWorld.hpp>
 #include <Utility/Timer.hpp>
 
-#define GET_STEP( X ) ( X ) > 0 ? 1 : ( ( X ) == 0 ? 0 : -1 )
+#define GET_STEP( X ) ( ( X ) > 0 ? 1 : ( ( X ) == 0 ? 0 : -1 ) )
 
 namespace Physics
 {
 template <typename Ty>
 struct Ray {
-    Ty x, y, z;
+    Ty x { }, y { }, z { };
+
+    inline constexpr auto& operator[]( const size_t& index )
+    {
+        switch ( index )
+        {
+        case 0: return x;
+        case 1: return y;
+        case 2: return z;
+        }
+
+        throw std::runtime_error( "Invalid index: " + std::to_string( index ) );
+    }
 };
 
 struct RaycastResult {
@@ -126,7 +138,7 @@ public:
 
         std::shared_ptr<ChunkTy> currentChunk;
         Block*                   blockPtr;
-        while ( tMaxX <= 1 || tMaxY <= 1 || tMaxZ <= 1 )
+        while ( true )
         {
             if constexpr ( LogPath ) pathLog.AddCoordinate( currentCoordinate );
 
@@ -145,12 +157,14 @@ public:
                 if ( GetMinecraftY( currentCoordinate ) >= 0 && GetMinecraftY( currentCoordinate ) < ChunkMaxHeight )
                 {
                     blockPtr = currentChunk->GetBlock( MinecraftWorld::BlockToChunkRelativeCoordinate( currentCoordinate ) );
-                    if ( !blockPtr->Transparent( ) )
+                    if ( !blockPtr->Transparent( ) )   // Hit
                         break;
                 }
             }
 
             result.beforeSolidHit = currentCoordinate;
+
+            if ( tMaxX > 1 && tMaxY > 1 && tMaxZ > 1 ) return result; /* outside grid */
 
             if ( tMaxX < tMaxY )
             {
@@ -183,8 +197,6 @@ public:
                     tMaxZ += tDeltaZ;
                 }
             }
-
-            if ( tMaxX > 1 && tMaxY > 1 && tMaxZ > 1 ) return result; /* outside grid */
         }
 
         result.hasSolidHit = true;

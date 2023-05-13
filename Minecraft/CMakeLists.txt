@@ -1,5 +1,5 @@
 add_subdirectory(Block)
-add_subdirectory(Player)
+add_subdirectory(Entity)
 add_subdirectory(Internet)
 add_subdirectory(World)
 
