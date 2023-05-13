@@ -54,7 +54,7 @@ RenderableChunk::RegenerateVisibleFaces( )
 namespace
 {
 inline auto&
-BlockAt( const std::pair<RenderableChunk*, uint32_t>& chunkIndexPair, uint32_t indexOffset )
+BlockAtOffset( const std::pair<RenderableChunk*, uint32_t>& chunkIndexPair, CoordinateType indexOffset )
 {
     return chunkIndexPair.first->At( chunkIndexPair.second + indexOffset );
 }
@@ -65,10 +65,10 @@ RenderableChunk::GetHorizontalChunkAfterPointMoved( uint32_t index )
 {
 
 #define CHUNK_DIR( dir ) \
-    if ( BlockAt( result[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
+    if ( BlockAtOffset( result[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
 
 #define CHUNK_DIR_OFFSET( dir, offset, DirKeyword ) \
-    if ( BlockAt( result[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
+    if ( BlockAtOffset( result[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
 
 #define SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET( dir, chunkPtrDir, offset ) result[ ( dir ) ] = { m_NearChunks[ ( chunkPtrDir ) ], \
                                                                                            index + ( offset ) }
@@ -197,13 +197,13 @@ RenderableChunk::UpdateNeighborAt( uint32_t index )
     const auto horizontalIndexChunkAfterPointMoved = GetHorizontalChunkAfterPointMoved( index );
 
 #define CHUNK_DIR( dir ) \
-    if ( BlockAt( horizontalIndexChunkAfterPointMoved[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
+    if ( BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
 #define CHUNK_DIR_OFFSET( dir, DirKeyword, offset ) \
-    if ( BlockAt( horizontalIndexChunkAfterPointMoved[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
-#define DIAGONAL_CHECK( X, Y )                                                             \
-    if ( BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##Y##X ], 0 ).Transparent( ) ) \
-    {                                                                                      \
-        blockNeighborTransparency |= Dir##Y##X##Bit;                                       \
+    if ( BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
+#define DIAGONAL_CHECK( X, Y )                                                                   \
+    if ( BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##Y##X ], 0 ).Transparent( ) ) \
+    {                                                                                            \
+        blockNeighborTransparency |= Dir##Y##X##Bit;                                             \
     }
 
     CHUNK_DIR( DirRight );
@@ -262,7 +262,7 @@ RenderableChunk::GenerateRenderBuffer( )
     uint32_t   greedyVisibleFace = 0;
     for ( const auto& mesh : requiredMeshes )
         for ( const auto& face : mesh )
-            greedyVisibleFace += face.second.faces.size( );
+            greedyVisibleFace += static_cast<uint32_t>( face.second.faces.size( ) );
 
     // Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Generating chunk:", chunk.GetCoordinate( ) );
 
@@ -275,9 +275,8 @@ RenderableChunk::GenerateRenderBuffer( )
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndices        = { 0, 1, 2, 2, 3, 0 };
     static const std::array<IndexBufferType, FaceIndicesCount> blockIndicesFlipped = { 0, 1, 3, 1, 2, 3 };
 
-    const auto verticesDataSize = ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( greedyVisibleFace );
-    const auto indicesDataSize  = ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( greedyVisibleFace ) );
-    auto&      api              = MainApplication::GetInstance( ).GetVulkanAPI( );
+    const auto verticesDataSize = (uint32_t) ScaleToSecond<1, sizeof( DataType::TexturedVertex ) * FaceVerticesCount>( greedyVisibleFace );
+    const auto indicesDataSize  = (uint32_t) ScaleToSecond<1, sizeof( IndexBufferType )>( m_IndexBufferSize = ScaleToSecond<1, FaceIndicesCount>( greedyVisibleFace ) );
 
     if ( m_BufferAllocation.targetChunk == nullptr )
         m_BufferAllocation = ChunkSolidBuffer::GetInstance( ).CreateBuffer( verticesDataSize, indicesDataSize );
@@ -417,7 +416,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
         constexpr auto oppositeDirectionUpBit   = DirectionBit( 1 << ( IntLog<(int) Dir##dir##DownBit, 2>::value ^ 0b1 ) ); \
         auto*          chunk                    = horizontalIndexChunkAfterPointMoved[ EWDir##dir ].first;                  \
         const auto     index                    = horizontalIndexChunkAfterPointMoved[ EWDir##dir ].second;                 \
-        if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], 0 ).Transparent( ) )                              \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], 0 ).Transparent( ) )                        \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index ] ^= oppositeDirectionBit;                                                 \
             chunk->UpdateAmbientOcclusionAt( index );                                                                       \
@@ -429,7 +428,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
         }                                                                                                                   \
                                                                                                                             \
-        if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirUpFaceOffset ).Transparent( ) )                \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirUpFaceOffset ).Transparent( ) )          \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index + dirUpFaceOffset ] ^= oppositeDirectionDownBit;                           \
             chunk->UpdateAmbientOcclusionAt( index + dirUpFaceOffset );                                                     \
@@ -438,7 +437,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
             if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
         }                                                                                                                   \
                                                                                                                             \
-        if ( !BlockAt( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirDownFaceOffset ).Transparent( ) )              \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirDownFaceOffset ).Transparent( ) )        \
         {                                                                                                                   \
             chunk->m_NeighborTransparency[ index + dirDownFaceOffset ] ^= oppositeDirectionUpBit;                           \
             chunk->UpdateAmbientOcclusionAt( index + dirDownFaceOffset );                                                   \
@@ -481,7 +480,8 @@ RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bo
     std::lock_guard<std::recursive_mutex> lock( m_SyncMutex );
     if ( m_EmptySlot == 0 )
     {
-        if ( !( m_NearChunks[ fromDir ] = other ) )
+        m_NearChunks[ fromDir ] = other;
+        if ( other == nullptr )
         {
             // Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, GetCoordinate( ), "are now incomplete chunks" );
             m_EmptySlot |= 1 << fromDir;
@@ -492,7 +492,8 @@ RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bo
         }
     } else
     {
-        if ( ( m_NearChunks[ fromDir ] = other ) )
+        m_NearChunks[ fromDir ] = other;
+        if ( other != nullptr )
             m_EmptySlot &= ~( 1 << fromDir );
         else
             m_EmptySlot |= ( 1 << fromDir );
@@ -578,7 +579,7 @@ RenderableChunk::UpdateMetaDataAt( uint32_t index )
     for ( int i = 0; i < CubeDirection::DirSize; ++i )
     {
         assert( textureIndices[ i ] <= FaceVertexMetaData::GetMaxTextureIDSupported( ) );
-        m_VertexMetaData[ index ].faceVertexMetaData[ i ].SetTextureID( textureIndices[ i ] );
+        m_VertexMetaData[ index ].faceVertexMetaData[ i ].SetTextureID( (FaceVertexMetaData::TextureIDTy) textureIndices[ i ] );
     }
 }
 

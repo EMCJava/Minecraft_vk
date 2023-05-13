@@ -13,9 +13,9 @@ void
 VulkanPipeline::SetupInputStage( float width, float height )
 {
     createInfo.viewport = vk::Viewport { 0.0f, 0.0f, width, height, 0.0f, 1.0f };
-    createInfo.scissor  = vk::Rect2D{
+    createInfo.scissor  = vk::Rect2D {
          {0, 0},
-         vk::Extent2D( static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) )
+        vk::Extent2D( static_cast<uint32_t>( width ), static_cast<uint32_t>( height ) )
     };
 
     createInfo.shaderBindingDescriptions   = VertexClass::getBindingDescriptions( );
@@ -41,7 +41,7 @@ VulkanPipeline::SetupInputStage( float width, float height )
 
 template <typename VertexClass, typename>
 void
-VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
+VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat )
 {
     SetupPipelineShaderStage( );
 
@@ -94,9 +94,9 @@ VulkanPipeline::Create( float width, float height, uint32_t descriptorCount, vk:
      *
      * */
     SetupRenderPass( device, imageFormat, depthFormat );
-    SetupDepthStencilStage();
+    SetupDepthStencilStage( );
 
-    createInfo.createInfo.setStageCount( createInfo.shaderStagesCreateInfo.size( ) );
+    createInfo.createInfo.setStageCount( (uint32_t) createInfo.shaderStagesCreateInfo.size( ) );
     createInfo.createInfo.setStages( createInfo.shaderStagesCreateInfo );
     createInfo.createInfo.setPVertexInputState( &createInfo.vertexInputInfo );
     createInfo.createInfo.setPInputAssemblyState( &createInfo.inputAssemblyCreateInfo );

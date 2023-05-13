@@ -6,6 +6,7 @@
 #define MINECRAFT_VK_GRAPHIC_VULKAN_VULKANAPI_IMPL_HPP
 
 #include "VulkanAPI.hpp"
+#include <Utility/Logger.hpp>
 
 template <bool doRender>
 void
@@ -88,6 +89,7 @@ VulkanAPI::presentFrame( uint32_t index )
     }
     catch ( vk::OutOfDateKHRError& err )
     {
+        LOGL_WARN( err.what() )
         m_swap_chain_not_valid.test_and_set( );
     }
 

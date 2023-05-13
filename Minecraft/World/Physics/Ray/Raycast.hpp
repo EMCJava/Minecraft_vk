@@ -80,8 +80,11 @@ public:
 
         // Timer timer;
 
-        BlockCoordinate currentCoordinate = result.beforeSolidHit = { std::floor( std::get<0>( startingPosition ) ), std::floor( std::get<1>( startingPosition ) ), std::floor( std::get<2>( startingPosition ) ) };
-        CoordinateType  stepX = GET_STEP( ray.x ), stepY = GET_STEP( ray.y ), stepZ = GET_STEP( ray.z );
+        BlockCoordinate currentCoordinate = result.beforeSolidHit =
+            { (CoordinateType) std::floor( std::get<0>( startingPosition ) ),
+              (CoordinateType) std::floor( std::get<1>( startingPosition ) ),
+              (CoordinateType) std::floor( std::get<2>( startingPosition ) ) };
+        CoordinateType stepX = GET_STEP( ray.x ), stepY = GET_STEP( ray.y ), stepZ = GET_STEP( ray.z );
         // CoordinateType  justOutX = stepX + ray.x + GetMinecraftX( startingPosition ), justOutY = stepY + ray.y + GetMinecraftY( startingPosition ), justOutZ = stepZ + ray.z + GetMinecraftZ( startingPosition );
         Ty tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
 

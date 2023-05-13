@@ -8,6 +8,7 @@ int
 main( )
 {
     bool result = GlobalConfig::LoadFromFile( "config.ini" );
+    (void) result;
     assert( result );
 
     bool success = true;

@@ -271,7 +271,7 @@ ClassName( void )::DelayedDeleteBuffer( const ChunkRenderBuffers::SuitableAlloca
     allocation.targetChunk->indirectCommands.erase( oldCommandIter );
     allocation.targetChunk->shouldUpdateIndirectDrawBuffers = true;
 
-    m_PendingErases.emplace_back( allocation, VulkanAPI::GetInstance( ).getSwapChainImagesCount( ) );
+    m_PendingErases.emplace_back( allocation, (int) VulkanAPI::GetInstance( ).getSwapChainImagesCount( ) );
 }
 
 ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
@@ -280,7 +280,7 @@ ClassName( void )::BufferChunk::UpdateIndirectDrawBuffers( )
     shouldUpdateIndirectDrawBuffers = false;
 
     std::lock_guard<std::mutex> lock( indirectDrawBuffersMutex );
-    const auto                  newIndirectDrawBufferSize = indirectCommands.size( ) * sizeof( indirectCommands[ 0 ] );
+    const auto                  newIndirectDrawBufferSize = (uint32_t) ( indirectCommands.size( ) * sizeof( indirectCommands[ 0 ] ) );
     if ( indirectDrawBufferSize < newIndirectDrawBufferSize )
     {
         indirectDrawBufferSize = newIndirectDrawBufferSize + ( IndirectDrawBufferSizeStep - ( newIndirectDrawBufferSize % IndirectDrawBufferSizeStep ) );

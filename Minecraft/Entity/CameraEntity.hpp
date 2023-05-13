@@ -9,7 +9,6 @@
 #include "PawnEntity.hpp"
 
 #include <Include/GLM.hpp>
-#include <Utility/Type.hpp>
 
 class CameraEntity : public PawnEntity
 {
@@ -20,8 +19,8 @@ class CameraEntity : public PawnEntity
     float Zoom { };
 
 public:
-    explicit CameraEntity( const EntityCoordinate& Coordinate, glm::vec3 position = glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3 up = glm::vec3( 0.0f, 1.0f, 0.0f ), float yaw = glm::radians( -90.0f ), float pitch = 0.0f )
-        : PawnEntity( Coordinate, position, up, yaw, pitch )
+    explicit CameraEntity( const EntityCoordinate& Coordinate, glm::vec3 up = glm::vec3( 0.0f, 1.0f, 0.0f ), float yaw = glm::radians( -90.0f ), float pitch = 0.0f )
+        : PawnEntity( Coordinate, up, yaw, pitch )
         , MovementSpeed( 20.5f )
         , ViewSensitivity( 0.005f )
         , Zoom( glm::radians( 104.0f / 2 ) )

@@ -118,16 +118,16 @@ BlockTexture::BlockTexture( const std::string& folder )
         const auto& textureList = blockTexturesJson[ blockName ];
         for ( int j = 0; j < DirSize; ++j )
         {
-            const auto& textureName = textureList[ j ].get<std::string>( );
-            const auto& texturePath = std::filesystem::path( folder + '/' + textureName ).make_preferred( ).string( );
+            const std::filesystem::path textureName = textureList[ j ].get<std::string>( );
+            const auto&                 texturePath = std::filesystem::path( folder / textureName ).make_preferred( ).string( );
             if ( m_UniqueTexture.contains( texturePath ) ) continue;
-            m_UniqueTexture[ texturePath ] = m_UniqueTexture.size( );
+            m_UniqueTexture[ texturePath ] = (uint32_t) m_UniqueTexture.size( );
         }
     }
 
-    const auto     totalTexture         = m_UniqueTexture.size( );
-    const uint32_t textureAtlasesWidth  = std::floor( std::sqrt( totalTexture ) );
-    const uint32_t textureAtlasesHeight = std::ceil( (float) totalTexture / textureAtlasesWidth );
+    const auto totalTexture         = m_UniqueTexture.size( );
+    const auto textureAtlasesWidth  = (uint32_t) std::floor( std::sqrt( totalTexture ) );
+    const auto textureAtlasesHeight = (uint32_t) std::ceil( (float) totalTexture / (float) textureAtlasesWidth );
 
     const auto textureResolution = textureSpec[ "resolution" ].get<uint32_t>( );
 
@@ -189,7 +189,7 @@ BlockTexture::BlockTexture( const std::string& folder )
             textureFace[ 3 ].SetTextureCoor( offset );
             textureFace[ 3 ].SetAccumulatedTextureCoor( glm::vec2 { 0, textureResolution } );
 
-            m_BlockTextureIndices[ i ][ j ] = m_TextureList.size( );
+            m_BlockTextureIndices[ i ][ j ] = (uint32_t) m_TextureList.size( );
             m_TextureList.push_back( textureFace );
 
             //            m_BlockTextures[ i ][ j ][ 0 ].textureCoor = {0, 0};

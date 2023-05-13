@@ -95,7 +95,7 @@ public:
     virtual ~VulkanPipeline( ) = default; // why ???
 
     template <typename VertexClass = DataType::VertexDetail, typename = std::enable_if_t<std::is_base_of_v<DataType::VertexDetail, VertexClass>>>
-    void Create( float width, float height, uint32_t descriptorCount, vk::PhysicalDevice& physicalDevice, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
+    void Create( float width, float height, uint32_t descriptorCount, vk::Device& device, vk::SurfaceFormatKHR imageFormat, vk::SurfaceFormatKHR depthFormat );
 
     [[nodiscard]] vk::Pipeline   getPipeline( ) const { return m_vkPipeline.begin( )->get( ); }
     [[nodiscard]] vk::RenderPass getRenderPass( ) const { return m_vkRenderPass.get( ); }

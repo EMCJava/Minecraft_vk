@@ -79,9 +79,9 @@ VulkanAPI::setupAPI( const std::string& applicationName )
      * */
     vk::InstanceCreateInfo createInfo;
     createInfo.setPApplicationInfo( &appInfo );
-    createInfo.setEnabledLayerCount( m_vkValidationLayer->RequiredLayerCount( ) );
+    createInfo.setEnabledLayerCount( (uint32_t) m_vkValidationLayer->RequiredLayerCount( ) );
     createInfo.setPpEnabledLayerNames( m_vkValidationLayer->RequiredLayerStrPtr( ) );
-    createInfo.setEnabledExtensionCount( m_vkExtension->VulkanExtensionCount( ) );
+    createInfo.setEnabledExtensionCount( (uint32_t) m_vkExtension->VulkanExtensionCount( ) );
     createInfo.setPpEnabledExtensionNames( m_vkExtension->VulkanExtensionStrPtr( ) );
 
     // Validation layer for instance create & destroy
@@ -417,11 +417,11 @@ VulkanAPI::setupLogicalDevice( )
 
     vk::DeviceCreateInfo createInfo;
     createInfo.setPEnabledFeatures( &requiredFeatures );
-    createInfo.setQueueCreateInfoCount( queueCreateInfos.size( ) );
+    createInfo.setQueueCreateInfoCount( (uint32_t) queueCreateInfos.size( ) );
     createInfo.setQueueCreateInfos( queueCreateInfos );
-    createInfo.setEnabledLayerCount( m_vkValidationLayer->RequiredLayerCount( ) );
+    createInfo.setEnabledLayerCount( (uint32_t) m_vkValidationLayer->RequiredLayerCount( ) );
     createInfo.setPpEnabledLayerNames( m_vkValidationLayer->RequiredLayerStrPtr( ) );
-    createInfo.setEnabledExtensionCount( m_vkExtension->DeviceExtensionCount( ) );
+    createInfo.setEnabledExtensionCount( (uint32_t) m_vkExtension->DeviceExtensionCount( ) );
     createInfo.setPpEnabledExtensionNames( m_vkExtension->DeviceExtensionStrPtr( ) );
 
     m_vkLogicalDevice = m_vkPhysicalDevice.createDeviceUnique( createInfo );
@@ -475,7 +475,7 @@ VulkanAPI::setupSwapChain( )
     if ( m_vkQueue_family_indices.graphicsFamily.first != m_vkQueue_family_indices.presentFamily )
     {
         createInfo.imageSharingMode      = vk::SharingMode::eConcurrent;
-        createInfo.queueFamilyIndexCount = std::size( queueFamilyIndices );
+        createInfo.queueFamilyIndexCount = (uint32_t) std::size( queueFamilyIndices );
         createInfo.pQueueFamilyIndices   = queueFamilyIndices;
     } else
     {
@@ -566,7 +566,12 @@ VulkanAPI::setupPipeline( )
      *
      * */
     m_vkPipeline = std::make_unique<VulkanPipeline>( std::move( shader ) );
-    m_vkPipeline->Create<DataType::TexturedVertex>( m_vkDisplayExtent.width, m_vkDisplayExtent.height, getSwapChainImagesCount( ), m_vkPhysicalDevice, m_vkLogicalDevice.get( ), m_vkSwap_chain_detail.formats[ 0 ], m_vkSwap_chain_depth_format );
+    m_vkPipeline->Create<DataType::TexturedVertex>( (float) m_vkDisplayExtent.width,
+                                                    (float) m_vkDisplayExtent.height,
+                                                    static_cast<uint32_t>( getSwapChainImagesCount( ) ),
+                                                    m_vkLogicalDevice.get( ),
+                                                    m_vkSwap_chain_detail.formats[ 0 ],
+                                                    m_vkSwap_chain_depth_format );
 
     /**
      *
@@ -620,7 +625,7 @@ VulkanAPI::setupSyncs( )
     m_vkSwap_chain_image_fence_syncs.clear( );
     m_vkSwap_chain_image_fence_syncs.resize( m_vkFrameBuffers.size( ), nullptr );
 
-    for ( int i = 0; i < m_sync_count; ++i )
+    for ( uint32_t i = 0; i < m_sync_count; ++i )
     {
         m_vkImage_acquire_syncs.emplace_back( m_vkLogicalDevice->createSemaphoreUnique( { } ) );
         m_vkRender_syncs.emplace_back( m_vkLogicalDevice->createSemaphoreUnique( { } ) );
@@ -689,7 +694,7 @@ VulkanAPI::cycleGraphicCommandBuffers( uint32_t index )
          * Rendering
          *
          * */
-        m_renderer( m_vkGraphicCommandBuffers[ it_index ], it_index );
+        m_renderer( m_vkGraphicCommandBuffers[ it_index ], (uint32_t) it_index );
 
         m_vkGraphicCommandBuffers[ it_index ].endRenderPass( );
         m_vkGraphicCommandBuffers[ it_index ].end( );
@@ -734,7 +739,7 @@ VulkanAPI::setupGraphicCommandBuffers( )
     vk::CommandBufferAllocateInfo allocInfo { };
     allocInfo.setCommandPool( m_vkGraphicCommandPool.get( ) );
     allocInfo.setLevel( vk::CommandBufferLevel::ePrimary );
-    allocInfo.setCommandBufferCount( m_vkFrameBuffers.size( ) );
+    allocInfo.setCommandBufferCount( (uint32_t) m_vkFrameBuffers.size( ) );
 
     m_vkGraphicCommandBuffers = m_vkLogicalDevice->allocateCommandBuffers( allocInfo );
 }

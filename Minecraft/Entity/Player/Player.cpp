@@ -15,7 +15,7 @@ Player::Tick( float deltaTime )
 
     const auto& deltaMouse      = MainApplication::GetInstance( ).GetDeltaMouse( );
     const auto& deltaMovement   = MainApplication::GetInstance( ).GetMovementDelta( );
-    const float speedMultiplier = MainApplication::GetInstance( ).IsSprint( ) ? 2 : 1;
+    const float speedMultiplier = MainApplication::GetInstance( ).IsSprint( ) ? 2.f : 1.f;
 
     {
         if ( deltaMouse.first != 0 || deltaMouse.second != 0 )
@@ -30,7 +30,7 @@ Player::Tick( float deltaTime )
     {
         // Can't crouch while jumping
         auto verticalMovement = MainApplication::GetInstance( ).IsJumping( ) ? 1 : ( MainApplication::GetInstance( ).IsCrouch( ) ? -1 : 0 );
-        ProcessVerticalMovement( verticalMovement, deltaTime * speedMultiplier );
+        ProcessVerticalMovement( (float) verticalMovement, deltaTime * speedMultiplier );
         // m_Camera.ProcessKeyboardHorizontal( MainApplication::GetInstance( ).GetMovementDelta( ), deltaTime );
     } else   // Walking
     {

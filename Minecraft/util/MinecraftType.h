@@ -103,13 +103,13 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
     return ( std::abs( std::get<I>( t1 ) - std::get<I>( t2 ) ) + ... );
 }
 
-//template <typename... T1, typename... T2, std::size_t... I>
-//inline constexpr auto
-//Equal( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
-//       std::index_sequence<I...> )
+// template <typename... T1, typename... T2, std::size_t... I>
+// inline constexpr auto
+// Equal( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
+//        std::index_sequence<I...> )
 //{
-//    return ( ( std::get<I>( t1 ) == std::get<I>( t2 ) ) && ... );
-//}
+//     return ( ( std::get<I>( t1 ) == std::get<I>( t2 ) ) && ... );
+// }
 
 }   // namespace
 
@@ -122,14 +122,14 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
     return ManhattanDistance( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
 }
 
-//template <typename... T1, typename... T2>
-//inline constexpr bool
-//operator==( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+// template <typename... T1, typename... T2>
+// inline constexpr bool
+// operator==( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
 //{
-//    // make sure both tuples have the same size
-//    static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
-//    return Equal( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
-//}
+//     // make sure both tuples have the same size
+//     static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
+//     return Equal( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
+// }
 
 template <typename... T1, typename... T2>
 inline constexpr auto
@@ -218,7 +218,11 @@ MakeMinecraftCoordinate( auto x, auto y, auto z )
     static_assert( MinecraftCoordinateYIndex == 2 );
     static_assert( MinecraftCoordinateZIndex == 1 );
 
-    return { x, z, y };
+    using type1 = std::tuple_element<0, Ty>::type;
+    using type2 = std::tuple_element<1, Ty>::type;
+    using type3 = std::tuple_element<2, Ty>::type;
+
+    return { (type1) x, (type2) z, (type3) y };
 }
 
 template <typename Ty = ChunkCoordinate>

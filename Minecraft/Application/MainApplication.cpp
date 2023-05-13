@@ -127,7 +127,7 @@ MainApplication::run( )
 
         const auto& player           = MinecraftServer::GetInstance( ).GetPlayer( 0 );
         renderUBOs[ index ].ubo.view = player.GetViewMatrix( );
-        renderUBOs[ index ].ubo.time = glfwGetTime( ) * 3;
+        renderUBOs[ index ].ubo.time = (float) glfwGetTime( ) * 3;
 
         const auto& playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
         const auto& blockLookingAt      = playerRaycastResult.solidHit;
@@ -138,7 +138,6 @@ MainApplication::run( )
 
         uniformBuffers[ index ].writeBuffer( &renderUBOs[ index ].ubo, sizeof( BlockTransformUBO ) );
         command_buffer.bindDescriptorSets( vk::PipelineBindPoint::eGraphics, m_graphics_api->getPipelineLayout( ), 0, m_graphics_api->getDescriptorSets( )[ index ], nullptr );
-        auto& chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
 
         m_renderingChunkCount = 0;
 
@@ -155,7 +154,7 @@ MainApplication::run( )
                 static_assert( std::is_same<IndexBufferType, uint32_t>::value );
                 command_buffer.bindIndexBuffer( buffer.buffer, 0, vk::IndexType::eUint32 );
 
-                command_buffer.drawIndexedIndirect( buffer.indirectDrawBuffers.GetBuffer( ), 0, buffer.indirectCommands.size( ), sizeof( vk::DrawIndexedIndirectCommand ) );
+                command_buffer.drawIndexedIndirect( buffer.indirectDrawBuffers.GetBuffer( ), 0, (uint32_t) buffer.indirectCommands.size( ), sizeof( vk::DrawIndexedIndirectCommand ) );
             }
 
             // Logger::getInstance( ).LogLine( renderBuffer.m_Buffers.size( ) );
@@ -268,8 +267,8 @@ MainApplication::InitImgui( )
 
     init_info.DescriptorPool  = *m_imguiDescriptorPool;
     init_info.Subpass         = 0;
-    init_info.MinImageCount   = m_graphics_api->getSwapChainImagesCount( );
-    init_info.ImageCount      = m_graphics_api->getSwapChainImagesCount( );
+    init_info.MinImageCount   = (uint32_t) m_graphics_api->getSwapChainImagesCount( );
+    init_info.ImageCount      = (uint32_t) m_graphics_api->getSwapChainImagesCount( );
     init_info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
     init_info.Allocator       = nullptr;
     init_info.CheckVkResultFn = nullptr;
@@ -454,7 +453,7 @@ MainApplication::onFrameBufferResized( GLFWwindow* window, int width, int height
     if ( !minimized )
     {
         const auto& player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
-        for ( int i = app->m_graphics_api->getSwapChainImagesCount( ) - 1; i >= 0; --i )
+        for ( int i = (int) app->m_graphics_api->getSwapChainImagesCount( ) - 1; i >= 0; --i )
         {
             app->renderUBOs[ i ].ubo.proj = glm::perspective( player.GetFOV( ), width / (float) height, 0.1f, 5000.0f );
             app->renderUBOs[ i ].ubo.proj[ 1 ][ 1 ] *= -1;
@@ -495,6 +494,7 @@ MainApplication::RecreateWindow( bool isFullScreen )
 void
 MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods )
 {
+    (void) ( scancode, mods );
     static auto* app = reinterpret_cast<MainApplication*>( glfwGetWindowUserPointer( window ) );
 
     switch ( action )
@@ -552,7 +552,8 @@ struct ScrollingBuffer {
 void
 MainApplication::renderImguiCursor( uint32_t renderIndex ) const
 {
-    ImGui::SetNextWindowPos( ImVec2( m_screen_width / 2, m_screen_height / 2 ), ImGuiCond_Always, { 0.5f, 0.5f } );
+    (void) renderIndex;
+    ImGui::SetNextWindowPos( ImVec2( (float) m_screen_width / 2, (float) m_screen_height / 2 ), ImGuiCond_Always, { 0.5f, 0.5f } );
     ImGui::Begin( "Cursor", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground );
     auto windowSize = ImGui::GetWindowSize( );
     auto textSize   = ImGui::CalcTextSize( "X" );
@@ -631,7 +632,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
             ImGui::SameLine( );
             if ( ImGui::Button( "Teleport" ) )
             {
-                MinecraftServer::GetInstance( ).GetPlayer( 0 ).SetCoordinate( MakeMinecraftCoordinate( pos[ 0 ], pos[ 1 ], pos[ 2 ] ) );
+                MinecraftServer::GetInstance( ).GetPlayer( 0 ).SetCoordinate( MakeMinecraftCoordinate<EntityCoordinate>( pos[ 0 ], pos[ 1 ], pos[ 2 ] ) );
             }
         }
 
@@ -696,7 +697,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
                 // Demonstrate using clipper for large vertical lists
                 ImGuiListClipper clipper;
-                clipper.Begin( m_BlockDetailMap.size( ) );
+                clipper.Begin( (int) m_BlockDetailMap.size( ) );
                 while ( clipper.Step( ) )
                 {
                     for ( int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
@@ -733,9 +734,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
                     chunkCount.shrink( 0 );
                     chunkRenderCount.shrink( 0 );
                 }
-                chunkLoadingThreadCount.push_back( ImVec2( xmod, chunkPool.GetLoadingCount( ) ) );
-                chunkCount.push_back( ImVec2( xmod, chunkPool.GetTotalChunk( ) ) );
-                chunkRenderCount.push_back( ImVec2( xmod, m_renderingChunkCount ) );
+                chunkLoadingThreadCount.push_back( ImVec2( xmod, (float) chunkPool.GetLoadingCount( ) ) );
+                chunkCount.push_back( ImVec2( xmod, (float) chunkPool.GetTotalChunk( ) ) );
+                chunkRenderCount.push_back( ImVec2( xmod, (float) m_renderingChunkCount ) );
             }
 
             static ScrollingBuffer fps;
@@ -755,7 +756,7 @@ MainApplication::renderImgui( uint32_t renderIndex )
                 ImPlot::SetupAxes( "Time", "Thread" );
                 ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit );
                 ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
-                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, chunkPool.GetMaxThread( ) + 1 );
+                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, (double) chunkPool.GetMaxThread( ) + 1 );
 
                 ImPlot::SetAxes( ImAxis_X1, ImAxis_Y1 );
                 ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
@@ -894,7 +895,7 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
         mainApplication->m_NegDeltaMouse.first += static_cast<FloatTy>( xpos ) - mainApplication->m_MousePos.first;
         mainApplication->m_NegDeltaMouse.second += mainApplication->m_MousePos.second - static_cast<FloatTy>( ypos );
     }
-    mainApplication->m_MousePos = { xpos, ypos };
+    mainApplication->m_MousePos = { static_cast<FloatTy>( xpos ), static_cast<FloatTy>( ypos ) };
 
     /*
         Logger::getInstance( ).LogLine( xpos, ypos );
@@ -920,7 +921,7 @@ MainApplication::SetGenerationOffsetByCurve( )
 {
     auto offsets = std::make_unique<float[]>( ChunkMaxHeight );
     for ( int i = 0; i < ChunkMaxHeight; ++i )
-        offsets[ i ] = m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
+        offsets[ i ] = (float) m_TerrainNoiseOffset.Sample( (float) i / ChunkMaxHeight );
 
     MinecraftServer::GetInstance( ).GetWorld( ).SetTerrainNoiseOffset( std::move( offsets ) );
 }

@@ -81,17 +81,17 @@ protected:
         wrapper.occupied = false;
     }
 
-    inline uint32_t GetRunningThreadCount( ) const
+    [[nodiscard]] inline uint32_t GetRunningThreadCount( ) const
     {
-        int runningThreadCount = 0;
-        for ( int i = 0; i < m_maxThread; ++i )
+        uint32_t runningThreadCount = 0;
+        for ( uint32_t i = 0; i < m_maxThread; ++i )
             if ( m_RunningThreads[ i ].occupied ) runningThreadCount++;
         return runningThreadCount;
     }
 
-    inline bool IsAllThreadCompleted( ) const
+    [[nodiscard]] inline bool IsAllThreadCompleted( ) const
     {
-        for ( int i = 0; i < m_maxThread; ++i )
+        for ( uint32_t i = 0; i < m_maxThread; ++i )
             if ( m_RunningThreads[ i ].threadInstance != nullptr ) return false;
         return true;
     }
@@ -131,7 +131,7 @@ protected:
 
         if ( m_PendingThreads.empty( ) ) return;
 
-        int emptySlot = 0;
+        uint32_t emptySlot = 0;
         for ( ; emptySlot < m_maxThread; ++emptySlot )
             if ( m_RunningThreads[ emptySlot ].threadInstance == nullptr ) break;
 

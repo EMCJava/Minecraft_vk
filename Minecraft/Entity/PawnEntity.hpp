@@ -29,7 +29,7 @@ public:
     glm::vec3 m_EyePosition { 0 };
 
     // constructor with vectors
-    explicit PawnEntity( const EntityCoordinate& Coordinate, glm::vec3 position = glm::vec3( 0.0f, 0.0f, 0.0f ), glm::vec3 up = glm::vec3( 0.0f, 1.0f, 0.0f ), float yaw = glm::radians( -90.0f ), float pitch = 0.0f )
+    explicit PawnEntity( const EntityCoordinate& Coordinate, glm::vec3 up = glm::vec3( 0.0f, 1.0f, 0.0f ), float yaw = glm::radians( -90.0f ), float pitch = 0.0f )
         : Entity( Coordinate )
         , Front( glm::vec3( 0.0f, 0.0f, -1.0f ) )
     {

@@ -8,7 +8,7 @@
 // assume x y has the same sign
 #define MIN_ABS( x, y ) ( ( x ) > 0 ? ( ( x ) > ( y ) ? ( y ) : ( x ) ) : ( ( x ) > ( y ) ? ( x ) : ( y ) ) )
 
-#define SMALL_DISTANCE   0.0001
+#define SMALL_DISTANCE   0.0001f
 #define SMALL_DISTANCE_2 ( SMALL_DISTANCE * 2 )
 
 inline glm::vec3
@@ -31,11 +31,6 @@ PointMove( const glm::vec3& pointPosition, const glm::vec3& maxTravel )
 
         if ( raycast.hasSolidHit )
         {
-            if ( i != 1 )
-            {
-                auto a = 0;
-            }
-
             // not initially inside a block
             if ( raycast.beforeSolidHit != raycast.solidHit )
             {
@@ -58,12 +53,8 @@ PointMove( const glm::vec3& pointPosition, const glm::vec3& maxTravel )
                     else
                         distance[ i ] = 0;
 
-                    Logger::getInstance( ).LogLine( (double) pointPosition[ i ], (double) distance[ i ] );
+                    // Logger::getInstance( ).LogLine( (double) pointPosition[ i ], (double) distance[ i ] );
                 }
-
-            } else
-            {
-                auto a = 0;
             }
         } else
         {
@@ -90,11 +81,6 @@ Entity::Tick( float deltaTime )
     }
 
     glm::vec3 travel = m_Velocity * deltaTime;
-
-    if ( travel[ 0 ] != 0 )
-    {
-        auto a = 0;
-    }
 
     // for hitbox size
     for ( FloatTy hitX = 0;; hitX += 1 )

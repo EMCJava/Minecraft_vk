@@ -14,10 +14,10 @@
 class Entity : public Tickable
 {
 protected:
-    FloatTy   m_Friction = 0.001;
+    FloatTy   m_Friction = 0.001f;
     glm::vec3 m_Position, m_Velocity { };
 
-    FloatTy m_Gravity    = -9.81;
+    FloatTy m_Gravity    = -9.81f;
     bool    m_UseGravity = true;
 
 public:

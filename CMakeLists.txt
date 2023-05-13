@@ -4,6 +4,15 @@ project(Minecraft_vk CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Set compiler flags for MSVC and g++
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /we4715")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror=uninitialized")
+endif()
+
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 

@@ -65,8 +65,9 @@ private:
      * Return and update the chunk reference
      *
      * */
-    std::weak_ptr<WorldChunk>              GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const;
-    std::weak_ptr<WorldChunk>&             GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate );
+    static inline int                                    GetRefIndexFromCenter( int dx, int dy ) { return ChunkReferenceRange * ( StructureReferenceStatusRange + dy ) + StructureReferenceStatusRange + dx; }
+    std::weak_ptr<WorldChunk>                            TryGetChunkReference( uint32_t index ) const;
+    std::weak_ptr<WorldChunk>&                           GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoordinate );
     [[nodiscard]] std::vector<std::weak_ptr<WorldChunk>> GetChunkRefInRange( int range ) const;
 
     /*

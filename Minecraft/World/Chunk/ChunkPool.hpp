@@ -62,7 +62,7 @@ public:
 
     ~ChunkPool( )
     {
-        LOGL_SYS( "Destroying ChunkPool" );
+        LOGL_SYS( "Destroying ChunkPool" )
 
         StopThread( );
         Clean( );

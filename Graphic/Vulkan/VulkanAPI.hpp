@@ -232,7 +232,7 @@ public:
         return descriptorWrite;
     }
 
-    inline std::size_t getSwapChainImagesCount( ) { return m_vkSwap_chain_images.size( ); }
+    inline auto        getSwapChainImagesCount( ) { return m_vkSwap_chain_images.size( ); }
     inline const auto& getDisplayExtent( ) { return m_vkDisplayExtent; }
 
     inline void invalidateSwapChain( ) { m_swap_chain_not_valid.test_and_set( ); }
@@ -360,10 +360,10 @@ private:
      * Custom detail(s)
      *
      * */
-    std::unordered_map<const void*, std::pair<uint32_t, vk::QueueFlagBits>> m_requested_queue;
-    std::function<void( const vk::CommandBuffer&, uint32_t index )>         m_renderer;
-    std::function<void( )>                                                  m_pipeline_create_callback;
-    std::array<vk::ClearValue, 2>                                           m_clearValues { vk::ClearValue { vk::ClearColorValue { std::array<float, 4> { 0.0515186f, 0.504163f, 0.656863f, 1.0f } } }, vk::ClearValue { vk::ClearDepthStencilValue { 1.f, 0 } } };
+    std::unordered_map<const void*, std::pair<size_t, vk::QueueFlagBits>> m_requested_queue;
+    std::function<void( const vk::CommandBuffer&, uint32_t index )>       m_renderer;
+    std::function<void( )>                                                m_pipeline_create_callback;
+    std::array<vk::ClearValue, 2>                                         m_clearValues { vk::ClearValue { vk::ClearColorValue { std::array<float, 4> { 0.0515186f, 0.504163f, 0.656863f, 1.0f } } }, vk::ClearValue { vk::ClearDepthStencilValue { 1.f, 0 } } };
 };
 
 #include "VulkanAPI_Impl.hpp"

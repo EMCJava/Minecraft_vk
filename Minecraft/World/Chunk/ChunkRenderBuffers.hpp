@@ -109,6 +109,8 @@ private:
     std::mutex                                     m_PendingErasesLock;
     std::deque<std::pair<SuitableAllocation, int>> m_PendingErases;
 
+    float cleanupTimer { };
+
     void GrowCapacity( );
 
 public:
@@ -146,13 +148,18 @@ public:
 
     inline void Tick( float deltaTime )
     {
-        std::lock_guard<std::mutex> lock( m_PendingErasesLock );
-        for ( int i = 0; i < m_PendingErases.size( ); ++i )
+        cleanupTimer += deltaTime;
+        if ( cleanupTimer > 1 )
         {
-            if ( m_PendingErases[ i ].second-- > 0 )
+            cleanupTimer = 0;
+            std::lock_guard<std::mutex> lock( m_PendingErasesLock );
+            for ( int i = 0; i < m_PendingErases.size( ); ++i )
             {
-                DeleteBuffer( m_PendingErases[ i ].first );
-                m_PendingErases.erase( m_PendingErases.begin( ) + i-- );
+                if ( m_PendingErases[ i ].second-- > 0 )
+                {
+                    DeleteBuffer( m_PendingErases[ i ].first );
+                    m_PendingErases.erase( m_PendingErases.begin( ) + i-- );
+                }
             }
         }
     }

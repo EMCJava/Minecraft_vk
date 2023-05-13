@@ -301,7 +301,7 @@ WorldChunk::GetChunkReference( uint32_t index, const ChunkCoordinate& worldCoord
 }
 
 std::weak_ptr<WorldChunk>
-WorldChunk::GetChunkReferenceConst( uint32_t index, const ChunkCoordinate& worldCoordinate ) const
+WorldChunk::TryGetChunkReference( uint32_t index ) const
 {
     if ( auto& chunkPtr = m_ChunkReferencesSaves[ index ]; !chunkPtr.expired( ) )
     {
@@ -315,7 +315,6 @@ bool
 WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
 {
     assert( range <= ChunkReferenceRange );
-    int unitOffset = StructureReferenceStatusRange - range;
 
     std::vector<ChunkCoordinate> missingChunk;
 
@@ -324,7 +323,7 @@ WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
             for ( int dx = -range; dx <= range; ++dx )
             {
                 const auto chunkCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
-                if ( auto chunkCache = GetChunkReference( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), chunkCoordinate );
+                if ( auto chunkCache = GetChunkReference( GetRefIndexFromCenter( dx, dz ), chunkCoordinate );
                      chunkCache.expired( ) || !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) )
                     missingChunk.push_back( chunkCoordinate );
             }
@@ -343,16 +342,12 @@ bool
 WorldChunk::IsSavedChunksStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const
 {
     assert( range <= ChunkReferenceRange );
-    int unitOffset = StructureReferenceStatusRange - range;
 
-    // std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
     for ( int dz = -range; dz <= range; ++dz )
         for ( int dx = -range; dx <= range; ++dx )
-        {
-            const auto chunkCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
-            if ( auto chunkCache = GetChunkReferenceConst( ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range ), chunkCoordinate );
+            if ( auto chunkCache = TryGetChunkReference( GetRefIndexFromCenter( dx, dz ) );
                  !chunkCache.expired( ) && !chunkCache.lock( )->IsChunkStatusAtLeast( targetStatus ) ) return false;
-        }
+
 
     return true;
 }
@@ -361,21 +356,11 @@ std::vector<std::weak_ptr<WorldChunk>>
 WorldChunk::GetChunkRefInRange( int range ) const
 {
     assert( range <= ChunkReferenceRange );
-    int unitOffset = StructureReferenceStatusRange - range;
 
     std::vector<std::weak_ptr<WorldChunk>> chunks;
-
-    {
-        // Not reading or writing chunk cache, just local storage
-        // std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
-        for ( int dz = -range; dz <= range; ++dz )
-            for ( int dx = -range; dx <= range; ++dx )
-            {
-                const auto chunkCoordinate    = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
-                const auto chunkRelativeIndex = ( ChunkReferenceRange * ( unitOffset + dz + range ) ) + unitOffset + ( dx + range );
-                chunks.push_back( GetChunkReferenceConst( chunkRelativeIndex, chunkCoordinate ) );
-            }
-    }
+    for ( int dz = -range; dz <= range; ++dz )
+        for ( int dx = -range; dx <= range; ++dx )
+            chunks.push_back( TryGetChunkReference( GetRefIndexFromCenter( dx, dz ) ) );
 
     return chunks;
 }

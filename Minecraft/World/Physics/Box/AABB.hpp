@@ -5,7 +5,7 @@
 #ifndef MINECRAFT_VK_MINECRAFT_WORLD_PHYSICS_BOX_AABB_HPP
 #define MINECRAFT_VK_MINECRAFT_WORLD_PHYSICS_BOX_AABB_HPP
 
-#include <Utility/Type.hpp>
+#include <Minecraft/util/MinecraftType.h>
 
 template <typename Ty = float>
 struct TAABB {

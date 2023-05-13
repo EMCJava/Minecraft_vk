@@ -46,13 +46,13 @@ Chunk::SetBlock( const uint32_t& blockIndex, const Block& block, bool replace )
     if ( block != Air )
     {
         auto&      originalHeight = m_HeightMap[ blockIndex & GetConstantBinaryMask<SectionSurfaceSize>( ) ];
-        const auto height         = blockIndex >> SectionSurfaceSizeBinaryOffset;
+        const auto height         = static_cast<int32_t>( blockIndex >> SectionSurfaceSizeBinaryOffset );
         if ( originalHeight < height ) originalHeight = height;
     } else
     {
         const auto horizontalIndex = blockIndex & GetConstantBinaryMask<SectionSurfaceSize>( );
         auto&      originalHeight  = m_HeightMap[ horizontalIndex ];
-        const auto height          = blockIndex >> SectionSurfaceSizeBinaryOffset;
+        const auto height          = static_cast<int32_t>( blockIndex >> SectionSurfaceSizeBinaryOffset );
 
         // remove the highest block
         if ( originalHeight == height )
@@ -79,10 +79,10 @@ Chunk::SetCoordinate( const ChunkCoordinate& coordinate )
     m_Coordinate      = coordinate;
     m_WorldCoordinate = ToMinecraftCoordinate( m_Coordinate << SectionUnitLengthBinaryOffset );
 
-    minX = GetMinecraftX( m_WorldCoordinate );
-    maxX = GetMinecraftX( m_WorldCoordinate ) + SectionUnitLength;
-    minY = GetMinecraftZ( m_WorldCoordinate );
-    maxY = GetMinecraftZ( m_WorldCoordinate ) + SectionUnitLength;
+    minX = (FloatTy) GetMinecraftX( m_WorldCoordinate );
+    maxX = (FloatTy) ( GetMinecraftX( m_WorldCoordinate ) + SectionUnitLength );
+    minY = (FloatTy) GetMinecraftZ( m_WorldCoordinate );
+    maxY = (FloatTy) ( GetMinecraftZ( m_WorldCoordinate ) + SectionUnitLength );
 }
 
 bool
