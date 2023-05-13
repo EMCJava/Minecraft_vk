@@ -66,16 +66,19 @@ private:
     static constexpr std::string_view WarnStr    = "[ WARN ] ";
     static constexpr std::string_view InfoStr    = "[ INFO ] ";
     static constexpr std::string_view VerboseStr = "[ VERB ] ";
+    static constexpr std::string_view SystemStr = "[ SYS ] ";
 
     static constexpr std::string_view RedStr    = "\033[38;5;9m";
     static constexpr std::string_view YellowStr = "\033[38;5;11m";
     static constexpr std::string_view GrayStr   = "\033[38;5;7m";
+    static constexpr std::string_view GreenStr  = "\033[38;5;10m";
     static constexpr std::string_view ResetStr  = "\033[38;5;15m";
 
     static constexpr auto ErrorPrefix   = JoinColorSrt<RedStr, ErrorStr>::value;
     static constexpr auto WarnPrefix    = JoinColorSrt<YellowStr, WarnStr>::value;
     static constexpr auto InfoPrefix    = JoinColorSrt<YellowStr, InfoStr>::value;
     static constexpr auto VerbosePrefix = JoinColorSrt<GrayStr, VerboseStr>::value;
+    static constexpr auto SystemPrefix = JoinColorSrt<GreenStr, SystemStr>::value;
 
 public:
     enum class Color {
@@ -83,11 +86,13 @@ public:
         eRed,
         eYellow,
         eGray,
+        eGreen,
         eColorSize
     };
 
     enum class LogType {
         eError,
+        eSystem,
         eWarn,
         eInfo,
         eVerbose,
@@ -121,6 +126,8 @@ public:
         {
         case LogType::eError:
             return ErrorPrefix;
+        case LogType::eSystem:
+            return SystemPrefix;
         case LogType::eWarn:
             return WarnPrefix;
         case LogType::eInfo:
@@ -147,6 +154,8 @@ public:
             return YellowStr;
         case Color::eGray:
             return GrayStr;
+        case Color::eGreen:
+            return GreenStr;
         default:
             break;
         }
@@ -223,5 +232,8 @@ public:
 using Logger = LoggerBase<false, false>;
 
 #define LOG_EXPRESSION( x ) Logger::getInstance( ).LogLine( #x " = [", ( x ), ']');
+
+#define LOGL_SYS(...) Logger::getInstance().LogLine( Logger::LogType::eSystem, __VA_ARGS__ )
+#define LOGL_INFO(...) Logger::getInstance().LogLine( Logger::LogType::eInfo, __VA_ARGS__ )
 
 #endif   // MINECRAFT_VK_UTILITY_LOGGER_HPP
