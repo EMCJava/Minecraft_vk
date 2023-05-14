@@ -5,6 +5,7 @@
 #include "StructureAbandonedHouse.hpp"
 
 #include "Minecraft/World/Chunk/Chunk.hpp"
+#include "Minecraft/World/Chunk/WorldChunk.hpp"
 #include "Minecraft/World/MinecraftWorld.hpp"
 #include "Utility/Logger.hpp"
 

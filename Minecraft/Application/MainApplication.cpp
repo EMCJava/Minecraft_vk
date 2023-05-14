@@ -5,6 +5,8 @@
 #include "MainApplication.hpp"
 
 #include <Minecraft/World/MinecraftWorld.hpp>
+#include <Minecraft/World/Chunk/WorldChunk.hpp>
+#include <Minecraft/World/Chunk/ChunkPool.hpp>
 #include <Minecraft/Block/BlockTexture.hpp>
 
 #include <Utility/Logger.hpp>

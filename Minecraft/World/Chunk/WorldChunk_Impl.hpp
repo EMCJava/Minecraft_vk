@@ -5,9 +5,9 @@
 #ifndef MINECRAFT_VK_WORLDCHUNK_IMPL_HPP
 #define MINECRAFT_VK_WORLDCHUNK_IMPL_HPP
 
-//#include <Minecraft/World/MinecraftWorld.hpp>
-//#include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
-//#include <Minecraft/World/Biome/BiomeSettings.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
+#include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
+#include <Minecraft/World/Biome/BiomeSettings.hpp>
 
 template <>
 inline bool
@@ -43,8 +43,7 @@ WorldChunk::AttemptCompleteStatus<eStructureStart>( )
 {
 #if !GENERATE_DEBUG_CHUNK
 
-    assert( false );
-    // DefaultBiome::StructuresSettings::TryGenerate( *this, m_StructureStarts );
+    DefaultBiome::StructuresSettings::TryGenerate( *this, m_StructureStarts );
 
 #endif
 
@@ -88,15 +87,13 @@ template <>
 inline bool
 WorldChunk::AttemptCompleteStatus<eNoise>( )
 {
-    assert( false );
+    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
 
-//    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
-//
-//#if !GENERATE_DEBUG_CHUNK
-//
-//    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
-//
-//#endif
+#if !GENERATE_DEBUG_CHUNK
+
+    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
+
+#endif
 
     return true;
 }

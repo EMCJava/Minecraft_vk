@@ -6,6 +6,7 @@
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
+#include "Minecraft/World/Chunk/WorldChunk.hpp"
 
 namespace
 {

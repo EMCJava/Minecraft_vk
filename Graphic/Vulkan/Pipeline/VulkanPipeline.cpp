@@ -3,6 +3,7 @@
 //
 
 #include "VulkanPipeline.hpp"
+#include "VulkanShader.hpp"
 
 #include <shaderc/shaderc.hpp>
 

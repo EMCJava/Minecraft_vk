@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_MINECRAFT_PHYSICS_RAY_RAYCAST_HPP
 #define MINECRAFT_VK_MINECRAFT_PHYSICS_RAY_RAYCAST_HPP
 
+#include <Minecraft/World/Chunk/WorldChunk.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
 #include <Utility/Timer.hpp>
 

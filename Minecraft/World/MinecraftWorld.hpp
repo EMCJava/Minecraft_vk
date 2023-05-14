@@ -5,8 +5,12 @@
 #ifndef MINECRAFT_VK_MINECRAFTWORLD_HPP
 #define MINECRAFT_VK_MINECRAFTWORLD_HPP
 
-#include <Minecraft/World/Chunk/ChunkPool.hpp>
+#include <Minecraft/Block/Block.hpp>
+#include <Minecraft/World/Chunk/ChunkStatus.hpp>
+#include <Minecraft/World/Chunk/ChunkPoolType.hpp>
 #include <Minecraft/World/Generation/MinecraftNoise.hpp>
+#include <Minecraft/util/MinecraftConstants.hpp>
+#include <Minecraft/util/MinecraftType.h>
 #include <Minecraft/util/Tickable.hpp>
 
 #include <memory>
@@ -31,6 +35,7 @@ class MinecraftWorld : public Tickable
 
 public:
     MinecraftWorld( );
+    ~MinecraftWorld( );
 
     void IntroduceChunkInRange( const ChunkCoordinate& centre, int32_t radius );
     void IntroduceChunk( const ChunkCoordinate& position, ChunkStatus minimumStatus );

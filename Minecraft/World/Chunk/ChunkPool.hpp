@@ -13,7 +13,8 @@
 #include <Utility/Logger.hpp>
 #include <Utility/Thread/ThreadPool.hpp>
 
-using ChunkTy = WorldChunk;
+#include "ChunkPoolType.hpp"
+
 class ChunkPool : public ThreadPool<ChunkTy>
 {
 private:
@@ -31,14 +32,7 @@ private:
     std::mutex                                         m_SafeAddedChunksLock;
     std::unordered_map<ChunkCoordinate, ChunkStatusTy> m_SafeAddedChunks;
 
-    static inline void LoadChunk( ChunkTy* cache )
-    {
-        // Logger::getInstance( ).LogLine( "Start loading", cache );
-
-        cache->initialized  = false;
-        cache->initializing = true;
-        cache->TryUpgradeChunk( );
-    }
+    static inline void LoadChunk( ChunkTy* cache );
 
     void CleanUpJobs( );
     void RemoveChunkOutsizeRange( );

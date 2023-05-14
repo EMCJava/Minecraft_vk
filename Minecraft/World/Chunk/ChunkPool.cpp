@@ -268,3 +268,13 @@ ChunkPool::FlushSafeAddedChunks( )
     for ( const auto& chunk : chunks )
         AddCoordinate( chunk.first, static_cast<ChunkStatus>( chunk.second ) );
 }
+
+void
+ChunkPool::LoadChunk( ChunkTy* cache )
+{
+    // Logger::getInstance( ).LogLine( "Start loading", cache );
+
+    cache->initialized  = false;
+    cache->initializing = true;
+    cache->TryUpgradeChunk( );
+}

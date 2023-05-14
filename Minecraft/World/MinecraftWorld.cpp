@@ -4,11 +4,13 @@
 
 #include "MinecraftWorld.hpp"
 
+#include <Minecraft/World/Chunk/ChunkPool.hpp>
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
 #include <Include/GlobalConfig.hpp>
 #include <random>
 
+MinecraftWorld::~MinecraftWorld( ) = default;
 MinecraftWorld::MinecraftWorld( )
 {
     Logger ::getInstance( ).LogLine( "Using \"random\" seed" );
