@@ -30,4 +30,13 @@ operator++( ChunkStatus& status )
     return status = ChunkStatus( ChunkStatusTy( status ) + 1 );
 }
 
+inline ChunkStatus
+operator++( ChunkStatus& status, int )
+{
+    const auto temStatus = status;
+    status               = ChunkStatus( ChunkStatusTy( status ) + 1 );
+
+    return temStatus;
+}
+
 #endif   // MINECRAFT_VK_CHUNKSTATUS_HPP
