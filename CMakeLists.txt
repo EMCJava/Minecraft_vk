@@ -46,20 +46,21 @@ if (WIN32 OR MSVC)
     set(SHADERC_LIB "${Vulkan_Lib_Dir}/shaderc_shared.lib")
     set(WINDOW_PLATFORM_LIB "opengl32;gdi32")
     set(GLFW_PLATFORM_LIB glfw)
+    link_libraries(glm::glm)
     message(STATUS "Assume platform window")
 
 else ()
     find_package(glfw3 3.3 REQUIRED)
-    include_directories(${glfw3_INCLUDE_DIRS})
+    find_package(glm REQUIRED)
 
     set(SHADERC_LIB "shaderc_shared")
     set(WINDOW_PLATFORM_LIB "dl;X11;Xxf86vm;Xrandr;Xi;dl")
     set(GLFW_PLATFORM_LIB "glfw")
+    include_directories(${GLM_INCLUDE_DIRS})
     message(STATUS "Assume platform linux")
 
 endif ()
 
-link_libraries(glm::glm)
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(Include/Imgui/)
 include_directories(Include)

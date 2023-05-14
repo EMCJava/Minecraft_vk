@@ -4,4 +4,5 @@ add_library(StructureAbandonedHouseLib StructureAbandonedHouse.hpp StructureAban
 add_library(StructureLib Structure.hpp Structure.cpp)
 
 target_link_libraries(StructureTreeLib StructureLib)
+target_link_libraries(StructureLib StructurePiecesLib)
 set_property(DIRECTORY PROPERTY StructureLib StructurePiecesLib StructureTreeLib StructureAbandonedHouseLib)

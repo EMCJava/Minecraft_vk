@@ -5,9 +5,9 @@
 #ifndef MINECRAFT_VK_UTILITY_MATH_MATH_HPP
 #define MINECRAFT_VK_UTILITY_MATH_MATH_HPP
 
-#include <utility>
 #include <concepts>
 #include <initializer_list>
+#include <utility>
 
 template <std::integral auto Val, std::integral auto Base, std::enable_if_t<Base >= 2, decltype( Val )> Power = 0, typename Ty = decltype( Val )>
 struct IntLog {

@@ -6,7 +6,8 @@
 
 ### Window
 
-1. Install Visual Studio ( Not code )
+1. Clone this repo
+2. Install Visual Studio ( Not code )
 2. Install [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 3. Install vcpkg
 4. vcpkg install glm:x64-windows

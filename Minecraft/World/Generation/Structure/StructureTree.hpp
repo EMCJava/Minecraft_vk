@@ -7,6 +7,8 @@
 
 #include "Structure.hpp"
 
+#include <memory>
+
 class StructureTree : public Structure
 {
 public:

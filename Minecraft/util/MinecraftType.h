@@ -218,9 +218,9 @@ MakeMinecraftCoordinate( auto x, auto y, auto z )
     static_assert( MinecraftCoordinateYIndex == 2 );
     static_assert( MinecraftCoordinateZIndex == 1 );
 
-    using type1 = std::tuple_element<0, Ty>::type;
-    using type2 = std::tuple_element<1, Ty>::type;
-    using type3 = std::tuple_element<2, Ty>::type;
+    using type1 = typename std::tuple_element<0, Ty>::type;
+    using type2 = typename std::tuple_element<1, Ty>::type;
+    using type3 = typename std::tuple_element<2, Ty>::type;
 
     return { (type1) x, (type2) z, (type3) y };
 }

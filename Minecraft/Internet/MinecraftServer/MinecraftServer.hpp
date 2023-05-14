@@ -10,6 +10,7 @@
 #include <Minecraft/Entity/Player/Player.hpp>
 #include <Minecraft/util/Tickable.hpp>
 
+#include <memory>
 #include <vector>
 
 class MinecraftWorld;
