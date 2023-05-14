@@ -3,13 +3,12 @@
 //
 
 #include "WorldChunk.hpp"
-#include <Minecraft/World/Biome/BiomeSettings.hpp>
+
+#include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
-
-#define GENERATE_DEBUG_CHUNK false
 
 namespace
 {
@@ -162,99 +161,22 @@ WorldChunk::UpgradeChunk( ChunkStatus targetStatus )
         switch ( m_Status )
         {
         case eEmpty:
-            if ( !AttemptRunStructureStart( ) ) return;
+            if ( !AttemptCompleteStatus<eStructureStart>( ) ) return;
             break;
         case eStructureStart:
-            if ( !AttemptRunStructureReference( ) ) return;
+            if ( !AttemptCompleteStatus<eStructureReference>( ) ) return;
             break;
         case eStructureReference:
-            if ( !AttemptRunNoise( ) ) return;
+            if ( !AttemptCompleteStatus<eNoise>( ) ) return;
             CopyHeightMapTo( eNoiseHeight );
             break;
         case eNoise:
-            if ( !AttemptRunFeature( ) ) return;
+            if ( !AttemptCompleteStatus<eFeature>( ) ) return;
             CopyHeightMapTo( eFullHeight );
             break;
         case eFeature: break;
         }
     }
-}
-
-bool
-WorldChunk::AttemptRunStructureStart( )
-{
-#if !GENERATE_DEBUG_CHUNK
-
-    DefaultBiome::StructuresSettings::TryGenerate( *this, m_StructureStarts );
-
-#endif
-
-    return true;
-}
-
-bool
-WorldChunk::AttemptRunStructureReference( )
-{
-    if ( UpgradeStatusAtLeastInRange( ChunkStatus::eStructureStart, StructureReferenceStatusRange ) ) return false;
-
-    {
-        // chunk cache will not be modified until all thread has finished, mutex can be avoided
-        // std::lock_guard<std::recursive_mutex> lock( m_World->GetChunkPool( ).GetChunkCacheLock( ) );
-        for ( int index = 0, dx = -StructureReferenceStatusRange; dx <= StructureReferenceStatusRange; ++dx )
-        {
-            for ( int dz = -StructureReferenceStatusRange; dz <= StructureReferenceStatusRange; ++dz, ++index )
-            {
-                const auto                  worldCoordinate = m_Coordinate + MakeMinecraftChunkCoordinate( dx, dz );
-                const auto                  weakChunkCache  = GetChunkReference( index, worldCoordinate );
-                std::shared_ptr<WorldChunk> chunkCache      = weakChunkCache.lock( );
-
-                const auto& chunkReferenceStarts = chunkCache->GetStructureStarts( );
-                // m_StructureReferences.reserve( m_StructureReferences.size( ) + chunkReferenceStarts.size( ) );
-                for ( const auto& chunkReferenceStart : chunkReferenceStarts )
-                {
-                    if ( chunkReferenceStart->IsOverlappingAny( *this ) )
-                    {
-                        m_StructureReferences.emplace_back( chunkReferenceStart );
-                    }
-                }
-            }
-        }
-    }
-
-    return true;
-}
-
-bool
-WorldChunk::AttemptRunNoise( )
-{
-    FillTerrain( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
-
-#if !GENERATE_DEBUG_CHUNK
-
-    FillBedRock( *MinecraftServer::GetInstance( ).GetWorld( ).GetBedRockNoise( ) );
-
-#endif
-
-    return true;
-}
-
-bool
-WorldChunk::AttemptRunFeature( )
-{
-
-    if ( UpgradeStatusAtLeastInRange( ChunkStatus::eNoise, 2 ) ) return false;
-
-    for ( auto& ss : m_StructureStarts )
-    {
-        ss->Generate( *this );
-    }
-
-    for ( auto& ss : m_StructureReferences )
-    {
-        ss.lock( )->Generate( *this );
-    }
-
-    return true;
 }
 
 void
@@ -263,30 +185,6 @@ WorldChunk::SetCoordinate( const ChunkCoordinate& coordinate )
     Chunk::SetCoordinate( coordinate );
 
     m_ChunkNoise = GenerateChunkNoise( *MinecraftServer::GetInstance( ).GetWorld( ).GetTerrainNoise( ) );
-}
-
-bool
-WorldChunk::CanRunStructureStart( ) const
-{
-    return true;
-}
-
-bool
-WorldChunk::CanRunStructureReference( ) const
-{
-    return IsSavedChunksStatusAtLeastInRange( ChunkStatus::eStructureStart, StructureReferenceStatusRange );
-}
-
-bool
-WorldChunk::CanRunNoise( ) const
-{
-    return true;
-}
-
-bool
-WorldChunk::CanRunFeature( ) const
-{
-    return IsSavedChunksStatusAtLeastInRange( ChunkStatus::eNoise, 2 );
 }
 
 std::weak_ptr<WorldChunk>&
@@ -335,7 +233,7 @@ WorldChunk::UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range )
         oldTarget       = std::max( oldTarget, (ChunkStatusTy) targetStatus );
     }
 
-    return !missingChunk.empty( );
+    return missingChunk.empty( );
 }
 
 bool
@@ -380,20 +278,10 @@ WorldChunk::StatusUpgradeAllSatisfied( ) const
     if ( m_RequiredStatus <= m_Status ) return true;
 
     auto temStatus = m_Status;
-    bool satisfied = true;
-    for ( ; temStatus < m_RequiredStatus && satisfied; ++temStatus )
-    {
-        switch ( m_Status )
-        {
-        case eEmpty: satisfied = CanRunStructureStart( ); break;
-        case eStructureStart: satisfied = CanRunStructureReference( ); break;
-        case eStructureReference: satisfied = CanRunNoise( ); break;
-        case eNoise: satisfied = CanRunFeature( ); break;
-        case eFeature: return true;   // ???
-        }
-    }
+    while ( temStatus < m_RequiredStatus && UpgradeSatisfied( temStatus++ ) )
+    { }
 
-    return satisfied;
+    return temStatus == m_RequiredStatus;
 }
 
 bool
@@ -404,16 +292,7 @@ WorldChunk::NextStatusUpgradeSatisfied( ) const
     // already fulfilled
     if ( m_RequiredStatus <= m_Status ) return true;
 
-    switch ( m_Status )
-    {
-    case eEmpty: return CanRunStructureStart( );
-    case eStructureStart: return CanRunStructureReference( );
-    case eStructureReference: return CanRunNoise( );
-    case eNoise: return CanRunFeature( );
-    case eFeature: return true;   // ???
-    }
-
-    return false;   // ???
+    return UpgradeSatisfied( m_Status );
 }
 
 size_t

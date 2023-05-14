@@ -5,6 +5,8 @@
 #ifndef MINECRAFT_VK_WORLDCHUNK_HPP
 #define MINECRAFT_VK_WORLDCHUNK_HPP
 
+#define GENERATE_DEBUG_CHUNK false
+
 #include <list>
 #include <vector>
 
@@ -37,20 +39,19 @@ private:
         m_StructureReferences.clear( );
     }
 
+    // return true if all chunk are upgraded
     bool UpgradeStatusAtLeastInRange( ChunkStatus targetStatus, int range );
     bool IsSavedChunksStatusAtLeastInRange( ChunkStatus targetStatus, int range ) const;
 
     void UpgradeChunk( ChunkStatus targetStatus );
 
-    bool CanRunStructureStart( ) const;
-    bool CanRunStructureReference( ) const;
-    bool CanRunNoise( ) const;
-    bool CanRunFeature( ) const;
+    template <ChunkStatus status>
+    [[nodiscard]] inline bool StatusCompletable( ) const;
 
-    bool AttemptRunStructureStart( );
-    bool AttemptRunStructureReference( );
-    bool AttemptRunNoise( );
-    bool AttemptRunFeature( );
+    template <ChunkStatus status>
+    inline bool AttemptCompleteStatus( );
+
+    inline bool UpgradeSatisfied( ChunkStatus status ) const;
 
     /*
      *
@@ -148,5 +149,6 @@ public:
     size_t GetObjectSize( ) const;
 };
 
+#include "WorldChunk_Impl.hpp"
 
 #endif   // MINECRAFT_VK_WORLDCHUNK_HPP

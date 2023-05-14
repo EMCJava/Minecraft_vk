@@ -11,6 +11,7 @@
 
 #include <memory>
 
+class ChunkPool;
 class MinecraftWorld : public Tickable
 {
     std::unique_ptr<float[]>        m_TerrainNoiseOffsetPerLevel;

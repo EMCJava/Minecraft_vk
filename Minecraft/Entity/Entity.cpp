@@ -3,7 +3,9 @@
 //
 
 #include "Entity.hpp"
-#include "Minecraft/Application/MainApplication.hpp"
+
+#include <Minecraft/Application/MainApplication.hpp>
+#include <Minecraft/World/Physics/Ray/Raycast.hpp>
 
 // assume x y has the same sign
 #define MIN_ABS( x, y ) ( ( x ) > 0 ? ( ( x ) > ( y ) ? ( y ) : ( x ) ) : ( ( x ) > ( y ) ? ( x ) : ( y ) ) )

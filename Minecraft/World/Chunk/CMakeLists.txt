@@ -1,5 +1,5 @@
 add_library(RenderableChunkLib RenderableChunk.hpp RenderableChunk.cpp)
-add_library(WorldChunkLib WorldChunk.cpp WorldChunk.hpp)
+add_library(WorldChunkLib WorldChunk.cpp WorldChunk.hpp WorldChunk_Impl.hpp)
 add_library(ChunkPoolLib ChunkPool.hpp ChunkPool.cpp)
 add_library(ChunkLib Chunk.hpp Chunk.cpp)
 

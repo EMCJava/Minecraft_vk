@@ -5,7 +5,6 @@
 #ifndef MINECRAFT_VK_MINECRAFT_WORLD_GENERATION_STRUCTURE_STRUCTUREABANDONEDHOUSE_HPP
 #define MINECRAFT_VK_MINECRAFT_WORLD_GENERATION_STRUCTURE_STRUCTUREABANDONEDHOUSE_HPP
 
-#include "Minecraft/World/Chunk/Chunk.hpp"
 #include "Structure.hpp"
 
 class StructureAbandonedHouse : public Structure

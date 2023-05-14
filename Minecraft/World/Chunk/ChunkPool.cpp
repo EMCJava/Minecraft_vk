@@ -6,6 +6,7 @@
 #include <Utility/Timer.hpp>
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
 
 namespace
 {

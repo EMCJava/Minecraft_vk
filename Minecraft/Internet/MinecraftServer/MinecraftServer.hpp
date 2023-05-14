@@ -8,11 +8,11 @@
 #include <Utility/Singleton.hpp>
 
 #include <Minecraft/Entity/Player/Player.hpp>
-#include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/util/Tickable.hpp>
 
 #include <vector>
 
+class MinecraftWorld;
 class MinecraftServer : public Tickable
     , public Singleton<MinecraftServer>
 {
@@ -21,7 +21,8 @@ private:
     std::unique_ptr<MinecraftWorld> m_MainWorld;
 
 public:
-    MinecraftServer( ) = default;
+    MinecraftServer( );
+    ~MinecraftServer( );
 
     MinecraftServer( const MinecraftServer& ) = delete;
     MinecraftServer( MinecraftServer&& )      = delete;

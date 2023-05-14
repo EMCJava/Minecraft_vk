@@ -3,6 +3,7 @@
 //
 
 #include "Minecraft/Application/MainApplication.hpp"
+#include "Minecraft/World/Physics/Ray/Raycast.hpp"
 
 #include "Player.hpp"
 

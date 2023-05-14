@@ -2,7 +2,12 @@
 // Created by loys on 6/1/22.
 //
 
+#include <Minecraft/World/MinecraftWorld.hpp>
+
 #include "MinecraftServer.hpp"
+
+MinecraftServer::MinecraftServer( ) = default;
+MinecraftServer::~MinecraftServer( ) = default;
 
 void
 MinecraftServer::Tick( float deltaTime )

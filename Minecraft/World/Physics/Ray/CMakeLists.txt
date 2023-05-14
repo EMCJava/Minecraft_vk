@@ -1,3 +1,3 @@
-add_library(RaycastLib Raycast.hpp Raycast.cpp)
+add_library(RaycastLib RaycastType.hpp Raycast.hpp Raycast.cpp)
 
 target_link_libraries(RaycastLib CachesLib)

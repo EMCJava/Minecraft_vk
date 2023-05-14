@@ -5,7 +5,6 @@
 #ifndef MINECRAFT_VK_STRUCTURETREE_HPP
 #define MINECRAFT_VK_STRUCTURETREE_HPP
 
-#include "Minecraft/World/Chunk/Chunk.hpp"
 #include "Structure.hpp"
 
 class StructureTree : public Structure

@@ -5,24 +5,17 @@
 #ifndef MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP
 #define MINECRAFT_VK_VULKAN_MAINAPPLICATION_HPP
 
-#include <Include/GraphicAPI.hpp>
 
-#include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
 #include <Graphic/Vulkan/VulkanAPI.hpp>
-#include <Include/GlobalConfig.hpp>
+#include <Minecraft/World/Chunk/RenderableChunk.hpp>
 #include <Minecraft/Application/Input/UserInput.hpp>
 #include <Minecraft/Minecraft.hpp>
 #include <Utility/ImguiAddons/CurveEditor.hpp>
-#include <Utility/Logger.hpp>
-#include <Utility/Singleton.hpp>
-#include <Utility/Vulkan/ValidationLayer.hpp>
-#include <Utility/Vulkan/VulkanExtension.hpp>
 
 #include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
-#include <vulkan/vulkan_handles.hpp>
 
 class MainApplication : public Singleton<MainApplication>
 {

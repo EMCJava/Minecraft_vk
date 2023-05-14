@@ -6,7 +6,7 @@
 #define MINECRAFT_VK_PLAYER_HPP
 
 #include "Minecraft/Entity/CameraEntity.hpp"
-#include "Minecraft/World/Physics/Ray/Raycast.hpp"
+#include "Minecraft/World/Physics/Ray/RaycastType.hpp"
 #include "Minecraft/util/MinecraftConstants.hpp"
 #include "Minecraft/util/MinecraftType.h"
 

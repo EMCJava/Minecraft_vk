@@ -5,7 +5,7 @@
 #include "Structure.hpp"
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
-#include <Minecraft/World/Chunk/WorldChunk.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
 
 namespace
 {
