@@ -16,28 +16,15 @@ Player::Tick( float deltaTime )
 
     const auto& deltaMouse      = MainApplication::GetInstance( ).GetDeltaMouse( );
     const auto& deltaMovement   = MainApplication::GetInstance( ).GetMovementDelta( );
-    float       speedMultiplier = 3.f;
+    float       speedMultiplier = 4.f;
 
-    constexpr float desiredAnimationTime = 0.1f;
     if ( MainApplication::GetInstance( ).IsSprint( ) )
-    {
         speedMultiplier *= 1.3f;
 
-        if ( SprintAnimationStep < 1 )
-        {
-            SprintAnimationStep += deltaTime / desiredAnimationTime;
-            SprintAnimationStep = SprintAnimationStep > 1 ? 1 : SprintAnimationStep;
-            SetFOV( std::lerp( defaultZoom, defaultBiggerZoom, SprintAnimationStep ) );
-        }
-    } else
-    {
-        if ( SprintAnimationStep > 0 )
-        {
-            SprintAnimationStep -= deltaTime / desiredAnimationTime;
-            SprintAnimationStep = SprintAnimationStep < 0 ? 0 : SprintAnimationStep;
-            SetFOV( std::lerp( defaultZoom, defaultBiggerZoom, SprintAnimationStep ) );
-        }
-    }
+    constexpr float desiredAnimationTime = 0.1f;
+    SprintAnimationStep.SetDirection( MainApplication::GetInstance( ).IsSprint( ) );
+    if ( SprintAnimationStep.Advance( deltaTime / desiredAnimationTime ) )
+        SetFOV( SprintAnimationStep.Lerp( defaultZoom, defaultBiggerZoom ) );
 
     {
         if ( deltaMouse.first != 0 || deltaMouse.second != 0 )

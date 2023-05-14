@@ -10,11 +10,13 @@
 #include "Minecraft/util/MinecraftConstants.hpp"
 #include "Minecraft/util/MinecraftType.h"
 
+#include "Utility/Animation/AnimationLinear.hpp"
+
 class Player : public CameraEntity
 {
     Physics::RaycastResult m_CurrentFrameRaycastResult;
 
-    float SprintAnimationStep = 0;
+    AnimationLinear SprintAnimationStep = 0.f;
 
 public:
     explicit Player( const EntityCoordinate& coordinate )

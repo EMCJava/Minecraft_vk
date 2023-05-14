@@ -1,0 +1,16 @@
+//
+// Created by Lo Yu Sum on 5/14/2023.
+//
+
+#ifndef MINECRAFT_VK_UTILITY_ANIMATION_ANIMATION_HPP
+#define MINECRAFT_VK_UTILITY_ANIMATION_ANIMATION_HPP
+
+#include <cmath>
+
+class Animation
+{
+
+};
+
+
+#endif   // MINECRAFT_VK_UTILITY_ANIMATION_ANIMATION_HPP
