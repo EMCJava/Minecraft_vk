@@ -7,9 +7,9 @@
 
 
 #include <Graphic/Vulkan/VulkanAPI.hpp>
-#include <Minecraft/World/Chunk/RenderableChunk.hpp>
 #include <Minecraft/Application/Input/UserInput.hpp>
 #include <Minecraft/Minecraft.hpp>
+#include <Minecraft/World/Chunk/RenderableChunk.hpp>
 #include <Utility/ImguiAddons/CurveEditor.hpp>
 
 #include <cstdlib>
@@ -53,6 +53,7 @@ class MainApplication : public Singleton<MainApplication>
 
     struct UBOData {
         BlockTransformUBO ubo;
+        float             previousFOV { };
     };
 
     std::unique_ptr<UBOData[]> renderUBOs;

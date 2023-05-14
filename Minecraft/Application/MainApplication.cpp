@@ -4,22 +4,22 @@
 
 #include "MainApplication.hpp"
 
-#include <Minecraft/World/MinecraftWorld.hpp>
-#include <Minecraft/World/Chunk/WorldChunk.hpp>
-#include <Minecraft/World/Chunk/ChunkPool.hpp>
 #include <Minecraft/Block/BlockTexture.hpp>
+#include <Minecraft/World/Chunk/ChunkPool.hpp>
+#include <Minecraft/World/Chunk/WorldChunk.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
 
+#include "Utility/Timer.hpp"
+#include <Utility/ImguiAddons/CurveEditor.hpp>
 #include <Utility/Logger.hpp>
 #include <Utility/Singleton.hpp>
 #include <Utility/Vulkan/ValidationLayer.hpp>
 #include <Utility/Vulkan/VulkanExtension.hpp>
-#include <Utility/ImguiAddons/CurveEditor.hpp>
-#include "Utility/Timer.hpp"
 
 #include <Include/GLM.hpp>
-#include <Include/imgui_include.hpp>
-#include <Include/GraphicAPI.hpp>
 #include <Include/GlobalConfig.hpp>
+#include <Include/GraphicAPI.hpp>
+#include <Include/imgui_include.hpp>
 
 #include <Graphic/Vulkan/ImageMeta.hpp>
 #include <Graphic/Vulkan/Pipeline/VulkanPipeline.hpp>
@@ -123,7 +123,8 @@ MainApplication::run( )
         const auto& player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
         for ( int i = 0; i < swapChainImagesCount; ++i )
         {
-            renderUBOs[ i ].ubo.proj = glm::perspective( player.GetFOV( ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
+            renderUBOs[ i ].previousFOV = player.GetFOV( );
+            renderUBOs[ i ].ubo.proj    = glm::perspective( player.GetFOV( ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
             renderUBOs[ i ].ubo.proj[ 1 ][ 1 ] *= -1;
         }
 
@@ -138,6 +139,12 @@ MainApplication::run( )
         const auto& player           = MinecraftServer::GetInstance( ).GetPlayer( 0 );
         renderUBOs[ index ].ubo.view = player.GetViewMatrix( );
         renderUBOs[ index ].ubo.time = (float) glfwGetTime( ) * 3;
+        if ( renderUBOs[ index ].previousFOV != player.GetFOV( ) )
+        {
+            renderUBOs[ index ].previousFOV = player.GetFOV( );
+            renderUBOs[ index ].ubo.proj    = glm::perspective( player.GetFOV( ), m_graphics_api->getDisplayExtent( ).width / (float) m_graphics_api->getDisplayExtent( ).height, 0.1f, 5000.0f );
+            renderUBOs[ index ].ubo.proj[ 1 ][ 1 ] *= -1;
+        }
 
         const auto& playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
         const auto& blockLookingAt      = playerRaycastResult.solidHit;

@@ -14,6 +14,8 @@ class Player : public CameraEntity
 {
     Physics::RaycastResult m_CurrentFrameRaycastResult;
 
+    float SprintAnimationStep = 0;
+
 public:
     explicit Player( const EntityCoordinate& coordinate )
         : CameraEntity( coordinate )

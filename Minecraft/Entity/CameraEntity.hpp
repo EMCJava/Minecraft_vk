@@ -5,8 +5,8 @@
 #ifndef MINECRAFT_VK_MINECRAFT_ENTITY_CAMERAENTITY_HPP
 #define MINECRAFT_VK_MINECRAFT_ENTITY_CAMERAENTITY_HPP
 
-#include <algorithm>
 #include "PawnEntity.hpp"
+#include <algorithm>
 
 #include <Include/GLM.hpp>
 
@@ -23,8 +23,8 @@ public:
         : PawnEntity( Coordinate, up, yaw, pitch )
         , MovementSpeed( 20.5f )
         , ViewSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f) )
     {
+        SetFOV( );
         updateCameraVectors( );
     }
 
@@ -33,11 +33,17 @@ public:
         : PawnEntity( posX, posY, posZ, upX, upY, upZ, yaw, pitch )
         , MovementSpeed( 20.5f )
         , ViewSensitivity( 0.005f )
-        , Zoom( glm::radians( 104.0f / 2 ) )
     {
+        SetFOV( );
         updateCameraVectors( );
     }
 
+    static constexpr float defaultZoom = glm::radians( 104.0f );
+    static constexpr float defaultBiggerZoom = glm::radians( 104.0f ) * 1.1f;
+    inline void SetFOV( float FOV = defaultZoom )
+    {
+        Zoom = FOV;
+    }
 
     [[nodiscard]] inline const auto& GetFOV( ) const
     {
