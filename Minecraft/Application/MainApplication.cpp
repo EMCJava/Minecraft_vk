@@ -655,10 +655,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
         if ( ImGui::CollapsingHeader( "Minecraft World" ) )
         {
-            const int                 span   = ( GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + StructureReferenceStatusRange );
+            const int                 span   = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + WorldChunkEffectiveRange;
             const int                 size   = span * 2 + 1;
             std::unique_ptr<double[]> values = std::make_unique<double[]>( size * size );
-            srand( (unsigned int) ( ImGui::GetTime( ) * 1000000 ) );
 
             auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
 
@@ -909,7 +908,7 @@ MainApplication::onMousePositionInput( GLFWwindow* window, double xpos, double y
 
     if ( !mainApplication->m_deltaMouseHoldUpdate.test( ) && mainApplication->m_is_mouse_locked )
     {
-        auto sensitivity = mainApplication->m_UserInput.GetMouseSensitivity( );
+        const auto sensitivity = mainApplication->m_UserInput.GetMouseSensitivity( );
         mainApplication->m_NegDeltaMouse.first += ( static_cast<FloatTy>( xpos ) - mainApplication->m_MousePos.first ) * sensitivity;
         mainApplication->m_NegDeltaMouse.second += ( mainApplication->m_MousePos.second - static_cast<FloatTy>( ypos ) ) * sensitivity;
     }

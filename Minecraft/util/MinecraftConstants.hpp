@@ -99,6 +99,8 @@ static constexpr CoordinateType ChunkVolume = MaxSectionInChunk * SectionVolume;
  *
  * */
 static constexpr CoordinateType StructureReferenceStatusRange = 8;
+static constexpr CoordinateType FeatureStatusRange            = 2;
+static constexpr CoordinateType WorldChunkEffectiveRange      = StructureReferenceStatusRange + FeatureStatusRange;
 
 
 /*

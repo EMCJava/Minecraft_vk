@@ -5,9 +5,9 @@
 #ifndef MINECRAFT_VK_WORLDCHUNK_IMPL_HPP
 #define MINECRAFT_VK_WORLDCHUNK_IMPL_HPP
 
-#include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 #include <Minecraft/World/Biome/BiomeSettings.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
 
 template <>
 inline bool
@@ -34,7 +34,7 @@ template <>
 inline bool
 WorldChunk::StatusCompletable<eFeature>( ) const
 {
-    return IsSavedChunksStatusAtLeastInRange( ChunkStatus::eNoise, 2 );
+    return IsSavedChunksStatusAtLeastInRange( ChunkStatus::eNoise, FeatureStatusRange );
 }
 
 template <>
@@ -102,16 +102,24 @@ template <>
 inline bool
 WorldChunk::AttemptCompleteStatus<eFeature>( )
 {
-    if ( !UpgradeStatusAtLeastInRange( ChunkStatus::eNoise, 2 ) ) return false;
+    if ( !UpgradeStatusAtLeastInRange( ChunkStatus::eNoise, FeatureStatusRange ) ) return false;
 
     for ( auto& ss : m_StructureStarts )
     {
         ss->Generate( *this );
     }
 
-    for ( auto& ss : m_StructureReferences )
+    auto i = m_StructureReferences.begin( );
+    while ( i != m_StructureReferences.end( ) )
     {
-        ss.lock( )->Generate( *this );
+        if ( i->expired( ) )
+        {
+            i = m_StructureReferences.erase( i );
+        } else
+        {
+            i->lock( )->Generate( *this );
+            ++i;
+        }
     }
 
     return true;
@@ -133,4 +141,4 @@ WorldChunk::UpgradeSatisfied( ChunkStatus status ) const
     throw std::runtime_error( "Unknown chunk status: " + std::to_string( status ) );
 }
 
-#endif //MINECRAFT_VK_WORLDCHUNK_IMPL_HPP
+#endif   // MINECRAFT_VK_WORLDCHUNK_IMPL_HPP

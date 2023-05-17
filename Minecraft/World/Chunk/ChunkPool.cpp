@@ -70,17 +70,16 @@ getNearChunkDirection<EWDirBackRight>( )
 {
     return getNearChunkDirection<EWDirBack>( ) + getNearChunkDirection<EWDirRight>( );
 }
-
-constexpr std::array<ChunkCoordinate, EightWayDirectionSize> NearChunkDirection { getNearChunkDirection<0>( ),
-                                                                                  getNearChunkDirection<1>( ),
-                                                                                  getNearChunkDirection<2>( ),
-                                                                                  getNearChunkDirection<3>( ),
-                                                                                  getNearChunkDirection<4>( ),
-                                                                                  getNearChunkDirection<5>( ),
-                                                                                  getNearChunkDirection<6>( ),
-                                                                                  getNearChunkDirection<7>( ) };
 }   // namespace
 
+const std::array<ChunkCoordinate, EightWayDirectionSize> ChunkPool::NearChunkDirection { getNearChunkDirection<0>( ),
+                                                                                         getNearChunkDirection<1>( ),
+                                                                                         getNearChunkDirection<2>( ),
+                                                                                         getNearChunkDirection<3>( ),
+                                                                                         getNearChunkDirection<4>( ),
+                                                                                         getNearChunkDirection<5>( ),
+                                                                                         getNearChunkDirection<6>( ),
+                                                                                         getNearChunkDirection<7>( ) };
 
 void
 ChunkPool::UpdateThread( const std::stop_token& st )
@@ -92,7 +91,7 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             // all thread ended, resources are safe to use
             CleanUpJobs( );
             FlushSafeAddedChunks( );
-            // RemoveChunkOutsizeRange( );
+            RemoveChunkOutsizeRange( );
 
             if ( m_PendingThreads.empty( ) )
             {
@@ -114,6 +113,9 @@ ChunkPool::UpdateThread( const std::stop_token& st )
 
                               return a->ManhattanDistance( centre ) < b->ManhattanDistance( centre );
                           } );
+        } else
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
         }
     }
 
@@ -131,27 +133,35 @@ ChunkPool::RemoveChunkOutsizeRange( )
 {
     if ( m_RemoveJobAfterRange > 0 )
     {
-        //        std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
-        //        std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
-        const auto lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                            [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->ManhattanDistance( centre ) <= range; } );
-
-        const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
-
-        // elements outside the range
-        if ( amountToRemove > 0 )
-            m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
-
-        std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) {
-            if ( cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
-            {
-                Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "About to erase chunk outside range", cache.first, cache.second.get( ) );
-            }
-        } );
-
-        if ( std::erase_if( m_ChunkCache, [ range = m_RemoveJobAfterRange << 1, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache.second->ManhattanDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ); } ) > 0 )
         {
-            m_ChunkErased.test_and_set( );
+            std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
+            const auto                            lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
+                                                                           [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->MaxAxisDistance( centre ) <= range; } );
+
+            const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
+
+            // elements outside the range
+            if ( amountToRemove > 0 )
+                m_PendingThreads.erase( lastIt, m_PendingThreads.end( ) );
+        }
+
+        {
+            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+            std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const std::pair<ChunkCoordinateHash, std::shared_ptr<ChunkTy>>& cache ) {
+                if ( cache.second->MaxAxisDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
+                {
+                    if ( std::get<0>( cache.second->GetChunkCoordinate( ) ) == 16 )
+                    {
+                        auto a = cache.second->MaxAxisDistance( centre );
+                    }
+                    Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "About to erase chunk outside range", cache.second->GetChunkCoordinate( ), cache.second.get( ) );
+                }
+            } );
+
+            if ( std::erase_if( m_ChunkCache, [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache.second->MaxAxisDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ); } ) > 0 )
+            {
+                -m_ChunkErased.test_and_set( );
+            }
         }
     }
 }
@@ -178,7 +188,7 @@ ChunkPool::CleanUpJobs( )
         {
             for ( int i = 0; i < EightWayDirectionSize; ++i )
             {
-                auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
+                auto chunkPtr = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheSafe( cache->GetChunkCoordinate( ) + NearChunkDirection[ i ] );
                 if ( chunkPtr != nullptr && chunkPtr->initialized && chunkPtr->GetStatus( ) == ChunkStatus::eFull )
                 {
                     // this is fast, I guess? (nope)

@@ -35,6 +35,12 @@ private:
     static inline void LoadChunk( ChunkTy* cache );
 
     void CleanUpJobs( );
+
+    /*
+     *
+     * This should only be called from UpdateThread when all thread are stopped.
+     *
+     * */
     void RemoveChunkOutsizeRange( );
     void UpdateThread( const std::stop_token& st );
 
@@ -45,7 +51,6 @@ private:
      *
      * */
     ChunkTy* AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status = ChunkStatus::eFull );
-    ChunkTy* AddCoordinate( const ChunkCoordinateHash& coordinateHash, ChunkStatus status = ChunkStatus::eFull );
     void     FlushSafeAddedChunks( );
 
 public:
@@ -61,6 +66,8 @@ public:
         StopThread( );
         Clean( );
     }
+
+    static const std::array<ChunkCoordinate, EightWayDirectionSize> NearChunkDirection;
 
     inline void SetCentre( const ChunkCoordinate& centre )
     {

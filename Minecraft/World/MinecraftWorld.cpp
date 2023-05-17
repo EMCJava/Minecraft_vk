@@ -36,7 +36,7 @@ MinecraftWorld::MinecraftWorld( )
 
     m_ChunkPool         = std::make_unique<ChunkPool>( this, GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
     m_ChunkLoadingRange = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( );
-    m_ChunkPool->SetValidRange( m_ChunkLoadingRange + StructureReferenceStatusRange );
+    m_ChunkPool->SetValidRange( m_ChunkLoadingRange + WorldChunkEffectiveRange );
     m_ChunkPool->StartThread( );
 }
 

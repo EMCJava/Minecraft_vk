@@ -98,6 +98,17 @@ public:
         return ::ManhattanDistance( m_Coordinate, other );
     }
 
+    [[nodiscard]] inline CoordinateType MaxAxisDistance( const Chunk& other ) const
+    {
+        return MaxAxisDistance( other.m_Coordinate );
+    }
+
+    [[nodiscard]] inline CoordinateType MaxAxisDistance( const ChunkCoordinate& other ) const
+    {
+        return std::max( std::abs( std::get<0>( m_Coordinate ) - std::get<0>( other ) ),
+                         std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) ) );
+    }
+
     size_t GetObjectSize( ) const;
 };
 
