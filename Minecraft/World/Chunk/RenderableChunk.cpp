@@ -9,6 +9,7 @@
 
 #include <Utility/Logger.hpp>
 
+#include "ChunkPool.hpp"
 #include "RenderableChunk.hpp"
 
 namespace
@@ -811,4 +812,29 @@ size_t
 RenderableChunk::GetObjectSize( ) const
 {
     return Chunk::GetObjectSize( ) + sizeof( RenderableChunk ) + ( m_NeighborTransparency ? sizeof( m_NeighborTransparency[ 0 ] ) * ChunkVolume : 0 ) + ( m_VertexMetaData ? sizeof( m_VertexMetaData[ 0 ] ) * ChunkVolume : 0 );
+}
+
+RenderableChunk::~RenderableChunk( )
+{
+    DeleteCache( );
+
+    if ( m_BufferAllocation.targetChunk != nullptr )
+    {
+        ChunkSolidBuffer::GetInstance( ).DelayedDeleteBuffer( m_BufferAllocation );
+    }
+
+    std::stringstream ss;
+    bool              hasChanged = false;
+    for ( int i = 0; i < EightWayDirectionSize; ++i )
+    {
+        if ( m_NearChunks[ i ] != nullptr )
+        {
+            hasChanged                 = true;
+            const auto otherCoordinate = GetChunkCoordinate( ) + ChunkPool::NearChunkDirection[ i ];
+            ss << otherCoordinate << " ";
+            m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<EightWayDirection>( i ^ 0b1 ) );
+        }
+    }
+    
+    LOGL_INFO( ss.str( ), "deleted from", GetChunkCoordinate( ) )
 }

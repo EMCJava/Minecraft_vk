@@ -175,18 +175,8 @@ public:
     explicit RenderableChunk( class MinecraftWorld* world )
         : Chunk( world )
     { }
-    ~RenderableChunk( )
-    {
-        DeleteCache( );
 
-        if ( m_BufferAllocation.targetChunk != nullptr )
-        {
-            ChunkSolidBuffer::GetInstance( ).DelayedDeleteBuffer( m_BufferAllocation );
-        }
-
-        for ( int i = 0; i < EightWayDirectionSize; ++i )
-            if ( m_NearChunks[ i ] != nullptr ) m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<EightWayDirection>( i ^ 0b1 ) );
-    }
+    ~RenderableChunk( );
 
     bool initialized  = false;
     bool initializing = false;
