@@ -131,12 +131,12 @@ ChunkPool::UpdateThread( const std::stop_token& st )
 void
 ChunkPool::RemoveChunkOutsizeRange( )
 {
-    if ( m_RemoveJobAfterRange > 0 )
+    if ( m_MaxRemoveJobRange > 0 )
     {
         {
             std::lock_guard<std::recursive_mutex> guard( m_PendingThreadsMutex );
             const auto                            lastIt = std::partition( m_PendingThreads.begin( ), m_PendingThreads.end( ),
-                                                                           [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->MaxAxisDistance( centre ) <= range; } );
+                                                                           [ range = m_StatusJobRemoveRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache->MaxAxisDistance( centre ) <= range[ cache->GetStatus( ) ]; } );
 
             const auto amountToRemove = std::distance( lastIt, m_PendingThreads.end( ) );
 
@@ -146,21 +146,16 @@ ChunkPool::RemoveChunkOutsizeRange( )
         }
 
         {
-            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
-            std::for_each( m_ChunkCache.begin( ), m_ChunkCache.end( ), [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const std::pair<ChunkCoordinateHash, std::shared_ptr<ChunkTy>>& cache ) {
-                if ( cache.second->MaxAxisDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ) )
-                {
-                    if ( std::get<0>( cache.second->GetChunkCoordinate( ) ) == 16 )
-                    {
-                        auto a = cache.second->MaxAxisDistance( centre );
-                    }
-                    Logger ::getInstance( ).LogLine( Logger::LogType::eInfo, "About to erase chunk outside range", cache.second->GetChunkCoordinate( ), cache.second.get( ) );
-                }
-            } );
 
-            if ( std::erase_if( m_ChunkCache, [ range = m_RemoveJobAfterRange, centre = m_PrioritizeCoordinate ]( const auto& cache ) { return cache.second->MaxAxisDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized ); } ) > 0 )
+
+            std::lock_guard<std::recursive_mutex> lock( m_ChunkCacheLock );
+
+            const auto condition = [ range = m_MaxRemoveJobRange, centre = m_PrioritizeCoordinate ]( const std::pair<ChunkCoordinateHash, std::shared_ptr<ChunkTy>>& cache ) {
+                return cache.second->MaxAxisDistance( centre ) > range && ( !cache.second->initializing || cache.second->initialized );
+            };
+            if ( std::erase_if( m_ChunkCache, condition ) > 0 )
             {
-                -m_ChunkErased.test_and_set( );
+                m_ChunkErased.test_and_set( );
             }
         }
     }
@@ -180,7 +175,11 @@ ChunkPool::CleanUpJobs( )
             // Logger::getInstance( ).LogLine( "Load not complete, re-appending chunk", cache );
             cache->initializing = false;
             cache->initialized  = false;
-            AddJobContext( cache );
+
+            // Could be outside range at the time the job finish
+            if ( CanLoadCoordinate( cache->GetChunkCoordinate( ), cache->GetStatus( ) + 1 ) )
+                AddJobContext( cache );
+
             continue;
         }
 
@@ -227,10 +226,10 @@ ChunkPool::CleanUpJobs( )
 ChunkTy*
 ChunkPool::AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status )
 {
-    ChunkTy*   newChunk;
-    const auto hashedCoordinate = ToChunkCoordinateHash( coordinate );
-
+    if ( CanLoadCoordinate( coordinate, status ) )
     {
+        const auto hashedCoordinate = ToChunkCoordinateHash( coordinate );
+
         std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
         if ( auto find_it = m_ChunkCache.find( hashedCoordinate ); find_it != m_ChunkCache.end( ) )
         {
@@ -251,15 +250,18 @@ ChunkPool::AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status 
             return find_it->second.get( );
         }
 
-        newChunk = new ChunkTy( m_World );
+        auto newChunk = new ChunkTy( m_World );
         newChunk->SetCoordinate( coordinate );
         newChunk->SetExpectedStatus( status );
 
         m_ChunkCache.insert( { hashedCoordinate, std::shared_ptr<ChunkTy>( newChunk ) } );
+        AddJobContext( newChunk );
+
+        return newChunk;
     }
 
-    AddJobContext( newChunk );
-    return newChunk;
+    LOGL_WARN( "Try adding chunk outside range:", coordinate, "with distance", MaxAxisDistance( m_PrioritizeCoordinate, coordinate ) );
+    return nullptr;
 }
 
 void

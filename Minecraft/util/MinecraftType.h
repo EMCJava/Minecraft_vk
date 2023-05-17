@@ -103,6 +103,14 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
     return ( std::abs( std::get<I>( t1 ) - std::get<I>( t2 ) ) + ... );
 }
 
+template <typename... T1, typename... T2, std::size_t... I>
+inline constexpr auto
+MaxAxisDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
+                 std::index_sequence<I...> )
+{
+    return std::max({ std::abs( std::get<I>( t1 ) - std::get<I>( t2 ) ) ... });
+}
+
 // template <typename... T1, typename... T2, std::size_t... I>
 // inline constexpr auto
 // Equal( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2,
@@ -120,6 +128,15 @@ ManhattanDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
     // make sure both tuples have the same size
     static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
     return ManhattanDistance( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
+}
+
+template <typename... T1, typename... T2>
+inline constexpr auto
+MaxAxisDistance( const std::tuple<T1...>& t1, const std::tuple<T2...>& t2 )
+{
+    // make sure both tuples have the same size
+    static_assert( sizeof...( T1 ) == sizeof...( T2 ) );
+    return MaxAxisDistance( t1, t2, std::make_index_sequence<sizeof...( T1 )> { } );
 }
 
 // template <typename... T1, typename... T2>

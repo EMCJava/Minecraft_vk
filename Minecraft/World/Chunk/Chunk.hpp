@@ -105,8 +105,7 @@ public:
 
     [[nodiscard]] inline CoordinateType MaxAxisDistance( const ChunkCoordinate& other ) const
     {
-        return std::max( std::abs( std::get<0>( m_Coordinate ) - std::get<0>( other ) ),
-                         std::abs( std::get<1>( m_Coordinate ) - std::get<1>( other ) ) );
+        return ::MaxAxisDistance( m_Coordinate, other );
     }
 
     size_t GetObjectSize( ) const;

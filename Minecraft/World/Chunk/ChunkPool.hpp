@@ -20,7 +20,8 @@ class ChunkPool : public ThreadPool<ChunkTy>
 private:
     class MinecraftWorld* m_World;
 
-    CoordinateType                m_RemoveJobAfterRange = 0;
+    std::array<int32_t, ChunkStatusSize>    m_StatusJobRemoveRange { };
+    int32_t                       m_MaxRemoveJobRange = 0;
     ChunkCoordinate               m_PrioritizeCoordinate;
     std::unique_ptr<std::jthread> m_UpdateThread;
 
@@ -74,9 +75,10 @@ public:
         m_PrioritizeCoordinate = centre;
     }
 
-    inline void SetValidRange( CoordinateType range )
+    inline void SetStatusValidRange( std::array<int32_t, ChunkStatusSize> range )
     {
-        m_RemoveJobAfterRange = range;
+        m_StatusJobRemoveRange = range;
+        m_MaxRemoveJobRange    = *std::max_element( m_StatusJobRemoveRange.begin( ), m_StatusJobRemoveRange.end( ) );
     }
 
     void StopThread( )
@@ -180,6 +182,11 @@ public:
         }
 
         return { };
+    }
+
+    [[nodiscard]] inline bool CanLoadCoordinate( const ChunkCoordinate& coordinate, ChunkStatus targetStatus ) const
+    {
+        return m_MaxRemoveJobRange == 0 || MaxAxisDistance( m_PrioritizeCoordinate, coordinate ) <= m_StatusJobRemoveRange[ targetStatus ];
     }
 };
 

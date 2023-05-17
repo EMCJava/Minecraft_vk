@@ -4,8 +4,8 @@
 
 #include "MinecraftWorld.hpp"
 
-#include <Minecraft/World/Chunk/ChunkPool.hpp>
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
+#include <Minecraft/World/Chunk/ChunkPool.hpp>
 
 #include <Include/GlobalConfig.hpp>
 #include <random>
@@ -36,7 +36,17 @@ MinecraftWorld::MinecraftWorld( )
 
     m_ChunkPool         = std::make_unique<ChunkPool>( this, GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "loading_thread" ].get<int>( ) );
     m_ChunkLoadingRange = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( );
-    m_ChunkPool->SetValidRange( m_ChunkLoadingRange + WorldChunkEffectiveRange );
+
+    std::array<int32_t, ChunkStatusSize> statusValidRange;
+    statusValidRange[ eEmpty ]   = -1;
+    statusValidRange[ eFeature ] = m_ChunkLoadingRange;
+
+    statusValidRange[ eFeature - 1 ]            = statusValidRange[ eFeature ] + FeatureStatusRange;
+    statusValidRange[ eNoise - 1 ]              = statusValidRange[ eNoise ];
+    statusValidRange[ eStructureReference - 1 ] = statusValidRange[ eStructureReference ] + StructureReferenceStatusRange;
+    statusValidRange[ eStructureStart - 1 ]     = statusValidRange[ eStructureStart ];
+
+    m_ChunkPool->SetStatusValidRange( statusValidRange );
     m_ChunkPool->StartThread( );
 }
 

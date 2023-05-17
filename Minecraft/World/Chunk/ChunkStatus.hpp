@@ -21,20 +21,28 @@ enum ChunkStatus : ChunkStatusTy {
     eStructureReference,   // chunk if surrounding chunk has structure that expended to this chunk
     eNoise,                // starts generating chunk, e.g. land scape
     eFeature,              // final decoration, e.g. placing trees / structure
-    eFull = eFeature       // a completed chunk
+    eFull = eFeature,      // a completed chunk
+
+    ChunkStatusSize
 };
+
+inline ChunkStatus
+operator+( ChunkStatus status, int offset )
+{
+    return ChunkStatus( ChunkStatusTy( status ) + offset );
+}
 
 inline ChunkStatus&
 operator++( ChunkStatus& status )
 {
-    return status = ChunkStatus( ChunkStatusTy( status ) + 1 );
+    return status = status + 1;
 }
 
 inline ChunkStatus
 operator++( ChunkStatus& status, int )
 {
     const auto temStatus = status;
-    status               = ChunkStatus( ChunkStatusTy( status ) + 1 );
+    status               = status + 1;
 
     return temStatus;
 }
