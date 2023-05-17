@@ -20,6 +20,8 @@ protected:
     FloatTy m_Gravity    = -18.f;
     bool    m_UseGravity = true;
 
+    float m_MaxVelocity = 20.0f;
+
 public:
     explicit Entity( const EntityCoordinate& coordinate )
     {

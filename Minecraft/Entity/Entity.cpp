@@ -119,8 +119,10 @@ Entity::Tick( float deltaTime )
     // Logger::getInstance( ).LogLine( m_Velocity.x, m_Velocity.y, m_Velocity.z, travel.x, travel.y, travel.z );
 
     // friction
-    const auto backupY = m_Velocity.y;
+    const auto backupY   = m_Velocity.y;
     const auto fpsFactor = 0.0625f / deltaTime;
     m_Velocity -= ( m_Velocity * ( 1 - m_Friction ) ) / fpsFactor;
-    m_Velocity.y = backupY; // No friction on vertical axis
+    m_Velocity.y = backupY;   // No friction on vertical axis
+
+    m_Velocity.y = std::clamp( m_Velocity.y, -m_MaxVelocity, m_MaxVelocity );
 }
