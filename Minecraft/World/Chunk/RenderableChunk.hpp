@@ -144,7 +144,12 @@ protected:
     std::array<RenderableChunk*, EightWayDirectionSize> m_NearChunks { };
     uint8_t                                             m_EmptySlot = ( 1 << EightWayDirectionSize ) - 1;
 
-    std::array<std::pair<RenderableChunk*, uint32_t>, EightWayDirectionSize>
+    /*
+     *
+     * @return [located chunk, chunk relative direction, index]
+     *
+     * */
+    std::array<std::tuple<RenderableChunk*, EightWayDirection, uint32_t>, EightWayDirectionSize>
     GetHorizontalChunkAfterPointMoved( uint32_t index );
 
     /*

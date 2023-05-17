@@ -55,26 +55,21 @@ RenderableChunk::RegenerateVisibleFaces( )
 namespace
 {
 inline auto&
-BlockAtOffset( const std::pair<RenderableChunk*, uint32_t>& chunkIndexPair, CoordinateType indexOffset )
+BlockAtOffset( const std::tuple<RenderableChunk*, EightWayDirection, uint32_t>& chunkIndexPair, CoordinateType indexOffset )
 {
-    return chunkIndexPair.first->At( chunkIndexPair.second + indexOffset );
+    return std::get<0>( chunkIndexPair )->At( std::get<2>( chunkIndexPair ) + indexOffset );
 }
 }   // namespace
 
-std::array<std::pair<RenderableChunk*, uint32_t>, EightWayDirectionSize>
+std::array<std::tuple<RenderableChunk*, EightWayDirection, uint32_t>, EightWayDirectionSize>
 RenderableChunk::GetHorizontalChunkAfterPointMoved( uint32_t index )
 {
 
-#define CHUNK_DIR( dir ) \
-    if ( BlockAtOffset( result[ EW##dir ], 0 ).Transparent( ) ) blockNeighborTransparency |= dir##Bit;
-
-#define CHUNK_DIR_OFFSET( dir, offset, DirKeyword ) \
-    if ( BlockAtOffset( result[ EW##dir ], offset ).Transparent( ) ) blockNeighborTransparency |= dir##DirKeyword##Bit;
-
 #define SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET( dir, chunkPtrDir, offset ) result[ ( dir ) ] = { m_NearChunks[ ( chunkPtrDir ) ], \
+                                                                                           ( chunkPtrDir ),                 \
                                                                                            index + ( offset ) }
-#define SAVE_CHUNK_INDEX_OFFSET( dir, offset )      result[ ( dir ) ] = { m_NearChunks[ ( dir ) ], index + ( offset ) }
-#define SAVE_THIS_CHUNK_INDEX_OFFSET( dir, offset ) result[ ( dir ) ] = { this, index + ( offset ) }
+#define SAVE_CHUNK_INDEX_OFFSET( dir, offset )      result[ ( dir ) ] = { m_NearChunks[ ( dir ) ], ( dir ), index + ( offset ) }
+#define SAVE_THIS_CHUNK_INDEX_OFFSET( dir, offset ) result[ ( dir ) ] = { this, EightWayDirectionSize, index + ( offset ) }
 
 #define ADD_DIAGONAL( X, Y )                                                                                         \
     if ( blockAtMost##X ) [[unlikely]]                                                                               \
@@ -102,7 +97,7 @@ RenderableChunk::GetHorizontalChunkAfterPointMoved( uint32_t index )
     const bool blockAtMostFront = ( index % SectionUnitLength ) == SectionUnitLength - 1;
     const bool blockAtMostBack  = ( index % SectionUnitLength ) == 0;
 
-    std::array<std::pair<RenderableChunk*, uint32_t>, EightWayDirectionSize> result;
+    std::array<std::tuple<RenderableChunk*, EightWayDirection, uint32_t>, EightWayDirectionSize> result;
 
     /*********/
     /* Right */
@@ -156,8 +151,6 @@ RenderableChunk::GetHorizontalChunkAfterPointMoved( uint32_t index )
     /*************/
     ADD_DIAGONAL( Left, Back );
 
-#undef CHUNK_DIR
-#undef CHUNK_DIR_OFFSET
 #undef SAVE_CHUNK_INDEX_OFFSET
 #undef SAVE_THIS_CHUNK_INDEX_OFFSET
 #undef SAVE_SIDEWAYS_CHUNK_INDEX_OFFSET
@@ -410,42 +403,41 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
         const auto horizontalIndexChunkAfterPointMoved = GetHorizontalChunkAfterPointMoved( blockIndex );
 
-#define UpdateAlongDir( dir )                                                                                               \
-    {                                                                                                                       \
-        constexpr auto oppositeDirectionBit     = DirectionBit( 1 << ( IntLog<(int) Dir##dir##Bit, 2>::value ^ 0b1 ) );     \
-        constexpr auto oppositeDirectionDownBit = DirectionBit( 1 << ( IntLog<(int) Dir##dir##UpBit, 2>::value ^ 0b1 ) );   \
-        constexpr auto oppositeDirectionUpBit   = DirectionBit( 1 << ( IntLog<(int) Dir##dir##DownBit, 2>::value ^ 0b1 ) ); \
-        auto*          chunk                    = horizontalIndexChunkAfterPointMoved[ EWDir##dir ].first;                  \
-        const auto     index                    = horizontalIndexChunkAfterPointMoved[ EWDir##dir ].second;                 \
-        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], 0 ).Transparent( ) )                        \
-        {                                                                                                                   \
-            chunk->m_NeighborTransparency[ index ] ^= oppositeDirectionBit;                                                 \
-            chunk->UpdateAmbientOcclusionAt( index );                                                                       \
-                                                                                                                            \
-            /* Within visible range */                                                                                      \
-            if constexpr ( EWDir##dir <= EWDirLeft )                                                                        \
-                chunk->m_VisibleFacesCount += faceCountDiff;                                                                \
-            /* regenerate other chunks faces */                                                                             \
-            if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
-        }                                                                                                                   \
-                                                                                                                            \
-        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirUpFaceOffset ).Transparent( ) )          \
-        {                                                                                                                   \
-            chunk->m_NeighborTransparency[ index + dirUpFaceOffset ] ^= oppositeDirectionDownBit;                           \
-            chunk->UpdateAmbientOcclusionAt( index + dirUpFaceOffset );                                                     \
-                                                                                                                            \
-            /* regenerate other chunks faces */                                                                             \
-            if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
-        }                                                                                                                   \
-                                                                                                                            \
-        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirDownFaceOffset ).Transparent( ) )        \
-        {                                                                                                                   \
-            chunk->m_NeighborTransparency[ index + dirDownFaceOffset ] ^= oppositeDirectionUpBit;                           \
-            chunk->UpdateAmbientOcclusionAt( index + dirDownFaceOffset );                                                   \
-                                                                                                                            \
-            /* regenerate other chunks faces */                                                                             \
-            if ( chunk != this ) chunk->SyncChunkFromDirection( this, EWDir##dir ^ 0b1, true );                             \
-        }                                                                                                                   \
+#define UpdateAlongDir( dir )                                                                                                           \
+    {                                                                                                                                   \
+        constexpr auto oppositeDirectionBit                 = DirectionBit( 1 << ( IntLog<(int) Dir##dir##Bit, 2>::value ^ 0b1 ) );     \
+        constexpr auto oppositeDirectionDownBit             = DirectionBit( 1 << ( IntLog<(int) Dir##dir##UpBit, 2>::value ^ 0b1 ) );   \
+        constexpr auto oppositeDirectionUpBit               = DirectionBit( 1 << ( IntLog<(int) Dir##dir##DownBit, 2>::value ^ 0b1 ) ); \
+        const auto [ chunk, chunkBackwordDirection, index ] = horizontalIndexChunkAfterPointMoved[ EWDir##dir ];                        \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], 0 ).Transparent( ) )                                    \
+        {                                                                                                                               \
+            chunk->m_NeighborTransparency[ index ] ^= oppositeDirectionBit;                                                             \
+            chunk->UpdateAmbientOcclusionAt( index );                                                                                   \
+                                                                                                                                        \
+            /* Within visible range (not diagonal) */                                                                                   \
+            if constexpr ( EWDir##dir <= EWDirLeft )                                                                                    \
+                chunk->m_VisibleFacesCount += faceCountDiff;                                                                            \
+            /* regenerate other chunks faces */                                                                                         \
+            if ( chunk != this ) chunk->SyncChunkFromDirection( this, chunkBackwordDirection ^ 0b1, true );                             \
+        }                                                                                                                               \
+                                                                                                                                        \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirUpFaceOffset ).Transparent( ) )                      \
+        {                                                                                                                               \
+            chunk->m_NeighborTransparency[ index + dirUpFaceOffset ] ^= oppositeDirectionDownBit;                                       \
+            chunk->UpdateAmbientOcclusionAt( index + dirUpFaceOffset );                                                                 \
+                                                                                                                                        \
+            /* regenerate other chunks faces */                                                                                         \
+            if ( chunk != this ) chunk->SyncChunkFromDirection( this, chunkBackwordDirection ^ 0b1, true );                             \
+        }                                                                                                                               \
+                                                                                                                                        \
+        if ( !BlockAtOffset( horizontalIndexChunkAfterPointMoved[ EWDir##dir ], dirDownFaceOffset ).Transparent( ) )                    \
+        {                                                                                                                               \
+            chunk->m_NeighborTransparency[ index + dirDownFaceOffset ] ^= oppositeDirectionUpBit;                                       \
+            chunk->UpdateAmbientOcclusionAt( index + dirDownFaceOffset );                                                               \
+                                                                                                                                        \
+            /* regenerate other chunks faces */                                                                                         \
+            if ( chunk != this ) chunk->SyncChunkFromDirection( this, chunkBackwordDirection ^ 0b1, true );                             \
+        }                                                                                                                               \
     }
 
         UpdateAlongDir( Front );
@@ -587,7 +579,7 @@ RenderableChunk::UpdateMetaDataAt( uint32_t index )
 /*
  *
  * From https://github.com/roboleary/GreedyMesh/blob/master/src/mygame/Main.java
- * with multiple buf fixes
+ * with multiple bug fixes
  *
  * */
 std::array<std::unordered_map<FaceVertexMetaData, GreedyMeshCollection>, CubeDirection::DirSize>
@@ -831,10 +823,10 @@ RenderableChunk::~RenderableChunk( )
         {
             hasChanged                 = true;
             const auto otherCoordinate = GetChunkCoordinate( ) + ChunkPool::NearChunkDirection[ i ];
-            ss << otherCoordinate << " ";
+            ss << " " << otherCoordinate << " " << m_NearChunks[ i ];
             m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<EightWayDirection>( i ^ 0b1 ) );
         }
     }
-    
-    LOGL_INFO( ss.str( ), "deleted from", GetChunkCoordinate( ) )
+
+    LOGL_INFO( ss.str( ), "deleted from", GetChunkCoordinate( ), this )
 }
