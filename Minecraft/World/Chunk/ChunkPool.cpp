@@ -84,6 +84,8 @@ const std::array<ChunkCoordinate, EightWayDirectionSize> ChunkPool::NearChunkDir
 void
 ChunkPool::UpdateThread( const std::stop_token& st )
 {
+    LOGL_SYS( "Chunk update thread started." )
+
     while ( !st.stop_requested( ) )
     {
         if ( !HasThreadRunning( ) )
@@ -118,6 +120,8 @@ ChunkPool::UpdateThread( const std::stop_token& st )
             std::this_thread::sleep_for( std::chrono::milliseconds( ChunkThreadDelayPeriod ) );
         }
     }
+
+    LOGL_SYS( "Chunk update thread stopped." )
 
     uint32_t leftRunningThread = 0;
     while ( ( leftRunningThread = GetRunningThreadCount( ) ) != 0 )
