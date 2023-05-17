@@ -4,9 +4,9 @@
 
 #include "WorldChunk.hpp"
 
-#include <Minecraft/World/MinecraftWorld.hpp>
 #include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
+#include <Minecraft/World/MinecraftWorld.hpp>
 
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 
@@ -78,8 +78,12 @@ WorldChunk::FillTerrain( const MinecraftNoise& generator )
         for ( int k = 0; k < SectionUnitLength; ++k )
             for ( int j = 0; j < SectionUnitLength; ++j, ++horizontalMapIndex )
             {
-                auto noiseValue = generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
-                noiseValue += noiseOffset[ i ];
+                auto noiseValue = noiseOffset[ i ];
+
+                if ( noiseValue != -1 && noiseValue != 1 )
+                {
+                    noiseValue += generator.GetNoiseInt( xCoordinate + j, i, zCoordinate + k );
+                }
 
                 assert( blocksPtr + horizontalMapIndex - m_Blocks.get( ) < ChunkVolume );
                 blocksPtr[ horizontalMapIndex ] = noiseValue > 0 ? BlockID::Air : BlockID::Stone;
