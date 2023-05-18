@@ -816,17 +816,15 @@ RenderableChunk::~RenderableChunk( )
     }
 
     std::stringstream ss;
-    bool              hasChanged = false;
     for ( int i = 0; i < EightWayDirectionSize; ++i )
     {
         if ( m_NearChunks[ i ] != nullptr )
         {
-            hasChanged                 = true;
             const auto otherCoordinate = GetChunkCoordinate( ) + ChunkPool::NearChunkDirection[ i ];
             ss << " " << otherCoordinate << " " << m_NearChunks[ i ];
             m_NearChunks[ i ]->SyncChunkFromDirection( nullptr, static_cast<EightWayDirection>( i ^ 0b1 ) );
         }
     }
 
-    LOGL_INFO( ss.str( ), "deleted from", GetChunkCoordinate( ), this )
+    LOGL_VERB( ss.str( ), "deleted from", GetChunkCoordinate( ), this )
 }

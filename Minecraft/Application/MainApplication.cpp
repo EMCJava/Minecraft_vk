@@ -540,12 +540,13 @@ MainApplication::onKeyboardInput( GLFWwindow* window, int key, int scancode, int
     case GLFW_PRESS:
         if ( key == GLFW_KEY_F11 )
         {
-            // toggle fullscreen
             app->RecreateWindow( !app->m_window_fullscreen );
+        } else if ( key == GLFW_KEY_F3 )
+        {
+            app->m_ShowDebugOverlay = !app->m_ShowDebugOverlay;
         } else if ( key == GLFW_KEY_ESCAPE )
         {
             app->UnlockMouse( );
-            // glfwSetWindowShouldClose( app->m_window, true );
         }
         break;
     case GLFW_RELEASE:
@@ -614,311 +615,381 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
     renderImguiCursor( renderIndex );
 
-    if ( m_is_mouse_locked ) return;
-
-    // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-    if ( show_demo_window )
-        ImGui::ShowDemoWindow( &show_demo_window );
-
-    // 2. Show a simple window that weF create ourselves. We use a Begin/End pair to created a named window.
+    if ( !m_is_mouse_locked )
     {
-        static float f       = 0.0f;
-        static int   counter = 0;
+        if ( show_demo_window )
+            ImGui::ShowDemoWindow( &show_demo_window );
 
-        ImGui::Begin( "Debuger" );                             // Create a window called "Hello, world!" and append into it.
-        ImGui::Checkbox( "Demo Window", &show_demo_window );   // Edit bools storing our window open/close state
-        ImGui::Checkbox( "Another Window", &show_another_window );
+        if ( show_another_window )
+            ImPlot::ShowDemoWindow( &show_another_window );
 
-        ImGui::SliderFloat( "float", &f, 0.0f, 1.0f );                     // Edit 1 float using a slider from 0.0f to 1.0f
-        if ( ImGui::ColorEdit3( "clear color", (float*) &clear_color ) )   // Edit 3 floats representing a color
         {
-            Logger::getInstance( ).LogLine( "Background", std::make_tuple( clear_color.x, clear_color.y, clear_color.z, 1.0f ) );
-            m_graphics_api->setClearColor( { clear_color.x, clear_color.y, clear_color.z, 1.0f } );
-        }
+            static float f       = 0.0f;
+            static int   counter = 0;
 
-        if ( ImGui::Button( "Exit" ) )
-        {
-            glfwSetWindowShouldClose( m_window, GL_TRUE );
-        }
+            ImGui::Begin( "Debuger" );                             // Create a window called "Hello, world!" and append into it.
+            ImGui::Checkbox( "Demo Window", &show_demo_window );   // Edit bools storing our window open/close state
+            ImGui::Checkbox( "Another Window", &show_another_window );
 
-        ImGui::SameLine( );
-        if ( ImGui::Button( "Reset" ) )
-        {
-            m_ShouldReset = true;
-        }
+            ImGui::SliderFloat( "float", &f, 0.0f, 1.0f );                     // Edit 1 float using a slider from 0.0f to 1.0f
+            if ( ImGui::ColorEdit3( "clear color", (float*) &clear_color ) )   // Edit 3 floats representing a color
+            {
+                Logger::getInstance( ).LogLine( "Background", std::make_tuple( clear_color.x, clear_color.y, clear_color.z, 1.0f ) );
+                m_graphics_api->setClearColor( { clear_color.x, clear_color.y, clear_color.z, 1.0f } );
+            }
 
-        ImGui::SameLine( );
-        if ( ImGui::Button( "Fps mode" ) )
-        {
-            LockMouse( );
-        }
-
-        ImGui::SameLine( );
-        if ( ImGui::Button( "Sleep 1s" ) )
-        {
-            using namespace std::chrono_literals;
-            std::this_thread::sleep_for( 1s );
-        }
-
-        ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
-
-        if ( ImGui::CollapsingHeader( "Player" ) )
-        {
-            static float pos[ 3 ];
-            ImGui::InputFloat3( "Player position", pos );
+            if ( ImGui::Button( "Exit" ) )
+            {
+                glfwSetWindowShouldClose( m_window, GL_TRUE );
+            }
 
             ImGui::SameLine( );
-            if ( ImGui::Button( "Teleport" ) )
+            if ( ImGui::Button( "Reset" ) )
             {
-                MinecraftServer::GetInstance( ).GetPlayer( 0 ).SetCoordinate( MakeMinecraftCoordinate<EntityCoordinate>( pos[ 0 ], pos[ 1 ], pos[ 2 ] ) );
+                m_ShouldReset = true;
             }
-        }
 
-        if ( ImGui::CollapsingHeader( "Minecraft World" ) )
-        {
-            const int                 span   = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + WorldChunkEffectiveRange;
-            const int                 size   = span * 2 + 1;
-            std::unique_ptr<double[]> values = std::make_unique<double[]>( size * size );
-
-            auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
-
+            ImGui::SameLine( );
+            if ( ImGui::Button( "Fps mode" ) )
             {
-                std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
-                int                                   index = 0;
-                for ( int i = -span; i <= span; ++i )
+                LockMouse( );
+            }
+
+            ImGui::SameLine( );
+            if ( ImGui::Button( "Sleep 1s" ) )
+            {
+                using namespace std::chrono_literals;
+                std::this_thread::sleep_for( 1s );
+            }
+
+            ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / m_imgui_io->Framerate, m_imgui_io->Framerate );
+
+            if ( ImGui::CollapsingHeader( "Player" ) )
+            {
+                static float pos[ 3 ];
+                ImGui::InputFloat3( "Player position", pos );
+
+                ImGui::SameLine( );
+                if ( ImGui::Button( "Teleport" ) )
                 {
-                    for ( int j = -span; j <= span; ++j, ++index )
+                    MinecraftServer::GetInstance( ).GetPlayer( 0 ).SetCoordinate( MakeMinecraftCoordinate<EntityCoordinate>( pos[ 0 ], pos[ 1 ], pos[ 2 ] ) );
+                }
+            }
+
+            if ( ImGui::CollapsingHeader( "Minecraft World" ) )
+            {
+                const int                 span   = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + WorldChunkEffectiveRange;
+                const int                 size   = span * 2 + 1;
+                std::unique_ptr<double[]> values = std::make_unique<double[]>( size * size );
+
+                auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
+
+                {
+                    std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
+                    int                                   index = 0;
+                    for ( int i = -span; i <= span; ++i )
                     {
-                        if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( playerPosition + MakeMinecraftChunkCoordinate( i, j ) ); chunkCache != nullptr )
+                        for ( int j = -span; j <= span; ++j, ++index )
                         {
-                            values[ index ] = (int) chunkCache->GetStatus( );
-                        } else
-                        {
-                            values[ index ] = 0;
+                            if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( playerPosition + MakeMinecraftChunkCoordinate( i, j ) ); chunkCache != nullptr )
+                            {
+                                values[ index ] = (int) chunkCache->GetStatus( );
+                            } else
+                            {
+                                values[ index ] = 0;
+                            }
                         }
                     }
                 }
-            }
 
-            ImPlot::PushColormap( ImPlotColormap_Cool );
+                ImPlot::PushColormap( ImPlotColormap_Cool );
 
-            if ( ImPlot::BeginPlot( "##Heatmap1", ImVec2( 225, 225 ) ) )
-            {
-                ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit );
-                ImPlot::PlotHeatmap( "Chunk Completeness", values.get( ), size, size, eEmpty, eFull, nullptr,
-                                     ImPlotPoint( GetMinecraftX( playerPosition ) - span, GetMinecraftZ( playerPosition ) - span ),
-                                     ImPlotPoint( GetMinecraftX( playerPosition ) + span, GetMinecraftZ( playerPosition ) + span ) );
-                ImPlot::EndPlot( );
-            }
-
-            ImPlot::PopColormap( );
-        }
-
-        if ( ImGui::CollapsingHeader( "Block Detail" ) )
-        {
-            static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-
-            ImGui::CheckboxFlags( "Scrollable", &flags, ImGuiTableFlags_ScrollY );
-
-            // When using ScrollX or ScrollY we need to specify a size for our table container!
-            // Otherwise by default the table will fit all available space, like a BeginChild() call.
-            ImVec2 outer_size = ImVec2( 0.0f, TEXT_BASE_HEIGHT * 8 );
-            if ( ImGui::BeginTable( "Block looking at detail", 2, flags, outer_size ) )
-            {
-                std::lock_guard lock( m_BlockDetailLock );
-
-                ImGui::TableSetupScrollFreeze( 0, 1 );   // Make top row always visible
-                ImGui::TableSetupColumn( "Key", ImGuiTableColumnFlags_None );
-                ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_None );
-                ImGui::TableHeadersRow( );
-
-                // Demonstrate using clipper for large vertical lists
-                ImGuiListClipper clipper;
-                clipper.Begin( (int) m_BlockDetailMap.size( ) );
-                while ( clipper.Step( ) )
+                if ( ImPlot::BeginPlot( "##Heatmap1", ImVec2( 225, 225 ) ) )
                 {
-                    for ( int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
+                    ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit );
+                    ImPlot::PlotHeatmap( "Chunk Completeness", values.get( ), size, size, eEmpty, eFull, nullptr,
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) - span, GetMinecraftZ( playerPosition ) - span ),
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) + span, GetMinecraftZ( playerPosition ) + span ) );
+                    ImPlot::EndPlot( );
+                }
+
+                ImPlot::PopColormap( );
+            }
+
+            if ( ImGui::CollapsingHeader( "Block Detail" ) )
+            {
+                static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+
+                ImGui::CheckboxFlags( "Scrollable", &flags, ImGuiTableFlags_ScrollY );
+
+                // When using ScrollX or ScrollY we need to specify a size for our table container!
+                // Otherwise by default the table will fit all available space, like a BeginChild() call.
+                ImVec2 outer_size = ImVec2( 0.0f, TEXT_BASE_HEIGHT * 8 );
+                if ( ImGui::BeginTable( "Block looking at detail", 2, flags, outer_size ) )
+                {
+                    std::lock_guard lock( m_BlockDetailLock );
+
+                    ImGui::TableSetupScrollFreeze( 0, 1 );   // Make top row always visible
+                    ImGui::TableSetupColumn( "Key", ImGuiTableColumnFlags_None );
+                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_None );
+                    ImGui::TableHeadersRow( );
+
+                    // Demonstrate using clipper for large vertical lists
+                    ImGuiListClipper clipper;
+                    clipper.Begin( (int) m_BlockDetailMap.size( ) );
+                    while ( clipper.Step( ) )
                     {
-                        ImGui::TableNextRow( );
-                        ImGui::TableSetColumnIndex( 0 );
-                        ImGui::Text( "%s", m_BlockDetailMap[ row ].first.c_str( ) );
-                        ImGui::TableSetColumnIndex( 1 );
-                        ImGui::Text( "%s", m_BlockDetailMap[ row ].second.c_str( ) );
+                        for ( int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
+                        {
+                            ImGui::TableNextRow( );
+                            ImGui::TableSetColumnIndex( 0 );
+                            ImGui::Text( "%s", m_BlockDetailMap[ row ].first.c_str( ) );
+                            ImGui::TableSetColumnIndex( 1 );
+                            ImGui::Text( "%s", m_BlockDetailMap[ row ].second.c_str( ) );
+                        }
+                    }
+                    ImGui::EndTable( );
+                }
+            }
+
+            if ( ImGui::CollapsingHeader( "Performance" ) )
+            {
+                static float            t         = 0;
+                static float            previousT = 0;
+                static float            history   = 10.0f;
+                static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount, chunkRenderCount;
+                auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
+
+                t += ImGui::GetIO( ).DeltaTime;
+                ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
+
+                if ( chunkLoadingThreadCount.empty( ) || t > previousT + 0.25 )
+                {
+                    previousT  = t;
+                    float xmod = fmodf( t, history );
+                    if ( !chunkLoadingThreadCount.empty( ) && xmod < chunkLoadingThreadCount.back( ).x )
+                    {
+                        chunkLoadingThreadCount.shrink( 0 );
+                        chunkCount.shrink( 0 );
+                        chunkRenderCount.shrink( 0 );
+                    }
+                    chunkLoadingThreadCount.push_back( ImVec2( xmod, (float) chunkPool.GetLoadingCount( ) ) );
+                    chunkCount.push_back( ImVec2( xmod, (float) chunkPool.GetTotalChunk( ) ) );
+                    chunkRenderCount.push_back( ImVec2( xmod, (float) m_renderingChunkCount ) );
+                }
+
+                static ScrollingBuffer fps;
+                fps.AddPoint( t, m_imgui_io->Framerate );
+
+                if ( ImPlot::BeginPlot( "FPS##Scrolling", ImVec2( -1, 150 ) ) )
+                {
+                    ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_None, ImPlotAxisFlags_AutoFit );
+                    ImPlot::SetupAxisLimits( ImAxis_X1, std::max( fps.Data[ fps.Offset ].x, t - history ), t, ImGuiCond_Always );
+                    ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
+                    ImPlot::PlotShaded( "", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
+                    ImPlot::EndPlot( );
+                }
+
+                if ( ImPlot::BeginPlot( "Chunks##Scrolling", ImVec2( -1, 0 ) ) )
+                {
+                    ImPlot::SetupAxes( "Time", "Thread" );
+                    ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit );
+                    ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
+                    ImPlot::SetupAxisLimits( ImAxis_Y1, 0, (double) chunkPool.GetMaxThread( ) + 1 );
+
+                    ImPlot::SetAxes( ImAxis_X1, ImAxis_Y1 );
+                    ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
+                    ImPlot::PlotStems( "Chunk thread", &chunkLoadingThreadCount[ 0 ].x, &chunkLoadingThreadCount[ 0 ].y, chunkLoadingThreadCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+
+                    ImPlot::SetAxes( ImAxis_X1, ImAxis_Y2 );
+                    ImPlot::SetNextMarkerStyle( ImPlotMarker_Circle );
+                    ImPlot::PlotStems( "Total Chunk", &chunkCount[ 0 ].x, &chunkCount[ 0 ].y, chunkCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+                    ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
+                    ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
+                    ImPlot::EndPlot( );
+                }
+
+                // ImGui::TreePop();
+            }
+
+            if ( ImGui::CollapsingHeader( "Generation" ) )
+            {
+                if ( m_TerrainNoiseOffset.Render( ) ) std::cout << m_TerrainNoiseOffset << std::endl;
+
+                auto&      terrainNoise   = MinecraftServer::GetInstance( ).GetWorld( ).GetModifiableTerrainNoise( );
+                static int noiseTypeIndex = 0;
+
+                {
+                    const char* noiseType[] = {
+                        "NoiseType_OpenSimplex2",
+                        "NoiseType_OpenSimplex2S",
+                        "NoiseType_Cellular",
+                        "NoiseType_Perlin",
+                        "NoiseType_ValueCubic",
+                        "NoiseType_Value" };
+
+                    if ( ImGui::Combo( "NoiseType", &noiseTypeIndex, noiseType, IM_ARRAYSIZE( noiseType ) ) )
+                        terrainNoise.SetNoiseType( static_cast<Noise::FastNoiseLite::NoiseType>( noiseTypeIndex ) );
+                }
+
+                if ( noiseTypeIndex == Noise::FastNoiseLite::NoiseType_Cellular && ImGui::TreeNode( "Cellular" ) )
+                {
+                    static int  cellularDistanceFunctionIndex = 1;
+                    const char* cellularDistanceFunction[]    = {
+                        "CellularDistanceFunction_Euclidean",
+                        "CellularDistanceFunction_EuclideanSq",
+                        "CellularDistanceFunction_Manhattan",
+                        "CellularDistanceFunction_Hybrid" };
+
+                    if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
+                        terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
+
+                    static int  cellularReturnTypeIndex = 1;
+                    const char* cellularReturnType[]    = {
+                        "CellularReturnType_CellValue",
+                        "CellularReturnType_Distance",
+                        "CellularReturnType_Distance2",
+                        "CellularReturnType_Distance2Add",
+                        "CellularReturnType_Distance2Sub",
+                        "CellularReturnType_Distance2Mul",
+                        "CellularReturnType_Distance2Div" };
+
+                    if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
+                        terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
+
+                    static float cellularJitter = 1;
+                    if ( ImGui::SliderFloat( "CellularJitter", &cellularJitter, 0, 2 ) )
+                        terrainNoise.SetCellularJitter( cellularJitter );
+
+                    ImGui::TreePop( );
+                }
+
+                {
+                    static int  rotationTypeIndex = 0;
+                    const char* rotationType[]    = {
+                        "RotationType3D_None",
+                        "RotationType3D_ImproveXYPlanes",
+                        "RotationType3D_ImproveXZPlanes" };
+
+                    if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
+                        terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
+                }
+
+                {
+                    static int  fractalTypeIndex = 0;
+                    const char* fractalType[]    = {
+                        "FractalType_None",
+                        "FractalType_FBm",
+                        "FractalType_Ridged",
+                        "FractalType_PingPong",
+                        "FractalType_DomainWarpProgressive",
+                        "FractalType_DomainWarpIndependent" };
+
+                    if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
+                        terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
+
+                    static int octaves = 0;
+                    if ( ImGui::SliderInt( "Octaves", &octaves, 1, 16 ) )
+                        terrainNoise.SetFractalOctaves( octaves );
+
+                    static float lacunarity = 2;
+                    if ( ImGui::SliderFloat( "Lacunarity", &lacunarity, 0, 5 ) )
+                        terrainNoise.SetFractalLacunarity( lacunarity );
+
+                    static float gain = 0.5;
+                    if ( ImGui::SliderFloat( "Gain", &gain, -2, 2 ) )
+                        terrainNoise.SetFractalGain( gain );
+
+                    static float weightedStrength = 0.0;
+                    if ( ImGui::SliderFloat( "WeightedStrength", &weightedStrength, -2, 2 ) )
+                        terrainNoise.SetFractalWeightedStrength( weightedStrength );
+
+                    if ( fractalTypeIndex == Noise::FastNoiseLite::FractalType_PingPong )
+                    {
+                        static float pingPongStrength = 0.0;
+                        if ( ImGui::SliderFloat( "PingPongStrength", &pingPongStrength, 0, 2 ) )
+                            terrainNoise.SetFractalPingPongStrength( pingPongStrength );
                     }
                 }
-                ImGui::EndTable( );
+                // ImGui::TreePop();
             }
+
+            ImGui::End( );
         }
-
-        if ( ImGui::CollapsingHeader( "Performance" ) )
-        {
-            static float            t         = 0;
-            static float            previousT = 0;
-            static float            history   = 10.0f;
-            static ImVector<ImVec2> chunkLoadingThreadCount, chunkCount, chunkRenderCount;
-            auto&                   chunkPool = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( );
-
-            t += ImGui::GetIO( ).DeltaTime;
-            ImGui::SliderFloat( "History", &history, 1, 30, "%.1f s" );
-
-            if ( chunkLoadingThreadCount.empty( ) || t > previousT + 0.25 )
-            {
-                previousT  = t;
-                float xmod = fmodf( t, history );
-                if ( !chunkLoadingThreadCount.empty( ) && xmod < chunkLoadingThreadCount.back( ).x )
-                {
-                    chunkLoadingThreadCount.shrink( 0 );
-                    chunkCount.shrink( 0 );
-                    chunkRenderCount.shrink( 0 );
-                }
-                chunkLoadingThreadCount.push_back( ImVec2( xmod, (float) chunkPool.GetLoadingCount( ) ) );
-                chunkCount.push_back( ImVec2( xmod, (float) chunkPool.GetTotalChunk( ) ) );
-                chunkRenderCount.push_back( ImVec2( xmod, (float) m_renderingChunkCount ) );
-            }
-
-            static ScrollingBuffer fps;
-            fps.AddPoint( t, m_imgui_io->Framerate );
-
-            if ( ImPlot::BeginPlot( "FPS##Scrolling", ImVec2( -1, 150 ) ) )
-            {
-                ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_None, ImPlotAxisFlags_AutoFit );
-                ImPlot::SetupAxisLimits( ImAxis_X1, std::max( fps.Data[ fps.Offset ].x, t - history ), t, ImGuiCond_Always );
-                ImPlot::SetNextFillStyle( IMPLOT_AUTO_COL, 0.5f );
-                ImPlot::PlotShaded( "", &fps.Data[ 0 ].x, &fps.Data[ 0 ].y, fps.Data.size( ), -INFINITY, 0, fps.Offset, 2 * sizeof( float ) );
-                ImPlot::EndPlot( );
-            }
-
-            if ( ImPlot::BeginPlot( "Chunks##Scrolling", ImVec2( -1, 0 ) ) )
-            {
-                ImPlot::SetupAxes( "Time", "Thread" );
-                ImPlot::SetupAxis( ImAxis_Y2, "Chunk", ImPlotAxisFlags_AuxDefault | ImPlotAxisFlags_AutoFit );
-                ImPlot::SetupAxisLimits( ImAxis_X1, -0.5, history + 0.5, ImGuiCond_Always );
-                ImPlot::SetupAxisLimits( ImAxis_Y1, 0, (double) chunkPool.GetMaxThread( ) + 1 );
-
-                ImPlot::SetAxes( ImAxis_X1, ImAxis_Y1 );
-                ImPlot::SetNextMarkerStyle( ImPlotMarker_Asterisk );
-                ImPlot::PlotStems( "Chunk thread", &chunkLoadingThreadCount[ 0 ].x, &chunkLoadingThreadCount[ 0 ].y, chunkLoadingThreadCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
-
-                ImPlot::SetAxes( ImAxis_X1, ImAxis_Y2 );
-                ImPlot::SetNextMarkerStyle( ImPlotMarker_Circle );
-                ImPlot::PlotStems( "Total Chunk", &chunkCount[ 0 ].x, &chunkCount[ 0 ].y, chunkCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
-                ImPlot::SetNextMarkerStyle( ImPlotMarker_Diamond );
-                ImPlot::PlotStems( "Total Chunk Rendering", &chunkRenderCount[ 0 ].x, &chunkRenderCount[ 0 ].y, chunkRenderCount.size( ), 0, 0, 0, 2 * sizeof( float ) );
-                ImPlot::EndPlot( );
-            }
-
-            // ImGui::TreePop();
-        }
-
-        if ( ImGui::CollapsingHeader( "Generation" ) )
-        {
-            if ( m_TerrainNoiseOffset.Render( ) ) std::cout << m_TerrainNoiseOffset << std::endl;
-
-            auto&      terrainNoise   = MinecraftServer::GetInstance( ).GetWorld( ).GetModifiableTerrainNoise( );
-            static int noiseTypeIndex = 0;
-
-            {
-                const char* noiseType[] = {
-                    "NoiseType_OpenSimplex2",
-                    "NoiseType_OpenSimplex2S",
-                    "NoiseType_Cellular",
-                    "NoiseType_Perlin",
-                    "NoiseType_ValueCubic",
-                    "NoiseType_Value" };
-
-                if ( ImGui::Combo( "NoiseType", &noiseTypeIndex, noiseType, IM_ARRAYSIZE( noiseType ) ) )
-                    terrainNoise.SetNoiseType( static_cast<Noise::FastNoiseLite::NoiseType>( noiseTypeIndex ) );
-            }
-
-            if ( noiseTypeIndex == Noise::FastNoiseLite::NoiseType_Cellular && ImGui::TreeNode( "Cellular" ) )
-            {
-                static int  cellularDistanceFunctionIndex = 1;
-                const char* cellularDistanceFunction[]    = {
-                    "CellularDistanceFunction_Euclidean",
-                    "CellularDistanceFunction_EuclideanSq",
-                    "CellularDistanceFunction_Manhattan",
-                    "CellularDistanceFunction_Hybrid" };
-
-                if ( ImGui::Combo( "CellularDistanceFunction", &cellularDistanceFunctionIndex, cellularDistanceFunction, IM_ARRAYSIZE( cellularDistanceFunction ) ) )
-                    terrainNoise.SetCellularDistanceFunction( static_cast<Noise::FastNoiseLite::CellularDistanceFunction>( cellularDistanceFunctionIndex ) );
-
-                static int  cellularReturnTypeIndex = 1;
-                const char* cellularReturnType[]    = {
-                    "CellularReturnType_CellValue",
-                    "CellularReturnType_Distance",
-                    "CellularReturnType_Distance2",
-                    "CellularReturnType_Distance2Add",
-                    "CellularReturnType_Distance2Sub",
-                    "CellularReturnType_Distance2Mul",
-                    "CellularReturnType_Distance2Div" };
-
-                if ( ImGui::Combo( "CellularReturnType", &cellularReturnTypeIndex, cellularReturnType, IM_ARRAYSIZE( cellularReturnType ) ) )
-                    terrainNoise.SetCellularReturnType( static_cast<Noise::FastNoiseLite::CellularReturnType>( cellularReturnTypeIndex ) );
-
-                static float cellularJitter = 1;
-                if ( ImGui::SliderFloat( "CellularJitter", &cellularJitter, 0, 2 ) )
-                    terrainNoise.SetCellularJitter( cellularJitter );
-
-                ImGui::TreePop( );
-            }
-
-            {
-                static int  rotationTypeIndex = 0;
-                const char* rotationType[]    = {
-                    "RotationType3D_None",
-                    "RotationType3D_ImproveXYPlanes",
-                    "RotationType3D_ImproveXZPlanes" };
-
-                if ( ImGui::Combo( "RotationType", &rotationTypeIndex, rotationType, IM_ARRAYSIZE( rotationType ) ) )
-                    terrainNoise.SetRotationType3D( static_cast<Noise::FastNoiseLite::RotationType3D>( rotationTypeIndex ) );
-            }
-
-            {
-                static int  fractalTypeIndex = 0;
-                const char* fractalType[]    = {
-                    "FractalType_None",
-                    "FractalType_FBm",
-                    "FractalType_Ridged",
-                    "FractalType_PingPong",
-                    "FractalType_DomainWarpProgressive",
-                    "FractalType_DomainWarpIndependent" };
-
-                if ( ImGui::Combo( "FractalType", &fractalTypeIndex, fractalType, IM_ARRAYSIZE( fractalType ) ) )
-                    terrainNoise.SetFractalType( static_cast<Noise::FastNoiseLite::FractalType>( fractalTypeIndex ) );
-
-                static int octaves = 0;
-                if ( ImGui::SliderInt( "Octaves", &octaves, 1, 16 ) )
-                    terrainNoise.SetFractalOctaves( octaves );
-
-                static float lacunarity = 2;
-                if ( ImGui::SliderFloat( "Lacunarity", &lacunarity, 0, 5 ) )
-                    terrainNoise.SetFractalLacunarity( lacunarity );
-
-                static float gain = 0.5;
-                if ( ImGui::SliderFloat( "Gain", &gain, -2, 2 ) )
-                    terrainNoise.SetFractalGain( gain );
-
-                static float weightedStrength = 0.0;
-                if ( ImGui::SliderFloat( "WeightedStrength", &weightedStrength, -2, 2 ) )
-                    terrainNoise.SetFractalWeightedStrength( weightedStrength );
-
-                if ( fractalTypeIndex == Noise::FastNoiseLite::FractalType_PingPong )
-                {
-                    static float pingPongStrength = 0.0;
-                    if ( ImGui::SliderFloat( "PingPongStrength", &pingPongStrength, 0, 2 ) )
-                        terrainNoise.SetFractalPingPongStrength( pingPongStrength );
-                }
-            }
-            // ImGui::TreePop();
-        }
-
-        ImGui::End( );
     }
 
-    // 3. Show another simple window.
-    if ( show_another_window )
+    if ( m_ShowDebugOverlay )
     {
-        ImPlot::ShowDemoWindow( &show_another_window );
+        static ImGuiWindowFlags flags    = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+        const ImGuiViewport*    viewport = ImGui::GetMainViewport( );
+        ImGui::SetNextWindowPos( viewport->Pos );
+        ImGui::SetNextWindowSize( viewport->Size );
+        if ( ImGui::Begin( "Debug Overlay", nullptr, flags ) )
+        {
+            ImGui::PushFont( ImGuiBigFont );
+            ImGui::PushStyleColor( ImGuiCol_Text, IM_COL32( 255, 255, 255, 255 ) );
+
+
+            const auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetCoordinate( );
+            ImGui::Text( "Player position %.3f %.3f %.3f", GetMinecraftX( playerPosition ), GetMinecraftY( playerPosition ), GetMinecraftZ( playerPosition ) );
+            ImGui::Text( "%.1f FPS  (%.3f ms/frame)", m_imgui_io->Framerate, 1000.0f / m_imgui_io->Framerate );
+
+            {
+                const int                 span               = GlobalConfig::getMinecraftConfigData( )[ "chunk" ][ "chunk_loading_range" ].get<CoordinateType>( ) + WorldChunkEffectiveRange;
+                const int                 size               = span * 2 + 1;
+                std::unique_ptr<double[]> chunkCurrentStatus = std::make_unique<double[]>( size * size );
+                std::unique_ptr<double[]> chunkTargetStatus  = std::make_unique<double[]>( size * size );
+
+                auto playerChunkPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetChunkCoordinate( );
+
+                {
+                    std::lock_guard<std::recursive_mutex> lock( MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheLock( ) );
+                    int                                   index = 0;
+                    for ( int i = -span; i <= span; ++i )
+                    {
+                        for ( int j = -span; j <= span; ++j, ++index )
+                        {
+                            if ( auto chunkCache = MinecraftServer::GetInstance( ).GetWorld( ).GetChunkPool( ).GetChunkCacheUnsafe( playerChunkPosition + MakeMinecraftChunkCoordinate( i, j ) ); chunkCache != nullptr )
+                            {
+                                chunkCurrentStatus[ index ] = (int) chunkCache->GetStatus( );
+                                chunkTargetStatus[ index ]  = (int) chunkCache->GetTargetStatus( );
+                            } else
+                            {
+                                chunkTargetStatus[ index ] = chunkCurrentStatus[ index ] = 0;
+                            }
+                        }
+                    }
+                }
+
+                // ImPlotColormap_Viridis
+                // ImPlotColormap_Hot
+                ImPlot::PushColormap( ImPlotColormap_Viridis );
+
+
+                if ( ImPlot::BeginPlot( "##Heatmap1", ImVec2( 225, 225 ), ImPlotFlags_CanvasOnly ) )
+                {
+                    ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit );
+                    ImPlot::PlotHeatmap( "Chunk Completeness", chunkCurrentStatus.get( ), size, size, eEmpty, eFull, nullptr,
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) - span, GetMinecraftZ( playerPosition ) - span ),
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) + span, GetMinecraftZ( playerPosition ) + span ) );
+                    ImPlot::EndPlot( );
+                }
+                if ( ImPlot::BeginPlot( "##Heatmap2", ImVec2( 225, 225 ), ImPlotFlags_CanvasOnly ) )
+                {
+                    ImPlot::SetupAxes( nullptr, nullptr, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit );
+                    ImPlot::PlotHeatmap( "Chunk Target Completeness", chunkTargetStatus.get( ), size, size, eEmpty, eFull, nullptr,
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) - span, GetMinecraftZ( playerPosition ) - span ),
+                                         ImPlotPoint( GetMinecraftX( playerPosition ) + span, GetMinecraftZ( playerPosition ) + span ) );
+                    ImPlot::EndPlot( );
+                }
+
+                ImPlot::PopColormap( );
+            }
+
+            ImGui::PopStyleColor( );
+            ImGui::PopFont( );
+        }
+        ImGui::End( );
     }
 }
 

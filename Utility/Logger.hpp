@@ -237,5 +237,6 @@ using Logger = LoggerBase<false, false>;
 #define LOGL_SYS( ... )  Logger::getInstance( ).LogLine( Logger::LogType::eSystem, __VA_ARGS__ );
 #define LOGL_WARN( ... ) Logger::getInstance( ).LogLine( Logger::LogType::eWarn, __VA_ARGS__ );
 #define LOGL_INFO( ... ) Logger::getInstance( ).LogLine( Logger::LogType::eInfo, __VA_ARGS__ );
+#define LOGL_VERB( ... ) Logger::getInstance( ).LogLine( Logger::LogType::eVerbose, __VA_ARGS__ );
 
 #endif   // MINECRAFT_VK_UTILITY_LOGGER_HPP

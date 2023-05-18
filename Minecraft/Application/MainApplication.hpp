@@ -42,6 +42,7 @@ class MainApplication : public Singleton<MainApplication>
 
     struct ImGuiIO*          m_imgui_io { };
     vk::UniqueDescriptorPool m_imguiDescriptorPool;
+    std::atomic<bool>        m_ShowDebugOverlay { };
 
     /*
      *

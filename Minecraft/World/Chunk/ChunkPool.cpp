@@ -183,6 +183,14 @@ ChunkPool::CleanUpJobs( )
             // Could be outside range at the time the job finish
             if ( CanLoadCoordinate( cache->GetChunkCoordinate( ), cache->GetStatus( ) + 1 ) )
                 AddJobContext( cache );
+            else
+            {
+                std::lock_guard<std::recursive_mutex> chunkLock( m_ChunkCacheLock );
+
+                // Lower the target status, it should not be used anymore, as its outside range
+                cache->SetExpectedStatus( cache->GetStatus( ) );
+                cache->initialized  = true;
+            }
 
             continue;
         }
@@ -264,7 +272,7 @@ ChunkPool::AddCoordinate( const ChunkCoordinate& coordinate, ChunkStatus status 
         return newChunk;
     }
 
-    LOGL_WARN( "Try adding chunk outside range:", coordinate, "with distance", MaxAxisDistance( m_PrioritizeCoordinate, coordinate ) );
+    LOGL_WARN( "Try adding chunk outside range:", coordinate, "with distance", MaxAxisDistance( m_PrioritizeCoordinate, coordinate ), "and status", status );
     return nullptr;
 }
 
