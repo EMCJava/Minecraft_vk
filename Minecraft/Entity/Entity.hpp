@@ -38,32 +38,32 @@ public:
         ToCartesianCoordinate( m_Position );
     }
 
-    inline EntityCoordinate GetCoordinate( )
+    inline EntityCoordinate GetCoordinate( ) const
     {
         return MakeMinecraftCoordinate<EntityCoordinate>(
             m_Position[ 0 ], m_Position[ 1 ], m_Position[ 2 ] );
     }
 
-    inline EntityCoordinate GetVelocity( )
+    inline EntityCoordinate GetVelocity( ) const
     {
         return MakeMinecraftCoordinate<EntityCoordinate>(
             m_Velocity[ 0 ], m_Velocity[ 1 ], m_Velocity[ 2 ] );
     }
 
-    inline BlockCoordinate GetIntCoordinate( )
+    inline BlockCoordinate GetIntCoordinate( ) const
     {
         return MakeMinecraftCoordinate<BlockCoordinate>(
             m_Position[ 0 ], m_Position[ 1 ], m_Position[ 2 ] );
     }
 
-    inline ChunkCoordinate GetChunkCoordinate( )
+    inline ChunkCoordinate GetChunkCoordinate( ) const
     {
         return {
             (int) m_Position.x >> SectionUnitLengthBinaryOffset,
             (int) m_Position.z >> SectionUnitLengthBinaryOffset };
     }
 
-    [[nodiscard]] inline bool IsOnGround( ) { return m_IsOnGround; }
+    [[nodiscard]] inline bool IsOnGround( ) const { return m_IsOnGround; }
 
     inline void SetAffectedByGravity( bool affected = true ) { m_UseGravity = affected; }
     inline void SetGravity( FloatTy gravity ) { m_Gravity = gravity; }

@@ -19,6 +19,7 @@ private:
 
     KeyState m_PrimaryKey;
     KeyState m_SecondaryKey;
+    KeyState m_FunctionKey;
 
     FloatTy m_MouseSensitivity { 0.5f };
 
@@ -34,6 +35,7 @@ public:
 
     [[nodiscard]] inline KeyState GetPrimaryKey( ) const { return m_PrimaryKey; }
     [[nodiscard]] inline KeyState GetSecondaryKey( ) const { return m_SecondaryKey; }
+    [[nodiscard]] inline KeyState GetFunctionKey( ) const { return m_FunctionKey; }
 
     [[nodiscard]] inline FloatTy GetMouseSensitivity( ) const { return m_MouseSensitivity; }
 };

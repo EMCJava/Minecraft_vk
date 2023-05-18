@@ -33,4 +33,10 @@ UserInput::UpdateMouse( )
     if ( mouseRightState == GLFW_PRESS && !m_SecondaryKey.isDown )
         m_SecondaryKey.isPressed = true;
     m_SecondaryKey.isDown = mouseRightState;
+
+    m_FunctionKey.isPressed = false;
+    int mouseMiddleState    = glfwGetMouseButton( m_EventWindow, GLFW_MOUSE_BUTTON_MIDDLE );
+    if ( mouseMiddleState == GLFW_PRESS && !m_FunctionKey.isDown )
+        m_FunctionKey.isPressed = true;
+    m_FunctionKey.isDown = mouseMiddleState;
 }

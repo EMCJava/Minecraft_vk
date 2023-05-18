@@ -929,9 +929,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
             ImGui::PushFont( ImGuiBigFont );
             ImGui::PushStyleColor( ImGuiCol_Text, IM_COL32( 255, 255, 255, 255 ) );
 
-
-            const auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetCoordinate( );
-            const auto playerVelocity = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetVelocity();
+            const auto player = MinecraftServer::GetInstance( ).GetPlayer( 0 );
+            const auto playerPosition = player.GetCoordinate( );
+            const auto playerVelocity = player.GetVelocity( );
             ImGui::Text( "Player position %.3f %.3f %.3f", GetMinecraftX( playerPosition ), GetMinecraftY( playerPosition ), GetMinecraftZ( playerPosition ) );
             ImGui::Text( "Player velocity %.3f %.3f %.3f", GetMinecraftX( playerVelocity ), GetMinecraftY( playerVelocity ), GetMinecraftZ( playerVelocity ) );
             ImGui::Text( "%.1f FPS  (%.3f ms/frame)", m_imgui_io->Framerate, 1000.0f / m_imgui_io->Framerate );
@@ -1040,14 +1040,28 @@ MainApplication::SetGenerationOffsetByCurve( )
 void
 MainApplication::RenderThreadMouseHandle( )
 {
-    const auto playerRaycastResult = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetRaycastResult( );
+    auto&      player              = MinecraftServer::GetInstance( ).GetPlayer( 0 );
+    const auto playerRaycastResult = player.GetRaycastResult( );
     if ( m_is_mouse_locked && m_UserInput.GetPrimaryKey( ).isPressed )
         if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.solidHit, BlockID::Air ) )
-            MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+            player.DoRaycast( );
 
     if ( m_is_mouse_locked && m_UserInput.GetSecondaryKey( ).isPressed )
-        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.beforeSolidHit, BlockID::Stone ) )
-            MinecraftServer::GetInstance( ).GetPlayer( 0 ).DoRaycast( );
+        if ( playerRaycastResult.hasSolidHit && MinecraftServer::GetInstance( ).GetWorld( ).SetBlock( playerRaycastResult.beforeSolidHit, player.GetBlockHolding( ) ) )
+            player.DoRaycast( );
+
+    if ( m_is_mouse_locked && m_UserInput.GetFunctionKey( ).isPressed )
+        if ( playerRaycastResult.hasSolidHit )
+        {
+            if ( auto* block = MinecraftServer::GetInstance( ).GetWorld( ).GetBlock( playerRaycastResult.solidHit ) )
+            {
+                player.SetBlockHolding( *block );
+                LOGL_VERB( "User picked block", toString( *block ).c_str( ) );
+            } else
+            {
+                LOGL_WARN( "False report on raycast hit at location", playerRaycastResult.solidHit );
+            }
+        }
 
     if ( playerRaycastResult.hasSolidHit )
     {

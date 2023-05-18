@@ -5,6 +5,7 @@
 #ifndef MINECRAFT_VK_PLAYER_HPP
 #define MINECRAFT_VK_PLAYER_HPP
 
+#include "Minecraft/Block/Block.hpp"
 #include "Minecraft/Entity/CameraEntity.hpp"
 #include "Minecraft/World/Physics/Ray/RaycastType.hpp"
 #include "Minecraft/util/MinecraftConstants.hpp"
@@ -18,6 +19,8 @@ class Player : public CameraEntity
 
     AnimationLinear SprintAnimationStep = 0.f;
 
+    Block m_BlockHolding = { Stone };
+
 public:
     explicit Player( const EntityCoordinate& coordinate )
         : CameraEntity( coordinate )
@@ -28,6 +31,9 @@ public:
 
     void                                 DoRaycast( );
     [[nodiscard]] Physics::RaycastResult GetRaycastResult( ) const;
+
+    inline void SetBlockHolding( Block block ) { m_BlockHolding = block; }
+    [[nodiscard]] inline Block GetBlockHolding( ) const { return m_BlockHolding; }
 
     void Tick( float deltaTime );
 };
