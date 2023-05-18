@@ -66,7 +66,7 @@ private:
     static constexpr std::string_view WarnStr    = "[ WARN ] ";
     static constexpr std::string_view InfoStr    = "[ INFO ] ";
     static constexpr std::string_view VerboseStr = "[ VERB ] ";
-    static constexpr std::string_view SystemStr = "[ SYS ] ";
+    static constexpr std::string_view SystemStr  = "[ SYS ] ";
 
     static constexpr std::string_view RedStr    = "\033[38;5;9m";
     static constexpr std::string_view YellowStr = "\033[38;5;11m";
@@ -78,7 +78,7 @@ private:
     static constexpr auto WarnPrefix    = JoinColorSrt<YellowStr, WarnStr>::value;
     static constexpr auto InfoPrefix    = JoinColorSrt<YellowStr, InfoStr>::value;
     static constexpr auto VerbosePrefix = JoinColorSrt<GrayStr, VerboseStr>::value;
-    static constexpr auto SystemPrefix = JoinColorSrt<GreenStr, SystemStr>::value;
+    static constexpr auto SystemPrefix  = JoinColorSrt<GreenStr, SystemStr>::value;
 
 public:
     enum class Color {
@@ -231,10 +231,11 @@ public:
 
 using Logger = LoggerBase<false, false>;
 
-#define LOG_EXPRESSION( x ) Logger::getInstance( ).LogLine( #x " = [", ( x ), ']');
+#define LE( x )             #x " = [", ( x ), ']'
+#define LOG_EXPRESSION( x ) Logger::getInstance( ).LogLine( LE( x ) );
 
-#define LOGL_SYS(...) Logger::getInstance().LogLine( Logger::LogType::eSystem, __VA_ARGS__ );
-#define LOGL_WARN(...) Logger::getInstance().LogLine( Logger::LogType::eWarn, __VA_ARGS__ );
-#define LOGL_INFO(...) Logger::getInstance().LogLine( Logger::LogType::eInfo, __VA_ARGS__ );
+#define LOGL_SYS( ... )  Logger::getInstance( ).LogLine( Logger::LogType::eSystem, __VA_ARGS__ );
+#define LOGL_WARN( ... ) Logger::getInstance( ).LogLine( Logger::LogType::eWarn, __VA_ARGS__ );
+#define LOGL_INFO( ... ) Logger::getInstance( ).LogLine( Logger::LogType::eInfo, __VA_ARGS__ );
 
 #endif   // MINECRAFT_VK_UTILITY_LOGGER_HPP

@@ -38,6 +38,8 @@ ImFont* ImGuiBigFont { };
 
 MainApplication::MainApplication( )
 {
+    SetAsMainThread( );
+
     InitWindow( );
 
     m_UserInput.SetEventWindow( m_window );
@@ -200,10 +202,28 @@ MainApplication::run( )
         while ( !glfwWindowShouldClose( m_window ) )
         {
             glfwPollEvents( );
+
+            if ( m_MouseShouldLock.test( ) )
+            {
+                LockMouse( );
+                m_MouseShouldLock.clear( );
+            }
+
+            if ( m_MouseShouldUnlock.test( ) )
+            {
+                UnlockMouse( );
+                m_MouseShouldUnlock.clear( );
+            }
         }
     }
 
     m_graphics_api->waitIdle( );
+}
+
+void
+window_focus_callback( GLFWwindow* window, int focused )
+{
+    LOGL_SYS( "window_focus_callback", LE( window ), LE( focused ) );
 }
 
 void
@@ -223,6 +243,7 @@ MainApplication::InitWindow( )
     glfwSetFramebufferSizeCallback( m_window, onFrameBufferResized );
     glfwSetCursorPosCallback( m_window, onMousePositionInput );
     glfwSetKeyCallback( m_window, onKeyboardInput );
+    glfwSetWindowFocusCallback( m_window, window_focus_callback );
 
     LockMouse( );
 }

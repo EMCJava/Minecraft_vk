@@ -29,8 +29,13 @@ class MainApplication : public Singleton<MainApplication>
     bool        m_window_fullscreen = false;
     bool        m_is_mouse_locked   = false;
 
+    std::thread::id m_MainThreadId { };
+
     UserInput                   m_UserInput;
     std::pair<FloatTy, FloatTy> m_MousePos { };
+    std::atomic_flag            m_MouseShouldLock { };
+    std::atomic_flag            m_MouseShouldUnlock { };
+
 
     std::atomic_flag            m_deltaMouseHoldUpdate { };
     std::pair<FloatTy, FloatTy> m_NegDeltaMouse { };
@@ -94,6 +99,11 @@ class MainApplication : public Singleton<MainApplication>
 
     void RenderThreadMouseHandle( );
 
+    /*
+     *
+     * GLFW event
+     *
+     * */
     static void onFrameBufferResized( GLFWwindow* window, int width, int height );
     static void onKeyboardInput( GLFWwindow* window, int key, int scancode, int action, int mods );
     static void onMousePositionInput( GLFWwindow* window, double xpos, double ypos );
@@ -127,16 +137,41 @@ public:
     void LockMouse( )
     {
         m_is_mouse_locked = true;
+
+        if ( std::this_thread::get_id( ) != m_MainThreadId )
+        {
+            m_MouseShouldLock.test_and_set( );
+            return;
+        }
+
         glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED );
+
+        if ( glfwRawMouseMotionSupported( ) )
+        {
+            glfwSetInputMode( m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE );
+            LOGL_SYS( "Using raw mouse motion" );
+        }
     }
 
     void UnlockMouse( )
     {
         m_is_mouse_locked = false;
+
+        if ( std::this_thread::get_id( ) != m_MainThreadId )
+        {
+            m_MouseShouldUnlock.test_and_set( );
+            return;
+        }
+
         glfwSetInputMode( m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
     }
 
-    [[nodiscard]] VulkanAPI& GetVulkanAPI( ) const { return *m_graphics_api.get( ); }
+    void SetAsMainThread( )
+    {
+        m_MainThreadId = std::this_thread::get_id( );
+    }
+
+    [[nodiscard]] VulkanAPI& GetVulkanAPI( ) const { return *m_graphics_api; }
 
     void run( );
 };
