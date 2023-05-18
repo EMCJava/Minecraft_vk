@@ -12,8 +12,8 @@
 void
 StructureTree::Generate( WorldChunk& chunk )
 {
-    static constexpr auto MIN_HEIGHT = 6;
-    static constexpr auto MAX_HEIGHT = 20;
+    static constexpr auto MIN_HEIGHT = 5;
+    static constexpr auto MAX_HEIGHT = 7;
     static_assert( MAX_HEIGHT >= MIN_HEIGHT );
 
     const WorldChunk& startingChunk      = GetStartingChunk( chunk );
@@ -38,16 +38,51 @@ StructureTree::Generate( WorldChunk& chunk )
     auto leafOrigin             = m_StartingPosition;
     GetMinecraftY( leafOrigin ) = heightAtPoint + treeHeight;
 
-    for ( int x = -4; x <= 4; ++x )
-        for ( int y = -4; y <= 4; ++y )
-            for ( int z = -4; z <= 4; ++z )
+    SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin, false );
+
+    for ( int i = 0; i < 2; ++i )
+    {
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 1, i, 0 ), false );
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -1, i, 0 ), false );
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 0, i, 1 ), false );
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 0, i, -1 ), false );
+    }
+
+    if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 1, 1, 1 ), false );
+    if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -1, 1, 1 ), false );
+    if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 1, 1, -1 ), false );
+    if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -1, 1, -1 ), false );
+
+    for ( int i = 2; i < 4; ++i )
+        for ( int x = -2; x <= 2; ++x )
+            for ( int y = -2; y <= 2; ++y )
             {
-                const auto leafDensity = std::abs( x ) + std::abs( y ) + std::abs( z );
-                if ( chunkNoise.NextUint64( ) % 8 >= leafDensity )
+                if ( std::abs( x ) + std::abs( y ) <= 3 )
                 {
-                    SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin + MakeMinecraftCoordinate( x, y, z ), false );
+                    SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( x, i, y ), false );
                 }
             }
+
+    if ( chunkNoise.NextUint64( ) % 2 == 1 )
+    {
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 2, 3, 2 ), false );
+        if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 2, 2, 2 ), false );
+    }
+    if ( chunkNoise.NextUint64( ) % 2 == 1 )
+    {
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -2, 3, 2 ), false );
+        if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -2, 2, 2 ), false );
+    }
+    if ( chunkNoise.NextUint64( ) % 2 == 1 )
+    {
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 2, 3, -2 ), false );
+        if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( 2, 2, -2 ), false );
+    }
+    if ( chunkNoise.NextUint64( ) % 2 == 1 )
+    {
+        SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -2, 3, -2 ), false );
+        if ( chunkNoise.NextUint64( ) % 3 == 2 ) SetBlockWorld( chunk, chunkNoise.NextUint64( ) % 8 == 0 ? BlockID::FloweringAzaleaLeaves : BlockID::AzaleaLeaves, leafOrigin - MakeMinecraftCoordinate( -2, 2, -2 ), false );
+    }
 }
 
 bool
