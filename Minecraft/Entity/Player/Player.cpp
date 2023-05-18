@@ -50,7 +50,7 @@ Player::Tick( float deltaTime )
     {
         static bool previousJump = false;
         bool        currentJump  = MainApplication::GetInstance( ).IsJumping( );
-        if ( !previousJump && currentJump )
+        if ( !previousJump && currentJump && IsOnGround( ) )
         {
             const auto jumpHeight       = 1.25f;
             const auto verticalVelocity = std::sqrt( -2 * m_Gravity * jumpHeight );
@@ -74,6 +74,6 @@ Player::DoRaycast( )
 {
     Physics::Ray<float> ray { Front.x * 20, Front.y * 20, Front.z * 20 };
 
-    const auto minectaftPosition = ToMinecraftCoordinate( m_Position + m_EyePosition );
-    m_CurrentFrameRaycastResult  = Physics::Raycast::CastRay( MinecraftServer::GetInstance( ).GetWorld( ), { minectaftPosition[ 0 ], minectaftPosition[ 1 ], minectaftPosition[ 2 ] }, ray );
+    const auto minecraftPosition = ToMinecraftCoordinate( m_Position + m_EyePosition );
+    m_CurrentFrameRaycastResult  = Physics::Raycast::CastRay( MinecraftServer::GetInstance( ).GetWorld( ), { minecraftPosition[ 0 ], minecraftPosition[ 1 ], minecraftPosition[ 2 ] }, ray );
 }
