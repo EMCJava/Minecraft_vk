@@ -931,7 +931,9 @@ MainApplication::renderImgui( uint32_t renderIndex )
 
 
             const auto playerPosition = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetCoordinate( );
+            const auto playerVelocity = MinecraftServer::GetInstance( ).GetPlayer( 0 ).GetVelocity();
             ImGui::Text( "Player position %.3f %.3f %.3f", GetMinecraftX( playerPosition ), GetMinecraftY( playerPosition ), GetMinecraftZ( playerPosition ) );
+            ImGui::Text( "Player velocity %.3f %.3f %.3f", GetMinecraftX( playerVelocity ), GetMinecraftY( playerVelocity ), GetMinecraftZ( playerVelocity ) );
             ImGui::Text( "%.1f FPS  (%.3f ms/frame)", m_imgui_io->Framerate, 1000.0f / m_imgui_io->Framerate );
 
             {

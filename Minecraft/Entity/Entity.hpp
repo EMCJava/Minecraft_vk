@@ -20,7 +20,7 @@ protected:
     FloatTy m_Gravity    = -18.f;
     bool    m_UseGravity = true;
 
-    float m_MaxVelocity = 50.0f;
+    float m_MaxVelocity = 60.0f;
 
 public:
     explicit Entity( const EntityCoordinate& coordinate )
@@ -41,6 +41,12 @@ public:
     {
         return MakeMinecraftCoordinate<EntityCoordinate>(
             m_Position[ 0 ], m_Position[ 1 ], m_Position[ 2 ] );
+    }
+
+    inline EntityCoordinate GetVelocity( )
+    {
+        return MakeMinecraftCoordinate<EntityCoordinate>(
+            m_Velocity[ 0 ], m_Velocity[ 1 ], m_Velocity[ 2 ] );
     }
 
     inline BlockCoordinate GetIntCoordinate( )
