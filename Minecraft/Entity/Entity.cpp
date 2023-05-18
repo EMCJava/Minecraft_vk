@@ -110,6 +110,8 @@ Entity::Tick( float deltaTime )
 
     // Logger::getInstance( ).LogLine( '[', m_Position.x, m_Position.y, m_Position.z, ']', '[', travel.x, travel.y, travel.z, ']' );
 
+    m_IsOnGround = m_Velocity.y != 0 && travel.y == 0;
+
     // blocked
     for ( int i = 0; i < 3; ++i )
         if ( travel[ i ] == 0 )

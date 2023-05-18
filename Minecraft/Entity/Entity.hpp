@@ -19,6 +19,7 @@ protected:
 
     FloatTy m_Gravity    = -18.f;
     bool    m_UseGravity = true;
+    bool    m_IsOnGround = false;
 
     float m_MaxVelocity = 60.0f;
 
@@ -61,6 +62,8 @@ public:
             (int) m_Position.x >> SectionUnitLengthBinaryOffset,
             (int) m_Position.z >> SectionUnitLengthBinaryOffset };
     }
+
+    [[nodiscard]] inline bool IsOnGround( ) { return m_IsOnGround; }
 
     inline void SetAffectedByGravity( bool affected = true ) { m_UseGravity = affected; }
     inline void SetGravity( FloatTy gravity ) { m_Gravity = gravity; }
