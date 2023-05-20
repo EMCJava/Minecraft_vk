@@ -91,6 +91,9 @@ public:
     bool SetBlockWorld( class Chunk& chunk, const Block& block, const BlockCoordinate& worldCoordinate, bool replace = true );
     bool SetBlock( class Chunk& chunk, const Block& block, const BlockCoordinate& inChunkCoordinate, bool replace = true );
 
+    Block* GetBlock( class Chunk& chunk, const BlockCoordinate& inChunkCoordinate );
+    Block& GetBlock( class Chunk& chunk, const uint32_t index );
+
     static constexpr inline auto
     ToHorizontalIndex( const auto& coordinate )
     {

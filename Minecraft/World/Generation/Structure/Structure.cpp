@@ -4,9 +4,9 @@
 
 #include "Structure.hpp"
 
+#include "Minecraft/World/Chunk/WorldChunk.hpp"
 #include <Minecraft/Internet/MinecraftServer/MinecraftServer.hpp>
 #include <Minecraft/World/MinecraftWorld.hpp>
-#include "Minecraft/World/Chunk/WorldChunk.hpp"
 
 namespace
 {
@@ -28,6 +28,18 @@ bool
 Structure::SetBlock( Chunk& chunk, const Block& block, const BlockCoordinate& inChunkCoordinate, bool replace )
 {
     return chunk.SetBlock( inChunkCoordinate, block, replace );
+}
+
+Block*
+Structure::GetBlock( Chunk& chunk, const BlockCoordinate& inChunkCoordinate )
+{
+    return chunk.GetBlock( inChunkCoordinate );
+}
+
+Block&
+Structure::GetBlock( Chunk& chunk, const uint32_t index )
+{
+    return chunk.At( index );
 }
 
 WorldChunk&

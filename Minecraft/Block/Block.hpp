@@ -25,6 +25,8 @@ enum BlockID : uint8_t {
     CraftingTable,
     BirchLog,
     StrippedBirchLog,
+    Water,
+    Lava,
     BlockIDSize
 };
 
@@ -47,6 +49,8 @@ toString( const BlockID& id )
         SWITCH_TOSTRING( CraftingTable )
         SWITCH_TOSTRING( BirchLog )
         SWITCH_TOSTRING( StrippedBirchLog )
+        SWITCH_TOSTRING( Water )
+        SWITCH_TOSTRING( Lava )
     case BlockIDSize: break;
     }
 

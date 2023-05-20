@@ -362,7 +362,12 @@ RenderableChunk::GenerateRenderBuffer( )
 bool
 RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& block )
 {
-    const auto& blockIndex = ScaleToSecond<1, SectionSurfaceSize>( GetMinecraftY( blockCoordinate ) ) + ScaleToSecond<1, SectionUnitLength>( GetMinecraftZ( blockCoordinate ) ) + GetMinecraftX( blockCoordinate );
+    return SetBlock( GetBlockIndex( blockCoordinate ), block );
+}
+
+bool
+RenderableChunk::SetBlock( const uint32_t& blockIndex, const Block& block )
+{
     assert( blockIndex >= 0 && blockIndex < ChunkVolume );
     assert( std::all_of( m_NearChunks.begin( ), m_NearChunks.end( ), []( const auto& chunk ) { return chunk != nullptr; } ) );
 
@@ -466,6 +471,7 @@ RenderableChunk::SetBlock( const BlockCoordinate& blockCoordinate, const Block& 
 
     return true;
 }
+
 
 bool
 RenderableChunk::SyncChunkFromDirection( RenderableChunk* other, int fromDir, bool changes )

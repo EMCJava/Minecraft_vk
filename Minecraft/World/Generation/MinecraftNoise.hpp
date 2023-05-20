@@ -83,6 +83,23 @@ public:
         return result;
     }
 
+    /*
+     *
+     * Random number in [0, max)
+     *
+     * */
+    inline constexpr uint64_t
+    NextUint64( uint64_t max )
+    {
+        return NextUint64( ) % max;
+    }
+
+    inline constexpr double
+    NextDouble( )
+    {
+        return static_cast<double>( NextUint64( ) ) / static_cast<double>( std::numeric_limits<uint64_t>::max( ) );
+    }
+
     inline constexpr MinecraftNoise&
     Jump( ) noexcept
     {
@@ -109,6 +126,12 @@ public:
         m_Seed.seedArray[ 1 ] = s1;
 
         return *this;
+    }
+
+    inline constexpr void AlterSeed( std::pair<uint64_t, uint64_t>&& delta )
+    {
+        m_Seed.seed.first += delta.first;
+        m_Seed.seed.second += delta.second;
     }
 
     static inline constexpr MinecraftNoise FromUint64( uint64_t seed )

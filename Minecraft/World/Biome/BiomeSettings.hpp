@@ -7,10 +7,15 @@
 
 #include <Minecraft/World/Generation/Structure/StructureAbandonedHouse.hpp>
 #include <Minecraft/World/Generation/Structure/StructureGroup.hpp>
+#include <Minecraft/World/Generation/Structure/StructureCave.hpp>
 #include <Minecraft/World/Generation/Structure/StructureTree.hpp>
 
+#include <Minecraft/Block/Block.hpp>
+
 struct DefaultBiome {
-    using StructuresSettings = StructureGroup<StructureTree, StructureAbandonedHouse>;
+    using StructuresSettings             = StructureGroup<StructureTree, StructureAbandonedHouse, StructureCave>;
+    static constexpr BlockID topBlock    = Grass;
+    static constexpr BlockID fillerBlock = Dart;
 };
 
 
