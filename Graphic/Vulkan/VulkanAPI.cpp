@@ -224,6 +224,8 @@ VulkanAPI::selectPhysicalDevice( )
         m_vkPhysicalDevice           = device_priorities.rbegin( )->second;
         m_vkPhysicalDeviceProperties = m_vkPhysicalDevice.getProperties( );
 
+        setSwapChainSupportDetails( m_vkPhysicalDevice );
+
         Logger::getInstance( ).LogLine( Logger::LogType::eInfo, "Using device: [", vk::to_string( m_vkPhysicalDeviceProperties.deviceType ), "]", m_vkPhysicalDeviceProperties.deviceName );
     } else
     {
